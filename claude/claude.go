@@ -16,6 +16,21 @@
 
 package claude
 
+import (
+	"context"
+
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/goplus/xai"
+)
+
 // -----------------------------------------------------------------------------
+
+type Client struct {
+	cli anthropic.Client
+}
+
+func (c *Client) Chat(ctx context.Context, in []xai.Message, opts ...xai.Option) (out xai.Message, err error) {
+	panic("todo")
+}
 
 // -----------------------------------------------------------------------------
