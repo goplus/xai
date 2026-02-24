@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/goplus/xai"
-	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/responses"
 )
 
 var (
@@ -30,15 +30,20 @@ var (
 // -----------------------------------------------------------------------------
 
 type Provider struct {
-	cli *openai.Client
+	responses responses.ResponseService
 }
 
 func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
-	panic("todo")
+	resp, err := p.responses.New(ctx, buildParams(params), buildOptions(opts)...)
+	if err != nil {
+		return nil, err // TODO(xsw): translate error
+	}
+	return resp, nil // TODO(xsw): translate msg
 }
 
 func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
-	panic("todo")
+	resp := p.responses.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
+	return resp // TODO(xsw): translate msg
 }
 
 // -----------------------------------------------------------------------------

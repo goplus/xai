@@ -59,6 +59,9 @@ func (p *params) InferenceGeo(v string) xai.ParamBuilder {
 }
 
 func (p *params) Temperature(v float64) xai.ParamBuilder {
+	if v > 1 {
+		v = 1 // claude does not support temperature > 1
+	}
 	p.params.Temperature = param.NewOpt(v)
 	return p
 }

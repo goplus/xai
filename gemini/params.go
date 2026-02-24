@@ -27,6 +27,7 @@ type params struct {
 	model    string
 	contents []*genai.Content
 	config   genai.GenerateContentConfig
+	lastErr  error
 }
 
 func (p *params) System(v xai.TextBuilder) xai.ParamBuilder {
@@ -35,7 +36,12 @@ func (p *params) System(v xai.TextBuilder) xai.ParamBuilder {
 }
 
 func (p *params) Messages(v xai.MessageBuilder) xai.ParamBuilder {
-	p.contents = buildMessages(v)
+	msg, err := buildMessages(v)
+	if err != nil {
+		p.lastErr = err
+	} else {
+		p.contents = msg
+	}
 	return p
 }
 
@@ -78,9 +84,9 @@ func (p *Provider) Params() xai.ParamBuilder {
 	return &params{}
 }
 
-func buildParams(in xai.ParamBuilder) (string, []*genai.Content, *genai.GenerateContentConfig) {
+func buildParams(in xai.ParamBuilder) (string, []*genai.Content, *genai.GenerateContentConfig, error) {
 	p := in.(*params)
-	return p.model, p.contents, &p.config
+	return p.model, p.contents, &p.config, p.lastErr
 }
 
 // -----------------------------------------------------------------------------

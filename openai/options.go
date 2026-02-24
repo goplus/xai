@@ -18,12 +18,29 @@ package openai
 
 import (
 	"github.com/goplus/xai"
+	"github.com/openai/openai-go/v3/option"
 )
 
 // -----------------------------------------------------------------------------
 
+type options struct {
+	opts []option.RequestOption
+}
+
+func (p *options) WithBaseURL(base string) xai.OptionBuilder {
+	p.opts = append(p.opts, option.WithBaseURL(base))
+	return p
+}
+
 func (p *Provider) Options() xai.OptionBuilder {
-	panic("todo")
+	return &options{}
+}
+
+func buildOptions(opts xai.OptionBuilder) (ret []option.RequestOption) {
+	if p, ok := opts.(*options); ok {
+		ret = p.opts
+	}
+	return
 }
 
 // -----------------------------------------------------------------------------

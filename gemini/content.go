@@ -27,22 +27,33 @@ import (
 // -----------------------------------------------------------------------------
 
 type msgBuilder struct {
-	msgs []*genai.Content
+	msgs    []*genai.Content
+	lastErr error
 }
 
 func (p *msgBuilder) User(content xai.ContentBuilder) xai.MessageBuilder {
-	p.msgs = append(p.msgs, &genai.Content{
-		Parts: buildContents(content),
-		Role:  genai.RoleUser,
-	})
+	parts, err := buildContents(content)
+	if err != nil {
+		p.lastErr = err
+	} else {
+		p.msgs = append(p.msgs, &genai.Content{
+			Parts: parts,
+			Role:  genai.RoleUser,
+		})
+	}
 	return p
 }
 
 func (p *msgBuilder) Assistant(content xai.ContentBuilder) xai.MessageBuilder {
-	p.msgs = append(p.msgs, &genai.Content{
-		Parts: buildContents(content),
-		Role:  genai.RoleModel,
-	})
+	parts, err := buildContents(content)
+	if err != nil {
+		p.lastErr = err
+	} else {
+		p.msgs = append(p.msgs, &genai.Content{
+			Parts: parts,
+			Role:  genai.RoleModel,
+		})
+	}
 	return p
 }
 
@@ -50,8 +61,9 @@ func (p *Provider) Messages() xai.MessageBuilder {
 	return &msgBuilder{}
 }
 
-func buildMessages(in xai.MessageBuilder) []*genai.Content {
-	return in.(*msgBuilder).msgs
+func buildMessages(in xai.MessageBuilder) ([]*genai.Content, error) {
+	p := in.(*msgBuilder)
+	return p.msgs, p.lastErr
 }
 
 // -----------------------------------------------------------------------------
@@ -158,8 +170,9 @@ func (p *Provider) Contents() xai.ContentBuilder {
 	return &contentBuilder{}
 }
 
-func buildContents(in xai.ContentBuilder) []*genai.Part {
-	return in.(*contentBuilder).content
+func buildContents(in xai.ContentBuilder) ([]*genai.Part, error) {
+	p := in.(*contentBuilder)
+	return p.content, p.lastErr
 }
 
 // -----------------------------------------------------------------------------
