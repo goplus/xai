@@ -44,7 +44,7 @@ func (p *params) MaxTokens(v int64) xai.ParamBuilder {
 }
 
 func (p *params) Model(model xai.Model) xai.ParamBuilder {
-	p.params.Model = anthropic.Model(model) // TODO(xsw): check model
+	p.params.Model = anthropic.Model(model) // TODO(xsw): validate model
 	return p
 }
 

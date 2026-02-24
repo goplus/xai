@@ -30,15 +30,22 @@ var (
 // -----------------------------------------------------------------------------
 
 type Provider struct {
-	cli genai.Client
+	models genai.Models
 }
 
-func (p *Provider) Chat(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
-	panic("todo")
+func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
+	model, contents, config := buildParams(params)
+	resp, err := p.models.GenerateContent(ctx, model, contents, config)
+	if err != nil {
+		return nil, err // TODO(xsw): translate error
+	}
+	return resp, nil // TODO(xsw): translate msg
 }
 
-func (p *Provider) ChatStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
-	panic("todo")
+func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
+	model, contents, config := buildParams(params)
+	resp := p.models.GenerateContentStream(ctx, model, contents, config)
+	return resp // TODO(xsw): translate msg
 }
 
 // -----------------------------------------------------------------------------

@@ -57,8 +57,9 @@ const (
 
 type ContentBuilder interface {
 	Text(text string) ContentBuilder
-	ImageURL(url string) ContentBuilder
+	Image(mime ImageType, data []byte) ContentBuilder
 	ImageBase64(mime ImageType, base64 string) ContentBuilder
+	ImageURL(mime ImageType, url string) ContentBuilder
 
 	DocText(text string) ContentBuilder
 	DocPDFURL(url string) ContentBuilder
@@ -67,7 +68,7 @@ type ContentBuilder interface {
 
 	SearchResult(content TextBuilder, source, title string) ContentBuilder
 	ToolUse(id string, input any, name string) ContentBuilder
-	ToolResult(toolUseID string, content string, isError bool) ContentBuilder
+	ToolResult(toolUseID string, content any, isError bool) ContentBuilder
 	ServerToolUse(id string, input any, name ServerToolName) ContentBuilder
 
 	Thinking(signature, thinking string) ContentBuilder

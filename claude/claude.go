@@ -30,19 +30,19 @@ var (
 // -----------------------------------------------------------------------------
 
 type Provider struct {
-	cli anthropic.Client
+	messages anthropic.MessageService
 }
 
-func (p *Provider) Chat(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
-	resp, err := p.cli.Messages.New(ctx, buildParams(params), buildOptions(opts)...)
+func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
+	resp, err := p.messages.New(ctx, buildParams(params), buildOptions(opts)...)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
 	return resp, nil // TODO(xsw): translate msg
 }
 
-func (p *Provider) ChatStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
-	resp := p.cli.Messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
+func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
+	resp := p.messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
 	return resp // TODO(xsw): translate msg
 }
 

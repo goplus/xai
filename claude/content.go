@@ -17,6 +17,8 @@
 package claude
 
 import (
+	"encoding/base64"
+
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/goplus/xai"
 )
@@ -51,15 +53,15 @@ type contentBuilder struct {
 	content []anthropic.ContentBlockParamUnion
 }
 
-func (p *contentBuilder) Text(s string) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewTextBlock(s))
+func (p *contentBuilder) Text(text string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewTextBlock(text))
 	return p
 }
 
-func (p *contentBuilder) ImageURL(url string) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewImageBlock(anthropic.URLImageSourceParam{
-		URL: url,
-	}))
+func (p *contentBuilder) Image(mime xai.ImageType, data []byte) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewImageBlockBase64(
+		string(mime), base64.StdEncoding.EncodeToString(data),
+	))
 	return p
 }
 
@@ -67,6 +69,13 @@ func (p *contentBuilder) ImageBase64(mime xai.ImageType, base64 string) xai.Cont
 	p.content = append(p.content, anthropic.NewImageBlockBase64(
 		string(mime), base64,
 	))
+	return p
+}
+
+func (p *contentBuilder) ImageURL(mime xai.ImageType, url string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewImageBlock(anthropic.URLImageSourceParam{
+		URL: url,
+	}))
 	return p
 }
 
@@ -120,8 +129,9 @@ func (p *contentBuilder) ToolUse(id string, input any, name string) xai.ContentB
 	return p
 }
 
-func (p *contentBuilder) ToolResult(toolUseID string, content string, isError bool) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewToolResultBlock(toolUseID, content, isError))
+func (p *contentBuilder) ToolResult(toolUseID string, content any, isError bool) xai.ContentBuilder {
+	// TODO(xsw): validate content
+	p.content = append(p.content, anthropic.NewToolResultBlock(toolUseID, content.(string), isError))
 	return p
 }
 
