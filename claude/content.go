@@ -17,6 +17,8 @@
 package claude
 
 import (
+	"unsafe"
+
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/goplus/xai"
 )
@@ -51,6 +53,25 @@ type contentBuilder struct {
 	content []anthropic.ContentBlockParamUnion
 }
 
+func (p *contentBuilder) Text(s string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewTextBlock(s))
+	return p
+}
+
+func (p *contentBuilder) ImageURL(url string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewImageBlock(anthropic.URLImageSourceParam{
+		URL: url,
+	}))
+	return p
+}
+
+func (p *contentBuilder) ImageBase64(mime xai.ImageType, base64 []byte) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewImageBlockBase64(
+		string(mime), unsafe.String(unsafe.SliceData(base64), len(base64)),
+	))
+	return p
+}
+
 func (p *Provider) Contents() xai.ContentBuilder {
 	return &contentBuilder{}
 }
@@ -62,15 +83,20 @@ func buildContents(in xai.ContentBuilder) []anthropic.ContentBlockParamUnion {
 // -----------------------------------------------------------------------------
 
 type textBuilder struct {
-	msgs []anthropic.TextBlockParam
+	content []anthropic.TextBlockParam
+}
+
+func (p *textBuilder) Text(s string) xai.TextBuilder {
+	p.content = append(p.content, anthropic.TextBlockParam{Text: s})
+	return p
 }
 
 func (p *Provider) Texts() xai.TextBuilder {
-	panic("todo")
+	return &textBuilder{}
 }
 
 func buildTexts(in xai.TextBuilder) []anthropic.TextBlockParam {
-	return in.(*textBuilder).msgs
+	return in.(*textBuilder).content
 }
 
 // -----------------------------------------------------------------------------

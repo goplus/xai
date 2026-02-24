@@ -19,12 +19,24 @@ package xai
 // -----------------------------------------------------------------------------
 
 type TextBuilder interface {
+	Text(string) TextBuilder
 }
 
 // -----------------------------------------------------------------------------
 
+type ImageType string
+
+const (
+	ImageJPEG ImageType = "image/jpeg"
+	ImagePNG  ImageType = "image/png"
+	ImageGIF  ImageType = "image/gif"
+	ImageWebP ImageType = "image/webp"
+)
+
 type ContentBuilder interface {
-	TextBuilder
+	Text(string) ContentBuilder
+	ImageURL(string) ContentBuilder
+	ImageBase64(mime ImageType, base64 []byte) ContentBuilder
 }
 
 // -----------------------------------------------------------------------------

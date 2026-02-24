@@ -180,7 +180,23 @@ type Provider interface {
 	Contents() ContentBuilder
 	Texts() TextBuilder
 	Tools() ToolBuilder
+
+	// Send a structured list of input messages with text and/or image content, and the
+	// model will generate the next message in the conversation.
+	//
+	// The Chat API can be used for either single queries or stateless multi-turn
+	// conversations.
+	//
+	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
 	Chat(ctx context.Context, params ParamBuilder, opts OptionBuilder) (Message, error)
+
+	// Send a structured list of input messages with text and/or image content, and the
+	// model will generate the next message in the conversation.
+	//
+	// The Chat API can be used for either single queries or stateless multi-turn
+	// conversations.
+	//
+	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
 	ChatStreaming(ctx context.Context, params ParamBuilder, opts OptionBuilder) StreamMessage
 }
 
