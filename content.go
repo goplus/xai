@@ -18,12 +18,6 @@ package xai
 
 // -----------------------------------------------------------------------------
 
-type TextBuilder interface {
-	Text(string) TextBuilder
-}
-
-// -----------------------------------------------------------------------------
-
 type ImageType string
 
 const (
@@ -33,10 +27,51 @@ const (
 	ImageWebP ImageType = "image/webp"
 )
 
+// -----------------------------------------------------------------------------
+
+type TextBuilder interface {
+	Text(text string) TextBuilder
+}
+
+// -----------------------------------------------------------------------------
+
+type MultipartBuilder interface {
+	Text(text string) MultipartBuilder
+	ImageURL(url string) MultipartBuilder
+	ImageBase64(mime ImageType, base64 string) MultipartBuilder
+}
+
+// -----------------------------------------------------------------------------
+
+type ServerToolName string
+
+const (
+	ToolWebSearch               ServerToolName = "web_search"
+	ToolWebFetch                ServerToolName = "web_fetch"
+	ToolCodeExecution           ServerToolName = "code_execution"
+	ToolBashCodeExecution       ServerToolName = "bash_code_execution"
+	ToolTextEditorCodeExecution ServerToolName = "text_editor_code_execution"
+	ToolSearchToolRegex         ServerToolName = "tool_search_tool_regex"
+	ToolSearchToolBm25          ServerToolName = "tool_search_tool_bm25"
+)
+
 type ContentBuilder interface {
-	Text(string) ContentBuilder
-	ImageURL(string) ContentBuilder
-	ImageBase64(mime ImageType, base64 []byte) ContentBuilder
+	Text(text string) ContentBuilder
+	ImageURL(url string) ContentBuilder
+	ImageBase64(mime ImageType, base64 string) ContentBuilder
+
+	DocText(text string) ContentBuilder
+	DocPDFURL(url string) ContentBuilder
+	DocPDFBase64(base64 string) ContentBuilder
+	DocMultipart(multi MultipartBuilder) ContentBuilder
+
+	SearchResult(content TextBuilder, source, title string) ContentBuilder
+	ToolUse(id string, input any, name string) ContentBuilder
+	ToolResult(toolUseID string, content string, isError bool) ContentBuilder
+	ServerToolUse(id string, input any, name ServerToolName) ContentBuilder
+
+	Thinking(signature, thinking string) ContentBuilder
+	RedactedThinking(data string) ContentBuilder
 }
 
 // -----------------------------------------------------------------------------

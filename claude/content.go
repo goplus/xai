@@ -17,8 +17,6 @@
 package claude
 
 import (
-	"unsafe"
-
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/goplus/xai"
 )
@@ -65,10 +63,70 @@ func (p *contentBuilder) ImageURL(url string) xai.ContentBuilder {
 	return p
 }
 
-func (p *contentBuilder) ImageBase64(mime xai.ImageType, base64 []byte) xai.ContentBuilder {
+func (p *contentBuilder) ImageBase64(mime xai.ImageType, base64 string) xai.ContentBuilder {
 	p.content = append(p.content, anthropic.NewImageBlockBase64(
-		string(mime), unsafe.String(unsafe.SliceData(base64), len(base64)),
+		string(mime), base64,
 	))
+	return p
+}
+
+func (p *contentBuilder) DocText(text string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewDocumentBlock(anthropic.PlainTextSourceParam{
+		Data: text,
+	}))
+	return p
+}
+
+func (p *contentBuilder) DocPDFURL(url string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewDocumentBlock(anthropic.URLPDFSourceParam{
+		URL: url,
+	}))
+	return p
+}
+
+func (p *contentBuilder) DocPDFBase64(base64 string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewDocumentBlock(anthropic.Base64PDFSourceParam{
+		Data: base64,
+	}))
+	return p
+}
+
+func (p *contentBuilder) DocMultipart(multi xai.MultipartBuilder) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewDocumentBlock(anthropic.ContentBlockSourceParam{
+		Content: anthropic.ContentBlockSourceContentUnionParam{
+			OfContentBlockSourceContent: buildMultipart(multi),
+		},
+	}))
+	return p
+}
+
+func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewSearchResultBlock(buildTexts(content), source, title))
+	return p
+}
+
+func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewThinkingBlock(signature, thinking))
+	return p
+}
+
+func (p *contentBuilder) RedactedThinking(data string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewRedactedThinkingBlock(data))
+	return p
+}
+
+func (p *contentBuilder) ToolUse(id string, input any, name string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewToolUseBlock(id, input, name))
+	return p
+}
+
+func (p *contentBuilder) ToolResult(toolUseID string, content string, isError bool) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewToolResultBlock(toolUseID, content, isError))
+	return p
+}
+
+func (p *contentBuilder) ServerToolUse(id string, input any, name xai.ServerToolName) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewServerToolUseBlock(id, input, anthropic.ServerToolUseBlockParamName(name)))
 	return p
 }
 
@@ -82,12 +140,60 @@ func buildContents(in xai.ContentBuilder) []anthropic.ContentBlockParamUnion {
 
 // -----------------------------------------------------------------------------
 
+type multipartBuilder struct {
+	content []anthropic.ContentBlockSourceContentItemUnionParam
+}
+
+func (p *multipartBuilder) Text(text string) xai.MultipartBuilder {
+	p.content = append(p.content, anthropic.ContentBlockSourceContentItemUnionParam{
+		OfText: &anthropic.TextBlockParam{Text: text},
+	})
+	return p
+}
+
+func (p *multipartBuilder) ImageURL(url string) xai.MultipartBuilder {
+	p.content = append(p.content, anthropic.ContentBlockSourceContentItemUnionParam{
+		OfImage: &anthropic.ImageBlockParam{
+			Source: anthropic.ImageBlockParamSourceUnion{
+				OfURL: &anthropic.URLImageSourceParam{
+					URL: url,
+				},
+			},
+		},
+	})
+	return p
+}
+
+func (p *multipartBuilder) ImageBase64(mime xai.ImageType, base64 string) xai.MultipartBuilder {
+	p.content = append(p.content, anthropic.ContentBlockSourceContentItemUnionParam{
+		OfImage: &anthropic.ImageBlockParam{
+			Source: anthropic.ImageBlockParamSourceUnion{
+				OfBase64: &anthropic.Base64ImageSourceParam{
+					MediaType: anthropic.Base64ImageSourceMediaType(mime),
+					Data:      base64,
+				},
+			},
+		},
+	})
+	return p
+}
+
+func (p *Provider) Parts() xai.MultipartBuilder {
+	return &multipartBuilder{}
+}
+
+func buildMultipart(in xai.MultipartBuilder) []anthropic.ContentBlockSourceContentItemUnionParam {
+	return in.(*multipartBuilder).content
+}
+
+// -----------------------------------------------------------------------------
+
 type textBuilder struct {
 	content []anthropic.TextBlockParam
 }
 
-func (p *textBuilder) Text(s string) xai.TextBuilder {
-	p.content = append(p.content, anthropic.TextBlockParam{Text: s})
+func (p *textBuilder) Text(text string) xai.TextBuilder {
+	p.content = append(p.content, anthropic.TextBlockParam{Text: text})
 	return p
 }
 

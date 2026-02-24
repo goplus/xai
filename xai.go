@@ -178,6 +178,7 @@ type Provider interface {
 	Params() ParamBuilder
 	Messages() MessageBuilder
 	Contents() ContentBuilder
+	Parts() MultipartBuilder
 	Texts() TextBuilder
 	Tools() ToolBuilder
 
