@@ -18,6 +18,7 @@ package gemini
 
 import (
 	"encoding/base64"
+	"unsafe"
 
 	"github.com/goplus/xai"
 	"google.golang.org/genai"
@@ -124,11 +125,17 @@ func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title str
 }
 
 func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder {
-	panic("todo")
+	p.content = append(p.content, &genai.Part{
+		Text:             thinking,
+		ThoughtSignature: unsafe.Slice(unsafe.StringData(signature), len(signature)),
+		Thought:          true,
+	})
+	return p
 }
 
 func (p *contentBuilder) RedactedThinking(data string) xai.ContentBuilder {
-	panic("todo")
+	// TODO(xsw): validate data
+	return p
 }
 
 func (p *contentBuilder) ToolUse(id string, input any, name string) xai.ContentBuilder {
