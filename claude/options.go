@@ -14,39 +14,33 @@
  * limitations under the License.
  */
 
-package xai
+package claude
+
+import (
+	"github.com/anthropics/anthropic-sdk-go/option"
+	"github.com/goplus/xai"
+)
 
 // -----------------------------------------------------------------------------
 
-type TextBuilder interface {
+type options struct {
+	opts []option.RequestOption
 }
 
-// -----------------------------------------------------------------------------
-
-type ContentBuilder interface {
-	TextBuilder
+func (p *options) WithBaseURL(base string) xai.OptionBuilder {
+	p.opts = append(p.opts, option.WithBaseURL(base))
+	return p
 }
 
-// -----------------------------------------------------------------------------
-
-type MessageBuilder interface {
-	User(content ContentBuilder) MessageBuilder
-	Assistant(content ContentBuilder) MessageBuilder
+func (p *Provider) Options() xai.OptionBuilder {
+	return &options{}
 }
 
-// -----------------------------------------------------------------------------
-
-type Message interface {
-}
-
-// -----------------------------------------------------------------------------
-
-type StreamMessage interface {
-}
-
-// -----------------------------------------------------------------------------
-
-type ToolBuilder interface {
+func buildOptions(opts xai.OptionBuilder) (ret []option.RequestOption) {
+	if p, ok := opts.(*options); ok {
+		ret = p.opts
+	}
+	return
 }
 
 // -----------------------------------------------------------------------------

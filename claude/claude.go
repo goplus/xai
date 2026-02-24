@@ -23,14 +23,27 @@ import (
 	"github.com/goplus/xai"
 )
 
+var (
+	_ xai.Provider = (*Provider)(nil)
+)
+
 // -----------------------------------------------------------------------------
 
-type Client struct {
+type Provider struct {
 	cli anthropic.Client
 }
 
-func (c *Client) Chat(ctx context.Context, in []xai.Message, opts ...xai.Option) (out xai.Message, err error) {
-	panic("todo")
+func (p *Provider) Chat(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
+	resp, err := p.cli.Messages.New(ctx, buildParams(params), buildOptions(opts)...)
+	if err != nil {
+		return nil, err // TODO(xsw): translate error
+	}
+	return resp, nil // TODO(xsw): translate msg
+}
+
+func (p *Provider) ChatStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
+	resp := p.cli.Messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
+	return resp // TODO(xsw): translate msg
 }
 
 // -----------------------------------------------------------------------------

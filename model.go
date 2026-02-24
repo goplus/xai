@@ -18,35 +18,7 @@ package xai
 
 // -----------------------------------------------------------------------------
 
-type TextBuilder interface {
-}
-
-// -----------------------------------------------------------------------------
-
-type ContentBuilder interface {
-	TextBuilder
-}
-
-// -----------------------------------------------------------------------------
-
-type MessageBuilder interface {
-	User(content ContentBuilder) MessageBuilder
-	Assistant(content ContentBuilder) MessageBuilder
-}
-
-// -----------------------------------------------------------------------------
-
-type Message interface {
-}
-
-// -----------------------------------------------------------------------------
-
-type StreamMessage interface {
-}
-
-// -----------------------------------------------------------------------------
-
-type ToolBuilder interface {
-}
+// The model that will complete your prompt.
+type Model string
 
 // -----------------------------------------------------------------------------
