@@ -18,6 +18,7 @@ package openai
 
 import (
 	"github.com/goplus/xai"
+	"github.com/openai/openai-go/v3/packages/param"
 	"github.com/openai/openai-go/v3/responses"
 )
 
@@ -28,10 +29,18 @@ type msgBuilder struct {
 }
 
 func (p *msgBuilder) User(content xai.ContentBuilder) xai.MessageBuilder {
+	p.msgs = append(p.msgs, buildContents(content)...)
 	return p
 }
 
 func (p *msgBuilder) Assistant(content xai.ContentBuilder) xai.MessageBuilder {
+	contents := buildContents(content)
+	for _, c := range contents {
+		if c.OfMessage != nil {
+			c.OfMessage.Role = responses.EasyInputMessageRoleAssistant
+		}
+	}
+	p.msgs = append(p.msgs, contents...)
 	return p
 }
 
@@ -55,8 +64,102 @@ func buildMessages(in xai.MessageBuilder, sys responses.ResponseInputItemUnionPa
 
 // -----------------------------------------------------------------------------
 
-func (p *Provider) Contents() xai.ContentBuilder {
+type contentBuilder struct {
+	content []responses.ResponseInputItemUnionParam
+	msg     *responses.EasyInputMessageParam
+}
+
+func (p *contentBuilder) addMsg(v responses.ResponseInputContentUnionParam) xai.ContentBuilder {
+	if p.msg == nil {
+		content := responses.ResponseInputItemParamOfMessage(responses.ResponseInputMessageContentListParam{v}, responses.EasyInputMessageRoleUser)
+		p.content = append(p.content, content)
+		p.msg = content.OfMessage
+	} else {
+		p.msg.Content.OfInputItemContentList = append(p.msg.Content.OfInputItemContentList, v)
+	}
+	return p
+}
+
+func (p *contentBuilder) addNonMsg(v responses.ResponseInputItemUnionParam) xai.ContentBuilder {
+	p.content = append(p.content, v)
+	p.msg = nil
+	return p
+}
+
+func (p *contentBuilder) Text(text string) xai.ContentBuilder {
+	return p.addMsg(responses.ResponseInputContentParamOfInputText(text))
+}
+
+func (p *contentBuilder) Image(mime xai.ImageType, data []byte) xai.ContentBuilder {
 	panic("todo")
+}
+
+func (p *contentBuilder) ImageBase64(mime xai.ImageType, base64 string) xai.ContentBuilder {
+	panic("todo")
+}
+
+func (p *contentBuilder) ImageURL(mime xai.ImageType, url string) xai.ContentBuilder {
+	return p.addMsg(responses.ResponseInputContentUnionParam{
+		OfInputImage: &responses.ResponseInputImageParam{
+			ImageURL: param.NewOpt(url),
+		},
+	})
+}
+
+func (p *contentBuilder) DocText(text string) xai.ContentBuilder {
+	return p.addMsg(responses.ResponseInputContentParamOfInputText(text))
+}
+
+func (p *contentBuilder) DocPDFURL(url string) xai.ContentBuilder {
+	panic("todo")
+}
+
+func (p *contentBuilder) DocPDFBase64(base64 string) xai.ContentBuilder {
+	panic("todo")
+}
+
+func (p *contentBuilder) DocMultipart(multi xai.MultipartBuilder) xai.ContentBuilder {
+	panic("todo")
+}
+
+func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
+	panic("todo")
+}
+
+func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder {
+	return p.addNonMsg(responses.ResponseInputItemUnionParam{
+		OfReasoning: &responses.ResponseReasoningItemParam{
+			ID: signature,
+			Content: []responses.ResponseReasoningItemContentParam{
+				{Text: thinking},
+			},
+		},
+	})
+}
+
+func (p *contentBuilder) RedactedThinking(data string) xai.ContentBuilder {
+	panic("todo")
+}
+
+func (p *contentBuilder) ToolUse(id string, input any, name string) xai.ContentBuilder {
+	return p.addNonMsg(responses.ResponseInputItemParamOfCustomToolCall(id, input.(string), name))
+}
+
+func (p *contentBuilder) ToolResult(toolUseID string, content any, isError bool) xai.ContentBuilder {
+	// TODO(xsw): validate content
+	panic("todo")
+}
+
+func (p *contentBuilder) ServerToolUse(id string, input any, name xai.ServerToolName) xai.ContentBuilder {
+	panic("todo")
+}
+
+func (p *Provider) Contents() xai.ContentBuilder {
+	return &contentBuilder{}
+}
+
+func buildContents(in xai.ContentBuilder) []responses.ResponseInputItemUnionParam {
+	return in.(*contentBuilder).content
 }
 
 // -----------------------------------------------------------------------------
