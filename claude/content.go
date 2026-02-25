@@ -20,7 +20,6 @@ import (
 	"encoding/base64"
 
 	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/packages/param"
 	"github.com/goplus/xai"
 )
 
@@ -100,7 +99,7 @@ func (p *contentBuilder) ImageFile(mime xai.ImageType, fileID string) xai.Conten
 	return p
 }
 
-func (p *contentBuilder) DocText(text string) xai.ContentBuilder {
+func (p *contentBuilder) DocPlainText(text string) xai.ContentBuilder {
 	p.content = append(p.content, anthropic.NewBetaDocumentBlock(anthropic.BetaPlainTextSourceParam{
 		Data: text,
 	}))
@@ -121,11 +120,9 @@ func (p *contentBuilder) DocPDFBase64(base64 string) xai.ContentBuilder {
 	return p
 }
 
-func (p *contentBuilder) DocMultipart(multi xai.MultipartBuilder) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewBetaDocumentBlock(anthropic.BetaContentBlockSourceParam{
-		Content: anthropic.BetaContentBlockSourceContentUnionParam{
-			OfBetaContentBlockSourceContent: buildMultipart(multi),
-		},
+func (p *contentBuilder) DocFile(mime xai.DocType, fileID string) xai.ContentBuilder {
+	p.content = append(p.content, anthropic.NewBetaDocumentBlock(anthropic.BetaFileDocumentSourceParam{
+		FileID: fileID,
 	}))
 	return p
 }
@@ -167,56 +164,6 @@ func (p *Provider) Contents() xai.ContentBuilder {
 
 func buildContents(in xai.ContentBuilder) []anthropic.BetaContentBlockParamUnion {
 	return in.(*contentBuilder).content
-}
-
-// -----------------------------------------------------------------------------
-
-type multipartBuilder struct {
-	content []anthropic.BetaContentBlockSourceContentUnionParam
-}
-
-func (p *multipartBuilder) Text(text string) xai.MultipartBuilder {
-	p.content = append(p.content, anthropic.BetaContentBlockSourceContentUnionParam{
-		OfString: param.NewOpt(text),
-	})
-	return p
-}
-
-func (p *multipartBuilder) ImageURL(url string) xai.MultipartBuilder {
-	panic("todo")
-	/* p.content = append(p.content, anthropic.BetaContentBlockSourceContentUnionParam{
-		OfImage: &anthropic.ImageBlockParam{
-			Source: anthropic.ImageBlockParamSourceUnion{
-				OfURL: &anthropic.URLImageSourceParam{
-					URL: url,
-				},
-			},
-		},
-	})
-	return p */
-}
-
-func (p *multipartBuilder) ImageBase64(mime xai.ImageType, base64 string) xai.MultipartBuilder {
-	panic("todo")
-	/* p.content = append(p.content, anthropic.BetaContentBlockSourceContentUnionParam{
-		OfImage: &anthropic.ImageBlockParam{
-			Source: anthropic.ImageBlockParamSourceUnion{
-				OfBase64: &anthropic.Base64ImageSourceParam{
-					MediaType: anthropic.Base64ImageSourceMediaType(mime),
-					Data:      base64,
-				},
-			},
-		},
-	})
-	return p */
-}
-
-func (p *Provider) Parts() xai.MultipartBuilder {
-	return &multipartBuilder{}
-}
-
-func buildMultipart(in xai.MultipartBuilder) []anthropic.BetaContentBlockSourceContentUnionParam {
-	return in.(*multipartBuilder).content
 }
 
 // -----------------------------------------------------------------------------

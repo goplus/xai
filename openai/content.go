@@ -106,7 +106,15 @@ func (p *contentBuilder) ImageURL(mime xai.ImageType, url string) xai.ContentBui
 	})
 }
 
-func (p *contentBuilder) DocText(text string) xai.ContentBuilder {
+func (p *contentBuilder) ImageFile(mime xai.ImageType, fileID string) xai.ContentBuilder {
+	return p.addMsg(responses.ResponseInputContentUnionParam{
+		OfInputImage: &responses.ResponseInputImageParam{
+			FileID: param.NewOpt(fileID),
+		},
+	})
+}
+
+func (p *contentBuilder) DocPlainText(text string) xai.ContentBuilder {
 	return p.addMsg(responses.ResponseInputContentParamOfInputText(text))
 }
 
@@ -118,8 +126,12 @@ func (p *contentBuilder) DocPDFBase64(base64 string) xai.ContentBuilder {
 	panic("todo")
 }
 
-func (p *contentBuilder) DocMultipart(multi xai.MultipartBuilder) xai.ContentBuilder {
-	panic("todo")
+func (p *contentBuilder) DocFile(mime xai.DocType, fileID string) xai.ContentBuilder {
+	return p.addMsg(responses.ResponseInputContentUnionParam{
+		OfInputFile: &responses.ResponseInputFileParam{
+			FileID: param.NewOpt(fileID),
+		},
+	})
 }
 
 func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
@@ -160,12 +172,6 @@ func (p *Provider) Contents() xai.ContentBuilder {
 
 func buildContents(in xai.ContentBuilder) []responses.ResponseInputItemUnionParam {
 	return in.(*contentBuilder).content
-}
-
-// -----------------------------------------------------------------------------
-
-func (p *Provider) Parts() xai.MultipartBuilder {
-	panic("todo")
 }
 
 // -----------------------------------------------------------------------------

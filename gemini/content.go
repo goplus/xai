@@ -104,7 +104,14 @@ func (p *contentBuilder) ImageURL(mime xai.ImageType, url string) xai.ContentBui
 	return p
 }
 
-func (p *contentBuilder) DocText(text string) xai.ContentBuilder {
+func (p *contentBuilder) ImageFile(mime xai.ImageType, fileID string) xai.ContentBuilder {
+	p.content = append(p.content, genai.NewPartFromURI(
+		fileID, string(mime),
+	))
+	return p
+}
+
+func (p *contentBuilder) DocPlainText(text string) xai.ContentBuilder {
 	p.content = append(p.content, genai.NewPartFromText(text))
 	return p
 }
@@ -128,8 +135,11 @@ func (p *contentBuilder) DocPDFBase64(data string) xai.ContentBuilder {
 	return p
 }
 
-func (p *contentBuilder) DocMultipart(multi xai.MultipartBuilder) xai.ContentBuilder {
-	panic("todo")
+func (p *contentBuilder) DocFile(mime xai.DocType, fileID string) xai.ContentBuilder {
+	p.content = append(p.content, genai.NewPartFromURI(
+		fileID, string(mime),
+	))
+	return p
 }
 
 func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
@@ -173,12 +183,6 @@ func (p *Provider) Contents() xai.ContentBuilder {
 func buildContents(in xai.ContentBuilder) ([]*genai.Part, error) {
 	p := in.(*contentBuilder)
 	return p.content, p.lastErr
-}
-
-// -----------------------------------------------------------------------------
-
-func (p *Provider) Parts() xai.MultipartBuilder {
-	panic("todo")
 }
 
 // -----------------------------------------------------------------------------

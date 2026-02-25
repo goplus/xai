@@ -27,18 +27,16 @@ const (
 	ImageWebP ImageType = "image/webp"
 )
 
+type DocType string
+
+const (
+	DocPDF DocType = "application/pdf"
+)
+
 // -----------------------------------------------------------------------------
 
 type TextBuilder interface {
 	Text(text string) TextBuilder
-}
-
-// -----------------------------------------------------------------------------
-
-type MultipartBuilder interface {
-	Text(text string) MultipartBuilder
-	ImageURL(url string) MultipartBuilder
-	ImageBase64(mime ImageType, base64 string) MultipartBuilder
 }
 
 // -----------------------------------------------------------------------------
@@ -57,14 +55,16 @@ const (
 
 type ContentBuilder interface {
 	Text(text string) ContentBuilder
+
 	Image(mime ImageType, data []byte) ContentBuilder
 	ImageBase64(mime ImageType, base64 string) ContentBuilder
 	ImageURL(mime ImageType, url string) ContentBuilder
+	ImageFile(mime ImageType, fileID string) ContentBuilder
 
-	DocText(text string) ContentBuilder
-	DocPDFURL(url string) ContentBuilder
+	DocPlainText(text string) ContentBuilder
 	DocPDFBase64(base64 string) ContentBuilder
-	DocMultipart(multi MultipartBuilder) ContentBuilder
+	DocPDFURL(url string) ContentBuilder
+	DocFile(mime DocType, fileID string) ContentBuilder
 
 	SearchResult(content TextBuilder, source, title string) ContentBuilder
 	ToolUse(id string, input any, name string) ContentBuilder
