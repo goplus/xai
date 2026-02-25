@@ -25,7 +25,7 @@ import (
 // -----------------------------------------------------------------------------
 
 type params struct {
-	params anthropic.MessageNewParams
+	params anthropic.BetaMessageNewParams
 }
 
 func (p *params) System(v xai.TextBuilder) xai.ParamBuilder {
@@ -49,8 +49,9 @@ func (p *params) Model(model xai.Model) xai.ParamBuilder {
 }
 
 func (p *params) Container(v string) xai.ParamBuilder {
-	p.params.Container = param.NewOpt(v)
-	return p
+	panic("todo")
+	// p.params.Container = param.NewOpt(v)
+	// return p
 }
 
 func (p *params) InferenceGeo(v string) xai.ParamBuilder {
@@ -80,7 +81,7 @@ func (p *Provider) Params() xai.ParamBuilder {
 	return &params{}
 }
 
-func buildParams(in xai.ParamBuilder) anthropic.MessageNewParams {
+func buildParams(in xai.ParamBuilder) anthropic.BetaMessageNewParams {
 	p := in.(*params)
 	// TODO(xsw): check param values
 	return p.params

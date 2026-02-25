@@ -30,7 +30,7 @@ var (
 // -----------------------------------------------------------------------------
 
 type Provider struct {
-	messages anthropic.MessageService
+	messages anthropic.BetaMessageService
 }
 
 func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
