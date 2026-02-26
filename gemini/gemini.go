@@ -34,22 +34,16 @@ type Provider struct {
 }
 
 func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
-	model, contents, config, err := buildParams(params)
-	if err != nil {
-		return nil, err // TODO(xsw): translate error
-	}
+	model, contents, config := buildParams(params)
 	resp, err := p.models.GenerateContent(ctx, model, contents, config)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
-	return resp, nil // TODO(xsw): translate msg
+	return message{resp}, nil
 }
 
 func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
-	model, contents, config, err := buildParams(params)
-	if err != nil {
-		return nil // TODO(xsw): translate error
-	}
+	model, contents, config := buildParams(params)
 	resp := p.models.GenerateContentStream(ctx, model, contents, config)
 	return resp // TODO(xsw): translate msg
 }

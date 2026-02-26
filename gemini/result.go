@@ -14,36 +14,27 @@
  * limitations under the License.
  */
 
-package claude
+package gemini
 
 import (
-	"context"
-
-	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/goplus/xai"
-)
-
-var (
-	_ xai.Provider = (*Provider)(nil)
+	"google.golang.org/genai"
 )
 
 // -----------------------------------------------------------------------------
 
-type Provider struct {
-	messages anthropic.BetaMessageService
+type message struct {
+	msg *genai.GenerateContentResponse
 }
 
-func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
-	resp, err := p.messages.New(ctx, buildParams(params), buildOptions(opts)...)
-	if err != nil {
-		return nil, err // TODO(xsw): translate error
+func (p message) AsContent() xai.ContentBuilder {
+	var parts []*genai.Part
+	if len(p.msg.Candidates) > 0 {
+		if c := p.msg.Candidates[0].Content; c != nil {
+			parts = c.Parts
+		}
 	}
-	return message{resp}, nil
-}
-
-func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
-	resp := p.messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
-	return resp // TODO(xsw): translate msg
+	return &contentBuilder{parts}
 }
 
 // -----------------------------------------------------------------------------

@@ -38,7 +38,7 @@ func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Op
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
-	return resp, nil // TODO(xsw): translate msg
+	return message{resp}, nil
 }
 
 func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {

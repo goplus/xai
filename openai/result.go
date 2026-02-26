@@ -14,36 +14,21 @@
  * limitations under the License.
  */
 
-package claude
+package openai
 
 import (
-	"context"
-
-	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/goplus/xai"
-)
-
-var (
-	_ xai.Provider = (*Provider)(nil)
+	"github.com/openai/openai-go/v3/responses"
 )
 
 // -----------------------------------------------------------------------------
 
-type Provider struct {
-	messages anthropic.BetaMessageService
+type message struct {
+	msg *responses.Response
 }
 
-func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
-	resp, err := p.messages.New(ctx, buildParams(params), buildOptions(opts)...)
-	if err != nil {
-		return nil, err // TODO(xsw): translate error
-	}
-	return message{resp}, nil
-}
-
-func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
-	resp := p.messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
-	return resp // TODO(xsw): translate msg
+func (p message) AsContent() xai.ContentBuilder {
+	panic("todo")
 }
 
 // -----------------------------------------------------------------------------
