@@ -67,7 +67,7 @@ func (p *params) Temperature(v float64) xai.ParamBuilder {
 }
 
 func (p *params) TopK(v int64) xai.ParamBuilder {
-	// TODO(xsw): openai does not support top_k, use top_p instead
+	// openai does not support top_k, use top_p instead
 	return p
 }
 

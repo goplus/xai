@@ -17,7 +17,6 @@
 package gemini
 
 import (
-	"encoding/base64"
 	"unsafe"
 
 	"github.com/goplus/xai"
@@ -78,22 +77,10 @@ func (p *contentBuilder) Text(text string) xai.ContentBuilder {
 	return p
 }
 
-func (p *contentBuilder) Image(mime xai.ImageType, data []byte) xai.ContentBuilder {
-	p.content = append(p.content, genai.NewPartFromBytes(
-		data, string(mime),
-	))
-	return p
-}
-
-func (p *contentBuilder) ImageBase64(mime xai.ImageType, data string) xai.ContentBuilder {
-	b, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		p.lastErr = err
-	} else {
-		p.content = append(p.content, genai.NewPartFromBytes(
-			b, string(mime),
-		))
-	}
+func (p *contentBuilder) Image(image xai.ImageData) xai.ContentBuilder {
+	p.content = append(p.content, &genai.Part{
+		InlineData: (*genai.Blob)(image.(*imageData)),
+	})
 	return p
 }
 
@@ -111,31 +98,19 @@ func (p *contentBuilder) ImageFile(mime xai.ImageType, fileID string) xai.Conten
 	return p
 }
 
-func (p *contentBuilder) DocPlainText(text string) xai.ContentBuilder {
-	p.content = append(p.content, genai.NewPartFromText(text))
+func (p *contentBuilder) Doc(doc xai.DocumentData) xai.ContentBuilder {
+	p.content = append(p.content, (*genai.Part)(doc.(*docData)))
 	return p
 }
 
-func (p *contentBuilder) DocPDFURL(url string) xai.ContentBuilder {
+func (p *contentBuilder) DocURL(mime xai.DocumentType, url string) xai.ContentBuilder {
 	p.content = append(p.content, genai.NewPartFromURI(
-		url, "application/pdf",
+		url, string(mime),
 	))
 	return p
 }
 
-func (p *contentBuilder) DocPDFBase64(data string) xai.ContentBuilder {
-	b, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		p.lastErr = err
-	} else {
-		p.content = append(p.content, genai.NewPartFromBytes(
-			b, "application/pdf",
-		))
-	}
-	return p
-}
-
-func (p *contentBuilder) DocFile(mime xai.DocType, fileID string) xai.ContentBuilder {
+func (p *contentBuilder) DocFile(mime xai.DocumentType, fileID string) xai.ContentBuilder {
 	p.content = append(p.content, genai.NewPartFromURI(
 		fileID, string(mime),
 	))

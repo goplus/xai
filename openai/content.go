@@ -90,11 +90,7 @@ func (p *contentBuilder) Text(text string) xai.ContentBuilder {
 	return p.addMsg(responses.ResponseInputContentParamOfInputText(text))
 }
 
-func (p *contentBuilder) Image(mime xai.ImageType, data []byte) xai.ContentBuilder {
-	panic("todo")
-}
-
-func (p *contentBuilder) ImageBase64(mime xai.ImageType, base64 string) xai.ContentBuilder {
+func (p *contentBuilder) Image(image xai.ImageData) xai.ContentBuilder {
 	panic("todo")
 }
 
@@ -114,19 +110,19 @@ func (p *contentBuilder) ImageFile(mime xai.ImageType, fileID string) xai.Conten
 	})
 }
 
-func (p *contentBuilder) DocPlainText(text string) xai.ContentBuilder {
-	return p.addMsg(responses.ResponseInputContentParamOfInputText(text))
-}
-
-func (p *contentBuilder) DocPDFURL(url string) xai.ContentBuilder {
+func (p *contentBuilder) Doc(doc xai.DocumentData) xai.ContentBuilder {
 	panic("todo")
 }
 
-func (p *contentBuilder) DocPDFBase64(base64 string) xai.ContentBuilder {
-	panic("todo")
+func (p *contentBuilder) DocURL(mime xai.DocumentType, url string) xai.ContentBuilder {
+	return p.addMsg(responses.ResponseInputContentUnionParam{
+		OfInputFile: &responses.ResponseInputFileParam{
+			FileURL: param.NewOpt(url),
+		},
+	})
 }
 
-func (p *contentBuilder) DocFile(mime xai.DocType, fileID string) xai.ContentBuilder {
+func (p *contentBuilder) DocFile(mime xai.DocumentType, fileID string) xai.ContentBuilder {
 	return p.addMsg(responses.ResponseInputContentUnionParam{
 		OfInputFile: &responses.ResponseInputFileParam{
 			FileID: param.NewOpt(fileID),

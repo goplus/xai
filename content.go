@@ -16,6 +16,8 @@
 
 package xai
 
+import "io"
+
 // -----------------------------------------------------------------------------
 
 type ImageType string
@@ -27,11 +29,35 @@ const (
 	ImageWebP ImageType = "image/webp"
 )
 
-type DocType string
+type DocumentType string
 
 const (
-	DocPDF DocType = "application/pdf"
+	DocPlainText DocumentType = "text/plain"
+	DocPDF       DocumentType = "application/pdf"
 )
+
+type ImageData interface {
+	ImageType() ImageType
+}
+
+type ImageBuilder interface {
+	From(mime ImageType, displayName string, src io.Reader) (ImageData, error)
+	FromLocal(mime ImageType, fileName string) (ImageData, error)
+	FromBase64(mime ImageType, displayName string, base64 string) (ImageData, error)
+	FromBytes(mime ImageType, displayName string, data []byte) ImageData
+}
+
+type DocumentData interface {
+	DocumentType() DocumentType
+}
+
+type DocumentBuilder interface {
+	From(mime DocumentType, displayName string, src io.Reader) (DocumentData, error)
+	FromLocal(mime DocumentType, fileName string) (DocumentData, error)
+	FromBase64(mime DocumentType, displayName string, base64 string) (DocumentData, error)
+	FromBytes(mime DocumentType, displayName string, data []byte) DocumentData
+	PlainText(text string) DocumentData
+}
 
 // -----------------------------------------------------------------------------
 
@@ -56,15 +82,13 @@ const (
 type ContentBuilder interface {
 	Text(text string) ContentBuilder
 
-	Image(mime ImageType, data []byte) ContentBuilder
-	ImageBase64(mime ImageType, base64 string) ContentBuilder
+	Image(image ImageData) ContentBuilder
 	ImageURL(mime ImageType, url string) ContentBuilder
 	ImageFile(mime ImageType, fileID string) ContentBuilder
 
-	DocPlainText(text string) ContentBuilder
-	DocPDFBase64(base64 string) ContentBuilder
-	DocPDFURL(url string) ContentBuilder
-	DocFile(mime DocType, fileID string) ContentBuilder
+	Doc(doc DocumentData) ContentBuilder
+	DocURL(mime DocumentType, url string) ContentBuilder
+	DocFile(mime DocumentType, fileID string) ContentBuilder
 
 	SearchResult(content TextBuilder, source, title string) ContentBuilder
 	ToolUse(id string, input any, name string) ContentBuilder

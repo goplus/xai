@@ -17,8 +17,6 @@
 package claude
 
 import (
-	"encoding/base64"
-
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/goplus/xai"
 )
@@ -61,22 +59,9 @@ func (p *contentBuilder) Text(text string) xai.ContentBuilder {
 	return p
 }
 
-func (p *contentBuilder) Image(mime xai.ImageType, data []byte) xai.ContentBuilder {
+func (p *contentBuilder) Image(image xai.ImageData) xai.ContentBuilder {
 	p.content = append(p.content, anthropic.NewBetaImageBlock(
-		anthropic.BetaBase64ImageSourceParam{
-			Data:      base64.StdEncoding.EncodeToString(data),
-			MediaType: anthropic.BetaBase64ImageSourceMediaType(mime),
-		},
-	))
-	return p
-}
-
-func (p *contentBuilder) ImageBase64(mime xai.ImageType, base64 string) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewBetaImageBlock(
-		anthropic.BetaBase64ImageSourceParam{
-			Data:      base64,
-			MediaType: anthropic.BetaBase64ImageSourceMediaType(mime),
-		},
+		*(*anthropic.BetaBase64ImageSourceParam)(image.(*imageData)),
 	))
 	return p
 }
@@ -99,28 +84,22 @@ func (p *contentBuilder) ImageFile(mime xai.ImageType, fileID string) xai.Conten
 	return p
 }
 
-func (p *contentBuilder) DocPlainText(text string) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewBetaDocumentBlock(anthropic.BetaPlainTextSourceParam{
-		Data: text,
-	}))
+func (p *contentBuilder) Doc(doc xai.DocumentData) xai.ContentBuilder {
+	p.content = append(p.content, (doc.(*docData).data))
 	return p
 }
 
-func (p *contentBuilder) DocPDFURL(url string) xai.ContentBuilder {
+func (p *contentBuilder) DocURL(mime xai.DocumentType, url string) xai.ContentBuilder {
+	if mime != xai.DocPDF {
+		panic("todo")
+	}
 	p.content = append(p.content, anthropic.NewBetaDocumentBlock(anthropic.BetaURLPDFSourceParam{
 		URL: url,
 	}))
 	return p
 }
 
-func (p *contentBuilder) DocPDFBase64(base64 string) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewBetaDocumentBlock(anthropic.BetaBase64PDFSourceParam{
-		Data: base64,
-	}))
-	return p
-}
-
-func (p *contentBuilder) DocFile(mime xai.DocType, fileID string) xai.ContentBuilder {
+func (p *contentBuilder) DocFile(mime xai.DocumentType, fileID string) xai.ContentBuilder {
 	p.content = append(p.content, anthropic.NewBetaDocumentBlock(anthropic.BetaFileDocumentSourceParam{
 		FileID: fileID,
 	}))
