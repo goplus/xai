@@ -18,12 +18,28 @@ package gemini
 
 import (
 	"github.com/goplus/xai"
+	"google.golang.org/genai"
 )
 
 // -----------------------------------------------------------------------------
 
+type options struct {
+	opts genai.HTTPOptions
+}
+
+func (p *options) WithBaseURL(base string) xai.OptionBuilder {
+	p.opts.BaseURL = base
+	return p
+}
+
 func (p *Provider) Options() xai.OptionBuilder {
-	panic("todo")
+	return &options{}
+}
+
+func buildOptions(conf *genai.GenerateContentConfig, opts xai.OptionBuilder) {
+	if p, ok := opts.(*options); ok {
+		conf.HTTPOptions = &p.opts
+	}
 }
 
 // -----------------------------------------------------------------------------
