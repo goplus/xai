@@ -14,20 +14,33 @@
  * limitations under the License.
  */
 
-package openai
+package claude
 
 import (
+	"iter"
+
+	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
 	"github.com/goplus/xai"
-	"github.com/openai/openai-go/v3/responses"
 )
 
 // -----------------------------------------------------------------------------
 
 type message struct {
-	msg *responses.Response
+	msg *anthropic.BetaMessage
 }
 
 func (p message) AsContent() xai.ContentBuilder {
+	content := make([]anthropic.BetaContentBlockParamUnion, len(p.msg.Content))
+	for i, c := range p.msg.Content {
+		content[i] = c.ToParam()
+	}
+	return &contentBuilder{content}
+}
+
+// -----------------------------------------------------------------------------
+
+func buildMsgIter(stream *ssestream.Stream[anthropic.BetaRawMessageStreamEventUnion]) iter.Seq2[xai.Message, error] {
 	panic("todo")
 }
 

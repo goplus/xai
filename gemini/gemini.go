@@ -18,6 +18,7 @@ package gemini
 
 import (
 	"context"
+	"iter"
 
 	"github.com/goplus/xai"
 	"google.golang.org/genai"
@@ -42,10 +43,14 @@ func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Op
 	return message{resp}, nil
 }
 
-func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
+func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.Message, error] {
 	model, contents, config := buildParams(params)
-	resp := p.models.GenerateContentStream(ctx, model, contents, config)
-	return resp // TODO(xsw): translate msg
+	iter := p.models.GenerateContentStream(ctx, model, contents, config)
+	return func(yield func(xai.Message, error) bool) {
+		iter(func(resp *genai.GenerateContentResponse, err error) bool {
+			return yield(message{resp}, err)
+		})
+	}
 }
 
 // -----------------------------------------------------------------------------

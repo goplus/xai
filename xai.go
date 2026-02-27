@@ -16,7 +16,10 @@
 
 package xai
 
-import "context"
+import (
+	"context"
+	"iter"
+)
 
 // -----------------------------------------------------------------------------
 
@@ -195,11 +198,11 @@ type Provider interface {
 	// Send a structured list of input messages with text and/or image content, and the
 	// model will generate the next message in the conversation.
 	//
-	// The GenStreaming API can be used for either single queries or stateless multi-turn
+	// The GenStream API can be used for either single queries or stateless multi-turn
 	// conversations.
 	//
 	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
-	GenStreaming(ctx context.Context, params ParamBuilder, opts OptionBuilder) StreamMessage
+	GenStream(ctx context.Context, params ParamBuilder, opts OptionBuilder) iter.Seq2[Message, error]
 }
 
 // -----------------------------------------------------------------------------

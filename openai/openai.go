@@ -18,6 +18,7 @@ package openai
 
 import (
 	"context"
+	"iter"
 
 	"github.com/goplus/xai"
 	"github.com/openai/openai-go/v3/responses"
@@ -41,9 +42,9 @@ func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Op
 	return message{resp}, nil
 }
 
-func (p *Provider) GenStreaming(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) xai.StreamMessage {
+func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.Message, error] {
 	resp := p.responses.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
-	return resp // TODO(xsw): translate msg
+	return buildMsgIter(resp)
 }
 
 // -----------------------------------------------------------------------------
