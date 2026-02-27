@@ -90,13 +90,13 @@ type ContentBuilder interface {
 	DocURL(mime DocumentType, url string) ContentBuilder
 	DocFile(mime DocumentType, fileID string) ContentBuilder
 
+	Thinking(signature, thinking string) ContentBuilder
+	RedactedThinking(data string) ContentBuilder
+
 	SearchResult(content TextBuilder, source, title string) ContentBuilder
 	ToolUse(id string, input any, name string) ContentBuilder
 	ToolResult(toolUseID string, content any, isError bool) ContentBuilder
 	ServerToolUse(id string, input any, name ServerToolName) ContentBuilder
-
-	Thinking(signature, thinking string) ContentBuilder
-	RedactedThinking(data string) ContentBuilder
 }
 
 // -----------------------------------------------------------------------------
