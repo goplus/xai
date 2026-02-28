@@ -26,17 +26,28 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type message struct {
+type response struct {
 	msg *responses.Response
 }
 
-func (p message) AsContent() xai.ContentBuilder {
+func (p response) Len() int {
+	return 1
+}
+
+func (p response) At(i int) xai.Candidate {
+	if i != 0 {
+		panic("response.At: index out of range")
+	}
+	return p
+}
+
+func (p response) AsContent() xai.ContentBuilder {
 	panic("todo")
 }
 
 // -----------------------------------------------------------------------------
 
-func buildMsgIter(stream *ssestream.Stream[responses.ResponseStreamEventUnion]) iter.Seq2[xai.Message, error] {
+func buildRespIter(stream *ssestream.Stream[responses.ResponseStreamEventUnion]) iter.Seq2[xai.GenResponse, error] {
 	panic("todo")
 }
 

@@ -178,6 +178,17 @@ type ParamBuilder interface {
 
 // -----------------------------------------------------------------------------
 
+type Candidate interface {
+	AsContent() ContentBuilder
+}
+
+type GenResponse interface {
+	Len() int
+	At(i int) Candidate
+}
+
+// -----------------------------------------------------------------------------
+
 type Provider interface {
 	Options() OptionBuilder
 	Params() ParamBuilder
@@ -195,7 +206,7 @@ type Provider interface {
 	// conversations.
 	//
 	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
-	Gen(ctx context.Context, params ParamBuilder, opts OptionBuilder) (Message, error)
+	Gen(ctx context.Context, params ParamBuilder, opts OptionBuilder) (GenResponse, error)
 
 	// Send a structured list of input messages with text and/or image content, and the
 	// model will generate the next message in the conversation.
@@ -204,7 +215,7 @@ type Provider interface {
 	// conversations.
 	//
 	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
-	GenStream(ctx context.Context, params ParamBuilder, opts OptionBuilder) iter.Seq2[Message, error]
+	GenStream(ctx context.Context, params ParamBuilder, opts OptionBuilder) iter.Seq2[GenResponse, error]
 }
 
 // -----------------------------------------------------------------------------

@@ -37,17 +37,17 @@ type Provider struct {
 	responses responses.ResponseService
 }
 
-func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
+func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
 	resp, err := p.responses.New(ctx, buildParams(params), buildOptions(opts)...)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
-	return message{resp}, nil
+	return response{resp}, nil
 }
 
-func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.Message, error] {
+func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
 	resp := p.responses.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
-	return buildMsgIter(resp)
+	return buildRespIter(resp)
 }
 
 // -----------------------------------------------------------------------------

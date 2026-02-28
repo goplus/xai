@@ -23,16 +23,28 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type message struct {
-	msg *genai.GenerateContentResponse
+type response struct {
+	*genai.GenerateContentResponse
 }
 
-func (p message) AsContent() xai.ContentBuilder {
+func (p response) Len() int {
+	return len(p.Candidates)
+}
+
+func (p response) At(i int) xai.Candidate {
+	return candidate{p.Candidates[i]}
+}
+
+// -----------------------------------------------------------------------------
+
+type candidate struct {
+	*genai.Candidate
+}
+
+func (p candidate) AsContent() xai.ContentBuilder {
 	var parts []*genai.Part
-	if len(p.msg.Candidates) > 0 {
-		if c := p.msg.Candidates[0].Content; c != nil {
-			parts = c.Parts
-		}
+	if c := p.Content; c != nil {
+		parts = c.Parts
 	}
 	return &contentBuilder{parts}
 }

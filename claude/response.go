@@ -26,11 +26,22 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type message struct {
+type response struct {
 	msg *anthropic.BetaMessage
 }
 
-func (p message) AsContent() xai.ContentBuilder {
+func (p response) Len() int {
+	return 1
+}
+
+func (p response) At(i int) xai.Candidate {
+	if i != 0 {
+		panic("response.At: index out of range")
+	}
+	return p
+}
+
+func (p response) AsContent() xai.ContentBuilder {
 	content := make([]anthropic.BetaContentBlockParamUnion, len(p.msg.Content))
 	for i, c := range p.msg.Content {
 		content[i] = c.ToParam()
@@ -40,7 +51,7 @@ func (p message) AsContent() xai.ContentBuilder {
 
 // -----------------------------------------------------------------------------
 
-func buildMsgIter(stream *ssestream.Stream[anthropic.BetaRawMessageStreamEventUnion]) iter.Seq2[xai.Message, error] {
+func buildRespIter(stream *ssestream.Stream[anthropic.BetaRawMessageStreamEventUnion]) iter.Seq2[xai.GenResponse, error] {
 	panic("todo")
 }
 

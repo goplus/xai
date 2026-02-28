@@ -122,8 +122,4 @@ type MessageBuilder interface {
 	Assistant(content ContentBuilder) MessageBuilder
 }
 
-type Message interface {
-	AsContent() ContentBuilder
-}
-
 // -----------------------------------------------------------------------------

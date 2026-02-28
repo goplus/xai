@@ -36,23 +36,23 @@ type Provider struct {
 	models genai.Models
 }
 
-func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.Message, error) {
+func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
 	model, contents, config := buildParams(params)
 	buildOptions(config, opts)
 	resp, err := p.models.GenerateContent(ctx, model, contents, config)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
-	return message{resp}, nil
+	return response{resp}, nil
 }
 
-func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.Message, error] {
+func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
 	model, contents, config := buildParams(params)
 	buildOptions(config, opts)
 	iter := p.models.GenerateContentStream(ctx, model, contents, config)
-	return func(yield func(xai.Message, error) bool) {
+	return func(yield func(xai.GenResponse, error) bool) {
 		iter(func(resp *genai.GenerateContentResponse, err error) bool {
-			return yield(message{resp}, err)
+			return yield(response{resp}, err)
 		})
 	}
 }
