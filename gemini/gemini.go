@@ -19,6 +19,8 @@ package gemini
 import (
 	"context"
 	"iter"
+	"net/url"
+	"strings"
 
 	"github.com/goplus/xai"
 	"google.golang.org/genai"
@@ -53,6 +55,38 @@ func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts 
 			return yield(message{resp}, err)
 		})
 	}
+}
+
+// -----------------------------------------------------------------------------
+
+const (
+	Scheme = "gemini"
+)
+
+// Create creates a new Provider instance based on the scheme in the given URI.
+// uri should be in the format of "gemini:?base=xxx", where "base" is the base URL
+// of the API endpoint.
+// For example, "gemini:?base=https://generativelanguage.googleapis.com/".
+func Create(ctx context.Context, uri string) (xai.Provider, error) {
+	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
+	if err != nil {
+		return nil, err
+	}
+	var conf genai.ClientConfig
+	if base := params["base"]; len(base) > 0 {
+		conf.HTTPOptions.BaseURL = base[0]
+	}
+	cli, err := genai.NewClient(ctx, &conf)
+	if err != nil {
+		return nil, err
+	}
+	return &Provider{
+		models: *cli.Models,
+	}, nil
+}
+
+func init() {
+	xai.RegisterCreator(Scheme, Create)
 }
 
 // -----------------------------------------------------------------------------

@@ -19,8 +19,11 @@ package openai
 import (
 	"context"
 	"iter"
+	"net/url"
+	"strings"
 
 	"github.com/goplus/xai"
+	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/responses"
 )
 
@@ -45,6 +48,34 @@ func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Op
 func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.Message, error] {
 	resp := p.responses.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
 	return buildMsgIter(resp)
+}
+
+// -----------------------------------------------------------------------------
+
+const (
+	Scheme = "openai"
+)
+
+// Create creates a new Provider instance based on the scheme in the given URI.
+// uri should be in the format of "openai:?base=xxx", where "base" is the base URL
+// of the API endpoint.
+// For example, "openai:?base=https://api.openai.com".
+func Create(ctx context.Context, uri string) (xai.Provider, error) {
+	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
+	if err != nil {
+		return nil, err
+	}
+	var opts []option.RequestOption
+	if base := params["base"]; len(base) > 0 {
+		opts = append(opts, option.WithBaseURL(base[0]))
+	}
+	return &Provider{
+		responses: responses.NewResponseService(opts...),
+	}, nil
+}
+
+func init() {
+	xai.RegisterCreator(Scheme, Create)
 }
 
 // -----------------------------------------------------------------------------

@@ -19,8 +19,11 @@ package claude
 import (
 	"context"
 	"iter"
+	"net/url"
+	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/goplus/xai"
 )
 
@@ -45,6 +48,34 @@ func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Op
 func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.Message, error] {
 	resp := p.messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
 	return buildMsgIter(resp)
+}
+
+// -----------------------------------------------------------------------------
+
+const (
+	Scheme = "claude"
+)
+
+// Create creates a new Provider instance based on the scheme in the given URI.
+// uri should be in the format of "claude:?base=xxx", where "base" is the base URL
+// of the API endpoint.
+// For example, "claude:?base=https://api.anthropic.com".
+func Create(ctx context.Context, uri string) (xai.Provider, error) {
+	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
+	if err != nil {
+		return nil, err
+	}
+	var opts []option.RequestOption
+	if base := params["base"]; len(base) > 0 {
+		opts = append(opts, option.WithBaseURL(base[0]))
+	}
+	return &Provider{
+		messages: anthropic.NewBetaMessageService(opts...),
+	}, nil
+}
+
+func init() {
+	xai.RegisterCreator(Scheme, Create)
 }
 
 // -----------------------------------------------------------------------------

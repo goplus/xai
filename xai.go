@@ -18,7 +18,9 @@ package xai
 
 import (
 	"context"
+	"errors"
 	"iter"
+	"strings"
 )
 
 // -----------------------------------------------------------------------------
@@ -203,6 +205,47 @@ type Provider interface {
 	//
 	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
 	GenStream(ctx context.Context, params ParamBuilder, opts OptionBuilder) iter.Seq2[Message, error]
+}
+
+// -----------------------------------------------------------------------------
+
+var (
+	// ErrUnknownScheme is returned when an unknown scheme is encountered in a URL.
+	ErrUnknownScheme = errors.New("unknown scheme")
+)
+
+// CreatorFunc is the function type for creating a new Provider instance from a URI.
+type CreatorFunc = func(ctx context.Context, uri string) (Provider, error)
+
+var (
+	creators = map[string]CreatorFunc{}
+)
+
+// RegisterCreator registers a CreatorFunc for a specific scheme. This allows different
+// providers to be created based on the scheme in the URI.
+func RegisterCreator(scheme string, creator CreatorFunc) {
+	creators[scheme] = creator
+}
+
+// Create creates a new Provider instance based on the scheme in the given URI. It
+// looks up the scheme in the registered creators and calls the corresponding
+// CreatorFunc. If the scheme is not found, it returns an ErrUnknownScheme error.
+func Create(ctx context.Context, uri string) (Provider, error) {
+	scheme := schemeOf(uri)
+	if creator, ok := creators[scheme]; ok {
+		return creator(ctx, uri)
+	}
+	return nil, ErrUnknownScheme
+}
+
+func schemeOf(uri string) (scheme string) {
+	pos := strings.IndexByte(uri, ':')
+	if pos > 0 {
+		if uri[pos] == ':' {
+			return uri[:pos]
+		}
+	}
+	return ""
 }
 
 // -----------------------------------------------------------------------------
