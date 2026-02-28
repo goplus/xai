@@ -107,10 +107,6 @@ func (p *contentBuilder) DocFile(mime xai.DocumentType, fileID string) xai.Conte
 	return p
 }
 
-func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
-	panic("todo")
-}
-
 func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder {
 	p.content = append(p.content, &genai.Part{
 		Text:             thinking,
@@ -123,22 +119,6 @@ func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder
 func (p *contentBuilder) RedactedThinking(data string) xai.ContentBuilder {
 	// TODO(xsw): validate data
 	return p
-}
-
-func (p *contentBuilder) ToolUse(id string, input any, name string) xai.ContentBuilder {
-	// TODO(xsw): name as toolUseID
-	p.content = append(p.content, genai.NewPartFromFunctionCall(name, input.(map[string]any)))
-	return p
-}
-
-func (p *contentBuilder) ToolResult(toolUseID string, content any, isError bool) xai.ContentBuilder {
-	// TODO(xsw): validate content
-	p.content = append(p.content, genai.NewPartFromFunctionResponse(toolUseID, content.(map[string]any)))
-	return p
-}
-
-func (p *contentBuilder) ServerToolUse(id string, input any, name xai.ServerToolName) xai.ContentBuilder {
-	panic("todo")
 }
 
 func (p *Provider) Contents() xai.ContentBuilder {

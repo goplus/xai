@@ -106,11 +106,6 @@ func (p *contentBuilder) DocFile(mime xai.DocumentType, fileID string) xai.Conte
 	return p
 }
 
-func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewBetaSearchResultBlock(buildTexts(content), source, title))
-	return p
-}
-
 func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder {
 	p.content = append(p.content, anthropic.NewBetaThinkingBlock(signature, thinking))
 	return p
@@ -118,22 +113,6 @@ func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder
 
 func (p *contentBuilder) RedactedThinking(data string) xai.ContentBuilder {
 	p.content = append(p.content, anthropic.NewBetaRedactedThinkingBlock(data))
-	return p
-}
-
-func (p *contentBuilder) ToolUse(id string, input any, name string) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewBetaToolUseBlock(id, input, name))
-	return p
-}
-
-func (p *contentBuilder) ToolResult(toolUseID string, content any, isError bool) xai.ContentBuilder {
-	// TODO(xsw): validate content
-	p.content = append(p.content, anthropic.NewBetaToolResultBlock(toolUseID, content.(string), isError))
-	return p
-}
-
-func (p *contentBuilder) ServerToolUse(id string, input any, name xai.ServerToolName) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewBetaServerToolUseBlock(id, input, anthropic.BetaServerToolUseBlockParamName(name)))
 	return p
 }
 

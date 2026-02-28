@@ -130,10 +130,6 @@ func (p *contentBuilder) DocFile(mime xai.DocumentType, fileID string) xai.Conte
 	})
 }
 
-func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
-	panic("todo")
-}
-
 func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder {
 	return p.addNonMsg(responses.ResponseInputItemUnionParam{
 		OfReasoning: &responses.ResponseReasoningItemParam{
@@ -146,19 +142,6 @@ func (p *contentBuilder) Thinking(signature, thinking string) xai.ContentBuilder
 }
 
 func (p *contentBuilder) RedactedThinking(data string) xai.ContentBuilder {
-	panic("todo")
-}
-
-func (p *contentBuilder) ToolUse(id string, input any, name string) xai.ContentBuilder {
-	return p.addNonMsg(responses.ResponseInputItemParamOfCustomToolCall(id, input.(string), name))
-}
-
-func (p *contentBuilder) ToolResult(toolUseID string, content any, isError bool) xai.ContentBuilder {
-	// TODO(xsw): validate content
-	panic("todo")
-}
-
-func (p *contentBuilder) ServerToolUse(id string, input any, name xai.ServerToolName) xai.ContentBuilder {
 	panic("todo")
 }
 
