@@ -64,9 +64,11 @@ const (
 )
 
 // Create creates a new Provider instance based on the scheme in the given URI.
-// uri should be in the format of "gemini:?base=xxx", where "base" is the base URL
-// of the API endpoint.
-// For example, "gemini:?base=https://generativelanguage.googleapis.com/".
+// uri should be in the format of "gemini:base=xxx&project=xxx", where "base" is
+// the base URL of the API endpoint. "project" is the project ID, which is required
+// when using the Vertex AI.
+//
+// For example, "gemini:base=https://generativelanguage.googleapis.com".
 func Create(ctx context.Context, uri string) (xai.Provider, error) {
 	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
 	if err != nil {
@@ -75,6 +77,10 @@ func Create(ctx context.Context, uri string) (xai.Provider, error) {
 	var conf genai.ClientConfig
 	if base := params["base"]; len(base) > 0 {
 		conf.HTTPOptions.BaseURL = base[0]
+	}
+	if project := params["project"]; len(project) > 0 {
+		conf.Project = project[0]
+		conf.Backend = genai.BackendVertexAI
 	}
 	cli, err := genai.NewClient(ctx, &conf)
 	if err != nil {
