@@ -17,30 +17,59 @@
 package gemini
 
 import (
+	"encoding/json"
+	"strings"
+	"unsafe"
+
 	"github.com/goplus/xai"
 	"google.golang.org/genai"
 )
 
 // -----------------------------------------------------------------------------
 
-func (p *contentBuilder) SearchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
-	panic("todo")
-}
-
-func (p *contentBuilder) ToolUse(id string, input any, name string) xai.ContentBuilder {
+func (p *contentBuilder) ToolUse(toolID, name string, input any) xai.ContentBuilder {
 	// TODO(xsw): name as toolUseID
 	p.content = append(p.content, genai.NewPartFromFunctionCall(name, input.(map[string]any)))
 	return p
 }
 
-func (p *contentBuilder) ToolResult(toolUseID string, content any, isError bool) xai.ContentBuilder {
-	// TODO(xsw): validate content
-	p.content = append(p.content, genai.NewPartFromFunctionResponse(toolUseID, content.(map[string]any)))
-	return p
+// -----------------------------------------------------------------------------
+
+var stdToolResultConv = map[string]func(toolID string, result any, isError bool) *genai.Part{
+	xai.ToolWebSearch: webSearchResultConv,
 }
 
-func (p *contentBuilder) ServerToolUse(id string, input any, name xai.ServerToolName) xai.ContentBuilder {
+func webSearchResultConv(toolID string, result any, isError bool) *genai.Part {
+	// genai.GoogleSearch
 	panic("todo")
+}
+
+func (p *contentBuilder) ToolResult(toolID, name string, result any, isError bool) xai.ContentBuilder {
+	var (
+		content *genai.Part
+	)
+	if strings.HasPrefix(name, "std/") {
+		conv, ok := stdToolResultConv[name]
+		if !ok {
+			panic("unsupported standard tool: " + name)
+		}
+		content = conv(toolID, result, isError)
+	} else {
+		var ret map[string]any
+		if v, ok := result.(xai.RawText); ok {
+			err := json.Unmarshal(unsafe.Slice(unsafe.StringData(string(v)), len(v)), &ret)
+			if err != nil {
+				panic("invalid tool result: " + err.Error())
+			}
+		} else if isError {
+			ret = map[string]any{"error": result.(error).Error()}
+		} else {
+			ret = result.(map[string]any)
+		}
+		content = genai.NewPartFromFunctionResponse(toolID, ret)
+	}
+	p.content = append(p.content, content)
+	return p
 }
 
 // -----------------------------------------------------------------------------

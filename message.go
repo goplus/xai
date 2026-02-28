@@ -59,25 +59,9 @@ type DocumentBuilder interface {
 	PlainText(text string) DocumentData
 }
 
-// -----------------------------------------------------------------------------
-
 type TextBuilder interface {
 	Text(text string) TextBuilder
 }
-
-// -----------------------------------------------------------------------------
-
-type ServerToolName string
-
-const (
-	ToolWebSearch               ServerToolName = "web_search"
-	ToolWebFetch                ServerToolName = "web_fetch"
-	ToolCodeExecution           ServerToolName = "code_execution"
-	ToolBashCodeExecution       ServerToolName = "bash_code_execution"
-	ToolTextEditorCodeExecution ServerToolName = "text_editor_code_execution"
-	ToolSearchToolRegex         ServerToolName = "tool_search_tool_regex"
-	ToolSearchToolBm25          ServerToolName = "tool_search_tool_bm25"
-)
 
 type ContentBuilder interface {
 	Text(text string) ContentBuilder
@@ -93,11 +77,43 @@ type ContentBuilder interface {
 	Thinking(signature, thinking string) ContentBuilder
 	RedactedThinking(data string) ContentBuilder
 
-	SearchResult(content TextBuilder, source, title string) ContentBuilder
-	ToolUse(id string, input any, name string) ContentBuilder
-	ToolResult(toolUseID string, content any, isError bool) ContentBuilder
-	ServerToolUse(id string, input any, name ServerToolName) ContentBuilder
+	// ToolUse is used to add a tool use block to the content. The toolID
+	// should be a unique identifier for the tool being used, and should
+	// match the ID used in ToolResult. The input can be any data that the
+	// tool requires to perform its function, and the name is a human-readable
+	// name for the tool that can be displayed in the UI.
+	//
+	// For standard tools (those with names starting with "std/"), the input
+	// should be a specific struct defined for that tool. For example, the web
+	// search tool expects a WebSearchInput struct.
+	//
+	// For non-standard tools, the input expects a map[string]any or RawText,
+	// When the input is a map[string]any, it will be marshaled to JSON and
+	// included in the message. When the input is a RawText, it will be treated
+	// as a raw string instead of being marshaled to JSON.
+	ToolUse(toolID, name string, input any) ContentBuilder
+
+	// ToolResult is used to add the result of a tool use to the content.
+	// The toolID should match the ID used in ToolUse. The content depends
+	// on the tool. If isError is true, the content will be treated as an
+	// error interface.
+	//
+	// For standard tools (those with names starting with "std/"), the content
+	// should be a specific struct defined for that tool. For example, the web
+	// search tool expects a WebSearchResult struct.
+	//
+	// For non-standard tools, the content expects a map[string]any or RawText,
+	// When the content is a map[string]any, it will be marshaled to JSON and
+	// included in the message. When the content is a RawText, it will be treated
+	// as a raw string instead of being marshaled to JSON.
+	ToolResult(toolID, name string, result any, isError bool) ContentBuilder
 }
+
+// RawText is a wrapper type that indicates the content should be treated as a raw
+// string instead of being marshaled to JSON. This is useful for non-standard tool
+// inputs or results where the content is already marshaled and does not need to be
+// marshaled again.
+type RawText string
 
 // -----------------------------------------------------------------------------
 
@@ -106,15 +122,8 @@ type MessageBuilder interface {
 	Assistant(content ContentBuilder) MessageBuilder
 }
 
-// -----------------------------------------------------------------------------
-
 type Message interface {
 	AsContent() ContentBuilder
-}
-
-// -----------------------------------------------------------------------------
-
-type ToolBuilder interface {
 }
 
 // -----------------------------------------------------------------------------
