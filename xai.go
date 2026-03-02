@@ -225,23 +225,23 @@ var (
 	ErrUnknownScheme = errors.New("unknown scheme")
 )
 
-// CreatorFunc is the function type for creating a new Provider instance from a URI.
-type CreatorFunc = func(ctx context.Context, uri string) (Provider, error)
+// NewFunc is the function type for creating a new Provider instance from a URI.
+type NewFunc = func(ctx context.Context, uri string) (Provider, error)
 
 var (
-	creators = map[string]CreatorFunc{}
+	creators = map[string]NewFunc{}
 )
 
-// RegisterCreator registers a CreatorFunc for a specific scheme. This allows different
+// Register registers a NewFunc for a specific scheme. This allows different
 // providers to be created based on the scheme in the URI.
-func RegisterCreator(scheme string, creator CreatorFunc) {
+func Register(scheme string, creator NewFunc) {
 	creators[scheme] = creator
 }
 
-// Create creates a new Provider instance based on the scheme in the given URI. It
+// New creates a new Provider instance based on the scheme in the given URI. It
 // looks up the scheme in the registered creators and calls the corresponding
-// CreatorFunc. If the scheme is not found, it returns an ErrUnknownScheme error.
-func Create(ctx context.Context, uri string) (Provider, error) {
+// NewFunc. If the scheme is not found, it returns an ErrUnknownScheme error.
+func New(ctx context.Context, uri string) (Provider, error) {
 	scheme := schemeOf(uri)
 	if creator, ok := creators[scheme]; ok {
 		return creator(ctx, uri)

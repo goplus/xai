@@ -33,12 +33,10 @@ func (p *contentBuilder) ToolUse(toolID, name string, input any) xai.ContentBuil
 	return p
 }
 
-/* TODO(xsw):
 func (p *contentBuilder) serverToolUse(toolID string, input any, name anthropic.BetaServerToolUseBlockParamName) xai.ContentBuilder {
 	p.content = append(p.content, anthropic.NewBetaServerToolUseBlock(toolID, input, name))
 	return p
 }
-*/
 
 // -----------------------------------------------------------------------------
 

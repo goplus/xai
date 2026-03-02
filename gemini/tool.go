@@ -57,6 +57,7 @@ func (p *contentBuilder) ToolResult(toolID, name string, result any, isError boo
 	} else {
 		var ret map[string]any
 		if v, ok := result.(xai.RawText); ok {
+			// TODO(xsw): optimize by returning raw text?
 			err := json.Unmarshal(unsafe.Slice(unsafe.StringData(string(v)), len(v)), &ret)
 			if err != nil {
 				panic("invalid tool result: " + err.Error())

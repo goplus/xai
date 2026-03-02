@@ -56,11 +56,12 @@ const (
 	Scheme = "openai"
 )
 
-// Create creates a new Provider instance based on the scheme in the given URI.
+// New creates a new Provider instance based on the scheme in the given URI.
 // uri should be in the format of "openai:base=xxx", where "base" is the base URL
 // of the API endpoint.
+//
 // For example, "openai:base=https://api.openai.com".
-func Create(ctx context.Context, uri string) (xai.Provider, error) {
+func New(ctx context.Context, uri string) (xai.Provider, error) {
 	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
 	if err != nil {
 		return nil, err
@@ -75,7 +76,7 @@ func Create(ctx context.Context, uri string) (xai.Provider, error) {
 }
 
 func init() {
-	xai.RegisterCreator(Scheme, Create)
+	xai.Register(Scheme, New)
 }
 
 // -----------------------------------------------------------------------------
