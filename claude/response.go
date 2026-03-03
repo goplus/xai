@@ -30,6 +30,16 @@ type response struct {
 	msg *anthropic.BetaMessage
 }
 
+func (p response) StopReason() xai.StopReason {
+	reason := p.msg.StopReason
+	if reason == anthropic.BetaStopReasonToolUse {
+		// NOTE(xsw): treat tool use as end turn, since the tool response will
+		// be included in the content.
+		reason = anthropic.BetaStopReasonEndTurn
+	}
+	return xai.StopReason(reason)
+}
+
 func (p response) Len() int {
 	return 1
 }

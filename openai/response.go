@@ -30,6 +30,24 @@ type response struct {
 	msg *responses.Response
 }
 
+func (p response) StopReason() xai.StopReason {
+	switch p.msg.Status {
+	case responses.ResponseStatusCompleted:
+		return xai.EndTurn
+	case responses.ResponseStatusIncomplete:
+		switch p.msg.IncompleteDetails.Reason {
+		case "max_output_tokens":
+			return xai.MaxTokens
+		case "content_filter":
+			return xai.Refusal
+		}
+	default:
+		// TODO(xsw): map other status to stop reason.
+		panic("todo")
+	}
+	return xai.Unspecified
+}
+
 func (p response) Len() int {
 	return 1
 }
