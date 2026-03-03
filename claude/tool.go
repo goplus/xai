@@ -28,10 +28,14 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type tools map[string]*anthropic.BetaToolParam
+type tools map[string]tool
 
 type tool struct {
 	tool *anthropic.BetaToolParam
+}
+
+func (p tool) UnderlyingAssignTo(ret any) {
+	ret.(*anthropic.BetaToolUnionParam).OfTool = p.tool
 }
 
 func (p tool) Description(desc string) xai.Tool {
@@ -39,34 +43,23 @@ func (p tool) Description(desc string) xai.Tool {
 	return p
 }
 
-func (p *Provider) ToolIsDefined(name string) bool {
-	_, ok := p.tools[name]
-	return ok
+func (p *Provider) Tool(name string) xai.Tool {
+	return p.tools[name]
 }
 
 func (p *Provider) ToolDef(name string) xai.Tool {
-	if p.ToolIsDefined(name) {
+	if _, ok := p.tools[name]; ok {
 		panic("tool already defined: " + name)
 	}
-	ret := &anthropic.BetaToolParam{Name: name}
+	ret := tool{&anthropic.BetaToolParam{Name: name}}
 	p.tools[name] = ret
-	return tool{ret}
+	return ret
 }
 
-func buildTools(tools tools, params []any) []anthropic.BetaToolUnionParam {
-	ret := make([]anthropic.BetaToolUnionParam, len(params))
-	for i, v := range params {
-		var param anthropic.BetaToolUnionParam
-		if name, ok := v.(string); ok {
-			tool, ok := tools[name]
-			if !ok {
-				panic("undefined tool: " + name)
-			}
-			param.OfTool = tool
-		} else {
-			v.(xai.StdTool).UnderlyingAssignTo(&param)
-		}
-		ret[i] = param
+func buildTools(tools []xai.ToolBase) []anthropic.BetaToolUnionParam {
+	ret := make([]anthropic.BetaToolUnionParam, len(tools))
+	for i, v := range tools {
+		v.UnderlyingAssignTo(&ret[i])
 	}
 	return ret
 }
