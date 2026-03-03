@@ -101,10 +101,8 @@ type ContentBuilder interface {
 	// should be a specific struct defined for that tool. For example, the web
 	// search tool expects a WebSearchResult struct.
 	//
-	// For non-standard tools, the content expects a map[string]any or RawMessage,
-	// When the content is a map[string]any, it will be marshaled to JSON and
-	// included in the message. When the content is a RawMessage, it will be treated
-	// as a raw message instead of being marshaled to JSON.
+	// For non-standard tools, the content expects anything that can be marshaled
+	// to JSON, including RawMessage.
 	ToolResult(toolID, name string, result any, isError bool) ContentBuilder
 }
 

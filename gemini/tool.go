@@ -33,26 +33,31 @@ func (p *contentBuilder) ToolUse(toolID, name string, input any) xai.ContentBuil
 	if strings.HasPrefix(name, "std/") {
 		panic("todo")
 	} else {
-		args, ok := input.(map[string]any)
-		if !ok {
-			var b []byte
-			var err error
-			if v, ok := input.(json.RawMessage); ok {
-				b = []byte(v)
-			} else {
-				b, err = json.Marshal(input)
-			}
-			if err == nil {
-				err = json.Unmarshal(b, &args)
-			}
-			if err != nil {
-				panic("invalid tool input: " + err.Error())
-			}
-		}
+		args := dataConv(input, "invalid tool input: ")
 		content = genai.NewPartFromFunctionCall(name, args)
 	}
 	p.content = append(p.content, content)
 	return p
+}
+
+func dataConv(input any, errPrompt string) map[string]any {
+	args, ok := input.(map[string]any)
+	if !ok {
+		var b []byte
+		var err error
+		if v, ok := input.(json.RawMessage); ok {
+			b = []byte(v)
+		} else {
+			b, err = json.Marshal(input)
+		}
+		if err == nil {
+			err = json.Unmarshal(b, &args)
+		}
+		if err != nil {
+			panic(errPrompt + err.Error())
+		}
+	}
+	return args
 }
 
 // -----------------------------------------------------------------------------
@@ -78,18 +83,12 @@ func (p *contentBuilder) ToolResult(toolID, name string, result any, isError boo
 		content = conv(toolID, result, isError)
 	} else {
 		var ret map[string]any
-		if v, ok := result.(json.RawMessage); ok {
-			// TODO(xsw): optimize by returning raw message?
-			err := json.Unmarshal([]byte(v), &ret)
-			if err != nil {
-				panic("invalid tool result: " + err.Error())
-			}
-		} else if isError {
+		if isError {
 			ret = map[string]any{"error": result.(error).Error()}
 		} else {
-			ret = result.(map[string]any)
+			ret = dataConv(result, "invalid tool result: ")
 		}
-		content = genai.NewPartFromFunctionResponse(toolID, ret)
+		content = genai.NewPartFromFunctionResponse(name, ret)
 	}
 	p.content = append(p.content, content)
 	return p

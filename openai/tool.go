@@ -34,24 +34,55 @@ func (p *contentBuilder) ToolUse(toolID, name string, input any) xai.ContentBuil
 	if strings.HasPrefix(name, "std/") {
 		panic("todo")
 	} else {
-		var args []byte
-		var err error
-		if v, ok := input.(json.RawMessage); ok {
-			args = []byte(v)
-		} else {
-			args, err = json.Marshal(input)
-			if err != nil {
-				panic("invalid tool input: " + err.Error())
-			}
-		}
-		content = responses.ResponseInputItemParamOfFunctionCall(toolID, unsafe.String(unsafe.SliceData(args), len(args)), name)
+		args := jsonStringify(input, "invalid tool input: ")
+		content = responses.ResponseInputItemParamOfFunctionCall(toolID, args, name)
 	}
 	return p.addNonMsg(content)
 }
 
-func (p *contentBuilder) ToolResult(toolID, name string, result any, isError bool) xai.ContentBuilder {
-	// TODO(xsw): validate content
+func jsonStringify(v any, errPrompt string) string {
+	var args []byte
+	if v, ok := v.(json.RawMessage); ok {
+		args = []byte(v)
+	} else {
+		var err error
+		args, err = json.Marshal(v)
+		if err != nil {
+			panic(errPrompt + err.Error())
+		}
+	}
+	return unsafe.String(unsafe.SliceData(args), len(args))
+}
+
+// -----------------------------------------------------------------------------
+
+var stdToolResultConv = map[string]func(toolID string, result any, isError bool) responses.ResponseInputItemUnionParam{
+	xai.ToolWebSearch: webSearchResultConv,
+}
+
+func webSearchResultConv(toolID string, result any, isError bool) responses.ResponseInputItemUnionParam {
 	panic("todo")
+}
+
+func (p *contentBuilder) ToolResult(toolID, name string, result any, isError bool) xai.ContentBuilder {
+	var (
+		content responses.ResponseInputItemUnionParam
+	)
+	if strings.HasPrefix(name, "std/") {
+		conv, ok := stdToolResultConv[name]
+		if !ok {
+			panic("unsupported standard tool: " + name)
+		}
+		content = conv(toolID, result, isError)
+	} else {
+		if isError {
+			result = map[string]any{"error": result.(error).Error()}
+		}
+		ret := jsonStringify(result, "invalid tool result: ")
+		content = responses.ResponseInputItemParamOfFunctionCallOutput(toolID, ret)
+	}
+	p.content = append(p.content, content)
+	return p
 }
 
 // -----------------------------------------------------------------------------

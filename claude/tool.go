@@ -89,10 +89,10 @@ func (p *contentBuilder) ToolResult(toolID, name string, result any, isError boo
 		content = conv(toolID, result, isError)
 	} else {
 		var ret string
-		if v, ok := result.(xai.RawMessage); ok {
-			ret = unsafe.String(unsafe.SliceData(v), len(v))
-		} else if isError {
+		if isError {
 			ret = result.(error).Error()
+		} else if v, ok := result.(xai.RawMessage); ok {
+			ret = unsafe.String(unsafe.SliceData(v), len(v))
 		} else {
 			b, err := json.Marshal(result)
 			if err != nil {
