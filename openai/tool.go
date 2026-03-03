@@ -53,18 +53,53 @@ func (p *Provider) ToolDef(name string) xai.Tool {
 	return tool{ret}
 }
 
-func buildTools(tools tools, toolNames []string) []responses.ToolUnionParam {
-	ret := make([]responses.ToolUnionParam, len(toolNames))
-	for i, name := range toolNames {
-		tool, ok := tools[name]
-		if !ok {
-			panic("undefined tool: " + name)
+func buildTools(tools tools, params []any) []responses.ToolUnionParam {
+	ret := make([]responses.ToolUnionParam, len(params))
+	for i, v := range params {
+		var param responses.ToolUnionParam
+		if name, ok := v.(string); ok {
+			tool, ok := tools[name]
+			if !ok {
+				panic("undefined tool: " + name)
+			}
+			param.OfFunction = tool
+		} else {
+			v.(xai.StdTool).UnderlyingAssignTo(&param)
 		}
-		ret[i] = responses.ToolUnionParam{
-			OfFunction: tool,
-		}
+		ret[i] = param
 	}
 	return ret
+}
+
+// -----------------------------------------------------------------------------
+
+type webSearchTool struct {
+	param *responses.WebSearchToolParam
+}
+
+func (p webSearchTool) UnderlyingAssignTo(ret any) {
+	ret.(*responses.ToolUnionParam).OfWebSearch = p.param
+}
+
+func (p webSearchTool) MaxUses(v int64) xai.WebSearchTool {
+	// openai web search tool does not support max uses
+	return p
+}
+
+func (p webSearchTool) AllowedDomains(v ...string) xai.WebSearchTool {
+	p.param.Filters.AllowedDomains = v
+	return p
+}
+
+func (p webSearchTool) BlockedDomains(v ...string) xai.WebSearchTool {
+	// openai web search tool does not support blocked domains
+	return p
+}
+
+func (p *Provider) WebSearchTool() xai.WebSearchTool {
+	return webSearchTool{&responses.WebSearchToolParam{
+		Type: "web_search_2025_08_26",
+	}}
 }
 
 // -----------------------------------------------------------------------------

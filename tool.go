@@ -83,6 +83,20 @@ type SearchToolBm25Result struct {
 
 // -----------------------------------------------------------------------------
 
+type StdTool interface {
+	UnderlyingAssignTo(any) // don't call it directly
+}
+
+type WebSearchTool interface {
+	StdTool
+
+	MaxUses(int64) WebSearchTool
+	AllowedDomains(...string) WebSearchTool
+	BlockedDomains(...string) WebSearchTool
+}
+
+// -----------------------------------------------------------------------------
+
 type Tool interface {
 	Description(string) Tool
 }

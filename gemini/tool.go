@@ -33,6 +33,7 @@ type tool struct {
 }
 
 func (p tool) Description(desc string) xai.Tool {
+	p.tool.Description = desc
 	return p
 }
 
@@ -50,18 +51,51 @@ func (p *Provider) ToolDef(name string) xai.Tool {
 	return tool{ret}
 }
 
-func buildTools(tools tools, toolNames []string) []*genai.Tool {
-	ret := make([]*genai.FunctionDeclaration, len(toolNames))
-	for i, name := range toolNames {
-		tool, ok := tools[name]
-		if !ok {
-			panic("undefined tool: " + name)
+func buildTools(tools tools, params []any) []*genai.Tool {
+	ret := make([]*genai.Tool, len(params))
+	for i, v := range params {
+		var param genai.Tool
+		if name, ok := v.(string); ok {
+			tool, ok := tools[name]
+			if !ok {
+				panic("undefined tool: " + name)
+			}
+			param.FunctionDeclarations = []*genai.FunctionDeclaration{tool}
+		} else {
+			v.(xai.StdTool).UnderlyingAssignTo(&param)
 		}
-		ret[i] = tool
+		ret[i] = &param
 	}
-	return []*genai.Tool{
-		{FunctionDeclarations: ret},
-	}
+	return ret
+}
+
+// -----------------------------------------------------------------------------
+
+type webSearchTool struct {
+	param *genai.GoogleSearch
+}
+
+func (p webSearchTool) UnderlyingAssignTo(ret any) {
+	ret.(*genai.Tool).GoogleSearch = p.param
+}
+
+func (p webSearchTool) MaxUses(v int64) xai.WebSearchTool {
+	// google search tool does not support max uses
+	return p
+}
+
+func (p webSearchTool) AllowedDomains(v ...string) xai.WebSearchTool {
+	// google search tool does not support allowed domains
+	return p
+}
+
+func (p webSearchTool) BlockedDomains(v ...string) xai.WebSearchTool {
+	p.param.ExcludeDomains = v
+	return p
+}
+
+func (p *Provider) WebSearchTool() xai.WebSearchTool {
+	return webSearchTool{&genai.GoogleSearch{}}
 }
 
 // -----------------------------------------------------------------------------

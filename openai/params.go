@@ -44,8 +44,8 @@ func (p *params) Messages(v xai.MessageBuilder) xai.ParamBuilder {
 	return p
 }
 
-func (p *params) Tools(toolNames ...string) xai.ParamBuilder {
-	p.params.Tools = buildTools(p.tools, toolNames)
+func (p *params) Tools(tools ...any) xai.ParamBuilder {
+	p.params.Tools = buildTools(p.tools, tools)
 	return p
 }
 

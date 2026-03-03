@@ -53,18 +53,51 @@ func (p *Provider) ToolDef(name string) xai.Tool {
 	return tool{ret}
 }
 
-func buildTools(tools tools, toolNames []string) []anthropic.BetaToolUnionParam {
-	ret := make([]anthropic.BetaToolUnionParam, len(toolNames))
-	for i, name := range toolNames {
-		tool, ok := tools[name]
-		if !ok {
-			panic("undefined tool: " + name)
+func buildTools(tools tools, params []any) []anthropic.BetaToolUnionParam {
+	ret := make([]anthropic.BetaToolUnionParam, len(params))
+	for i, v := range params {
+		var param anthropic.BetaToolUnionParam
+		if name, ok := v.(string); ok {
+			tool, ok := tools[name]
+			if !ok {
+				panic("undefined tool: " + name)
+			}
+			param.OfTool = tool
+		} else {
+			v.(xai.StdTool).UnderlyingAssignTo(&param)
 		}
-		ret[i] = anthropic.BetaToolUnionParam{
-			OfTool: tool,
-		}
+		ret[i] = param
 	}
 	return ret
+}
+
+// -----------------------------------------------------------------------------
+
+type webSearchTool struct {
+	param *anthropic.BetaWebSearchTool20260209Param
+}
+
+func (p webSearchTool) UnderlyingAssignTo(ret any) {
+	ret.(*anthropic.BetaToolUnionParam).OfWebSearchTool20260209 = p.param
+}
+
+func (p webSearchTool) MaxUses(v int64) xai.WebSearchTool {
+	p.param.MaxUses = param.NewOpt(v)
+	return p
+}
+
+func (p webSearchTool) AllowedDomains(v ...string) xai.WebSearchTool {
+	p.param.AllowedDomains = v
+	return p
+}
+
+func (p webSearchTool) BlockedDomains(v ...string) xai.WebSearchTool {
+	p.param.BlockedDomains = v
+	return p
+}
+
+func (p *Provider) WebSearchTool() xai.WebSearchTool {
+	return webSearchTool{&anthropic.BetaWebSearchTool20260209Param{}}
 }
 
 // -----------------------------------------------------------------------------
