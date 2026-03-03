@@ -109,3 +109,14 @@ type MsgBuilder interface {
 type RawMessage = json.RawMessage
 
 // -----------------------------------------------------------------------------
+
+type PartType string
+
+const ( // TODO(xsw): PartType
+)
+
+type Part interface {
+	Type() PartType
+}
+
+// -----------------------------------------------------------------------------

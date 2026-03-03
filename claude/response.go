@@ -30,8 +30,8 @@ type contentBlock struct {
 	content *anthropic.BetaContentBlockUnion
 }
 
-func (p contentBlock) Type() xai.ContentBlockType {
-	return xai.ContentBlockType(p.content.Type)
+func (p contentBlock) Type() xai.PartType {
+	return xai.PartType(p.content.Type)
 }
 
 // -----------------------------------------------------------------------------
@@ -50,11 +50,11 @@ func (p response) StopReason() xai.StopReason {
 	return xai.StopReason(reason)
 }
 
-func (p response) Contents() int {
+func (p response) Parts() int {
 	return len(p.msg.Content)
 }
 
-func (p response) Content(i int) xai.ContentBlock {
+func (p response) Part(i int) xai.Part {
 	return contentBlock{&p.msg.Content[i]}
 }
 

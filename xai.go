@@ -204,21 +204,12 @@ const (
 	ModelContextWindowExceeded StopReason = "model_context_window_exceeded"
 )
 
-type ContentBlockType string
-
-const ( // TODO(xsw): ContentBlockType
-)
-
-type ContentBlock interface {
-	Type() ContentBlockType
-}
-
 // Candidate represents a single candidate response from the model. A GenResponse
 // may contain multiple candidates, and the model may return them in different
 // orders based on the sampling parameters used in the request.
 type Candidate interface {
-	Contents() int
-	Content(i int) ContentBlock
+	Parts() int
+	Part(i int) Part
 	StopReason() StopReason
 	ToMsg() MsgBuilder
 }

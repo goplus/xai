@@ -30,8 +30,8 @@ type contentBlock struct {
 	content *responses.ResponseOutputItemUnion
 }
 
-func (p contentBlock) Type() xai.ContentBlockType {
-	return xai.ContentBlockType(p.content.Type)
+func (p contentBlock) Type() xai.PartType {
+	return xai.PartType(p.content.Type)
 }
 
 // -----------------------------------------------------------------------------
@@ -58,11 +58,11 @@ func (p response) StopReason() xai.StopReason {
 	return xai.Unspecified
 }
 
-func (p response) Contents() int {
+func (p response) Parts() int {
 	return len(p.msg.Output)
 }
 
-func (p response) Content(i int) xai.ContentBlock {
+func (p response) Part(i int) xai.Part {
 	return contentBlock{&p.msg.Output[i]}
 }
 

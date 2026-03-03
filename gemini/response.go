@@ -79,11 +79,11 @@ func (p candidate) StopReason() xai.StopReason {
 	return xai.Unspecified
 }
 
-func (p candidate) Contents() int {
+func (p candidate) Parts() int {
 	return len(p.c.Content.Parts)
 }
 
-func (p candidate) Content(i int) xai.ContentBlock {
+func (p candidate) Part(i int) xai.Part {
 	return contentBlock{p.c.Content.Parts[i]}
 }
 
@@ -101,7 +101,7 @@ type contentBlock struct {
 	content *genai.Part
 }
 
-func (p contentBlock) Type() xai.ContentBlockType {
+func (p contentBlock) Type() xai.PartType {
 	panic("todo")
 }
 
