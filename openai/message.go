@@ -51,7 +51,7 @@ func (p *Provider) UserMsg() xai.MsgBuilder {
 	return &msgBuilder{role: responses.EasyInputMessageRoleUser}
 }
 
-func (p *Provider) ModelMsg() xai.MsgBuilder {
+func (p *Provider) AssistantMsg() xai.MsgBuilder {
 	return &msgBuilder{role: responses.EasyInputMessageRoleAssistant}
 }
 

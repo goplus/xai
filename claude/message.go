@@ -44,7 +44,7 @@ func (p *Provider) UserMsg() xai.MsgBuilder {
 	return &msgBuilder{role: anthropic.BetaMessageParamRoleUser}
 }
 
-func (p *Provider) ModelMsg() xai.MsgBuilder {
+func (p *Provider) AssistantMsg() xai.MsgBuilder {
 	return &msgBuilder{role: anthropic.BetaMessageParamRoleAssistant}
 }
 

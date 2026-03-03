@@ -200,15 +200,39 @@ type GenResponse interface {
 // -----------------------------------------------------------------------------
 
 type Provider interface {
+	// Options returns an `OptionBuilder` that can be used to set options for
+	// generation requests. This includes options like the base URL for the API
+	// endpoint, etc.
 	Options() OptionBuilder
+
+	// Params returns a `ParamBuilder` that can be used to build the parameters for
+	// generation requests. This includes setting the system prompt, input messages,
+	// tools, and generation parameters like `max_tokens`, `temperature`, etc.
 	Params() ParamBuilder
 
+	// Images returns an `ImageBuilder` that can be used to create image content.
 	Images() ImageBuilder
-	Docs() DocumentBuilder
-	Texts(texts ...string) TextBuilder
-	UserMsg() MsgBuilder
-	ModelMsg() MsgBuilder
 
+	// Docs returns a `DocumentBuilder` that can be used to create document content.
+	Docs() DocumentBuilder
+
+	// Texts creates a text content block with the given texts. Each text will be
+	// treated as a separate text item within the block. The returned `TextBuilder`
+	// can be used to further customize the text content block.
+	Texts(texts ...string) TextBuilder
+
+	// UserMsg creates a message with the `user` role, which represents input from
+	// a user in a conversation. The content of the message can be built using the
+	// returned `MsgBuilder`.
+	UserMsg() MsgBuilder
+
+	// AssistantMsg creates a message with the `assistant` role, which represents
+	// output from the AI assistant in a conversation. The content of the message
+	// can be built using the returned `MsgBuilder`.
+	AssistantMsg() MsgBuilder
+
+	// WebSearchTool returns a reference to a standard web search tool that the model
+	// may use to perform web searches during a conversation.
 	WebSearchTool() WebSearchTool
 
 	// ToolDef defines a tool that the model may use. The tool is identified by a unique

@@ -46,7 +46,7 @@ func (p *Provider) UserMsg() xai.MsgBuilder {
 	return &msgBuilder{role: genai.RoleUser}
 }
 
-func (p *Provider) ModelMsg() xai.MsgBuilder {
+func (p *Provider) AssistantMsg() xai.MsgBuilder {
 	return &msgBuilder{role: genai.RoleModel}
 }
 
