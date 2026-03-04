@@ -19,6 +19,7 @@ package openai
 import (
 	"encoding/json"
 	"iter"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/xai"
@@ -83,7 +84,13 @@ func (p contentBlock) AsCompaction() (ret xai.Compaction, ok bool) {
 }
 
 func (p contentBlock) Text() string {
-	panic("todo")
+	var outputText strings.Builder
+	for _, content := range p.content.Content {
+		if content.Type == "output_text" {
+			outputText.WriteString(content.Text)
+		}
+	}
+	return outputText.String()
 }
 
 func (p contentBlock) Underlying() any {
@@ -125,6 +132,10 @@ func (p response) Parts() int {
 
 func (p response) Part(i int) xai.Part {
 	return contentBlock{&p.msg.Output[i]}
+}
+
+func buildPart(part xai.Part) responses.ResponseInputItemUnionParam {
+	panic("todo")
 }
 
 func (p response) Len() int {

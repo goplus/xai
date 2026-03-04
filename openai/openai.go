@@ -28,10 +28,6 @@ import (
 	"github.com/openai/openai-go/v3/responses"
 )
 
-var (
-	_ xai.Provider = (*Provider)(nil)
-)
-
 // -----------------------------------------------------------------------------
 
 type Provider struct {

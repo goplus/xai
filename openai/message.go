@@ -116,6 +116,11 @@ func (p *msgBuilder) DocFile(mime xai.DocumentType, fileID string) xai.MsgBuilde
 	})
 }
 
+func (p *msgBuilder) Part(part xai.Part) xai.MsgBuilder {
+	p.content = append(p.content, buildPart(part))
+	return p
+}
+
 func (p *msgBuilder) Thinking(v xai.Thinking) xai.MsgBuilder {
 	if v.Redacted {
 		panic("todo")

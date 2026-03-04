@@ -159,6 +159,10 @@ func (p response) Part(i int) xai.Part {
 	return contentBlock{&p.msg.Content[i]}
 }
 
+func buildPart(part xai.Part) anthropic.BetaContentBlockParamUnion {
+	return part.(contentBlock).content.ToParam()
+}
+
 func (p response) Len() int {
 	return 1
 }

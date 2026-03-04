@@ -26,10 +26,6 @@ import (
 	"google.golang.org/genai"
 )
 
-var (
-	_ xai.Provider = (*Provider)(nil)
-)
-
 // -----------------------------------------------------------------------------
 
 type Provider struct {

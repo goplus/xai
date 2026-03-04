@@ -27,10 +27,6 @@ import (
 	"github.com/goplus/xai"
 )
 
-var (
-	_ xai.Provider = (*Provider)(nil)
-)
-
 // -----------------------------------------------------------------------------
 
 type Provider struct {

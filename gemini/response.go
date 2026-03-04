@@ -89,6 +89,10 @@ func (p candidate) Part(i int) xai.Part {
 	return contentBlock{p.c.Content.Parts[i]}
 }
 
+func buildPart(part xai.Part) *genai.Part {
+	return part.(contentBlock).content
+}
+
 func (p candidate) ToMsg() xai.MsgBuilder {
 	var parts []*genai.Part
 	if c := p.c.Content; c != nil {
