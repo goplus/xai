@@ -100,13 +100,14 @@ func (p *msgBuilder) DocFile(mime xai.DocumentType, fileID string) xai.MsgBuilde
 	return p
 }
 
-func (p *msgBuilder) Thinking(signature, thinking string) xai.MsgBuilder {
-	p.content = append(p.content, anthropic.NewBetaThinkingBlock(signature, thinking))
-	return p
-}
-
-func (p *msgBuilder) RedactedThinking(data string) xai.MsgBuilder {
-	p.content = append(p.content, anthropic.NewBetaRedactedThinkingBlock(data))
+func (p *msgBuilder) Thinking(v xai.Thinking) xai.MsgBuilder {
+	var content anthropic.BetaContentBlockParamUnion
+	if v.Redacted {
+		content = anthropic.NewBetaThinkingBlock(v.Signature, v.Text)
+	} else {
+		content = anthropic.NewBetaRedactedThinkingBlock(v.Signature)
+	}
+	p.content = append(p.content, content)
 	return p
 }
 

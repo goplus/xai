@@ -97,15 +97,15 @@ func (p *Provider) WebSearchTool() xai.WebSearchTool {
 
 // -----------------------------------------------------------------------------
 
-func (p *msgBuilder) ToolUse(toolID, name string, input any) xai.MsgBuilder {
+func (p *msgBuilder) ToolUse(v xai.ToolUse) xai.MsgBuilder {
 	var (
 		content responses.ResponseInputItemUnionParam
 	)
-	if strings.HasPrefix(name, "std/") {
+	if strings.HasPrefix(v.Name, "std/") {
 		panic("todo")
 	} else {
-		args := jsonStringify(input, "invalid tool input: ")
-		content = responses.ResponseInputItemParamOfFunctionCall(toolID, args, name)
+		args := jsonStringify(v.Input, "invalid tool input: ")
+		content = responses.ResponseInputItemParamOfFunctionCall(v.ID, args, v.Name)
 	}
 	return p.addNonMsg(content)
 }

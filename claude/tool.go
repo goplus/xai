@@ -95,15 +95,15 @@ func (p *Provider) WebSearchTool() xai.WebSearchTool {
 
 // -----------------------------------------------------------------------------
 
-func (p *msgBuilder) ToolUse(toolID, name string, input any) xai.MsgBuilder {
+func (p *msgBuilder) ToolUse(v xai.ToolUse) xai.MsgBuilder {
 	var (
 		content anthropic.BetaContentBlockParamUnion
 	)
-	if strings.HasPrefix(name, "std/") {
-		stdToolName := anthropic.BetaServerToolUseBlockParamName(name[4:])
-		content = anthropic.NewBetaServerToolUseBlock(toolID, input, stdToolName)
+	if strings.HasPrefix(v.Name, "std/") {
+		stdToolName := anthropic.BetaServerToolUseBlockParamName(v.Name[4:])
+		content = anthropic.NewBetaServerToolUseBlock(v.ID, v.Input, stdToolName)
 	} else {
-		content = anthropic.NewBetaToolUseBlock(toolID, input, name)
+		content = anthropic.NewBetaToolUseBlock(v.ID, v.Input, v.Name)
 	}
 	p.content = append(p.content, content)
 	return p

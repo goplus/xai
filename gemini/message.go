@@ -95,17 +95,12 @@ func (p *msgBuilder) DocFile(mime xai.DocumentType, fileID string) xai.MsgBuilde
 	return p
 }
 
-func (p *msgBuilder) Thinking(signature, thinking string) xai.MsgBuilder {
+func (p *msgBuilder) Thinking(v xai.Thinking) xai.MsgBuilder {
 	p.content = append(p.content, &genai.Part{
-		Text:             thinking,
-		ThoughtSignature: unsafe.Slice(unsafe.StringData(signature), len(signature)),
+		Text:             v.Text,
+		ThoughtSignature: unsafe.Slice(unsafe.StringData(v.Signature), len(v.Signature)),
 		Thought:          true,
 	})
-	return p
-}
-
-func (p *msgBuilder) RedactedThinking(data string) xai.MsgBuilder {
-	// TODO(xsw): validate data
 	return p
 }
 

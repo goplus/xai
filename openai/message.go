@@ -116,19 +116,18 @@ func (p *msgBuilder) DocFile(mime xai.DocumentType, fileID string) xai.MsgBuilde
 	})
 }
 
-func (p *msgBuilder) Thinking(signature, thinking string) xai.MsgBuilder {
+func (p *msgBuilder) Thinking(v xai.Thinking) xai.MsgBuilder {
+	if v.Redacted {
+		panic("todo")
+	}
 	return p.addNonMsg(responses.ResponseInputItemUnionParam{
 		OfReasoning: &responses.ResponseReasoningItemParam{
-			ID: signature,
+			ID: v.Signature,
 			Content: []responses.ResponseReasoningItemContentParam{
-				{Text: thinking},
+				{Text: v.Text},
 			},
 		},
 	})
-}
-
-func (p *msgBuilder) RedactedThinking(data string) xai.MsgBuilder {
-	panic("todo")
 }
 
 // -----------------------------------------------------------------------------

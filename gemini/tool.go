@@ -93,15 +93,15 @@ func (p *Provider) WebSearchTool() xai.WebSearchTool {
 
 // -----------------------------------------------------------------------------
 
-func (p *msgBuilder) ToolUse(toolID, name string, input any) xai.MsgBuilder {
+func (p *msgBuilder) ToolUse(v xai.ToolUse) xai.MsgBuilder {
 	var (
 		content *genai.Part
 	)
-	if strings.HasPrefix(name, "std/") {
+	if strings.HasPrefix(v.Name, "std/") {
 		panic("todo")
 	} else {
-		args := dataConv(input, "invalid tool input: ")
-		content = genai.NewPartFromFunctionCall(name, args)
+		args := dataConv(v.Input, "invalid tool input: ")
+		content = genai.NewPartFromFunctionCall(v.Name, args)
 	}
 	p.content = append(p.content, content)
 	return p

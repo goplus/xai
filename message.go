@@ -77,20 +77,15 @@ type MsgBuilder interface {
 	DocURL(mime DocumentType, url string) MsgBuilder
 	DocFile(mime DocumentType, fileID string) MsgBuilder
 
-	Thinking(signature, thinking string) MsgBuilder
-	RedactedThinking(data string) MsgBuilder
+	Thinking(Thinking) MsgBuilder
 
-	// ToolUse is used to add a tool use block to the content. The toolID
+	// ToolUse is used to add a tool use block to the content. The tool ID
 	// should be a unique identifier for the tool being used, and should
-	// match the ID used in ToolResult. The input can be any data that the
-	// tool requires to perform its function, and the name is a human-readable
-	// name for the tool that can be displayed in the UI.
+	// match the ID used in ToolResult.
 	//
-	// For standard tools, the input expects a RawMessage.
-	//
-	// For non-standard tools, the input expects anything that can be marshaled
-	// to JSON, including RawMessage.
-	ToolUse(toolID, name string, input any) MsgBuilder
+	// The input expects anything that can be marshaled to JSON, including
+	// RawMessage.
+	ToolUse(ToolUse) MsgBuilder
 
 	// ToolResult is used to add the result of a tool use to the content.
 	// The tool ID should match the ID used in ToolUse. The content depends
