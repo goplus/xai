@@ -37,13 +37,12 @@ type WebSearchResultItem struct {
 	Title   string
 	URL     string
 	PageAge string
-
-	// implementation-specific content that can be used for tool result conversion
-	Underlying any
 }
 
 type WebSearchResult struct {
 	Result []WebSearchResultItem
+
+	Underlying any // for provider-specific extensions
 }
 
 // -----------------------------------------------------------------------------

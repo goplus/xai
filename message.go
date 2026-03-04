@@ -93,17 +93,17 @@ type MsgBuilder interface {
 	ToolUse(toolID, name string, input any) MsgBuilder
 
 	// ToolResult is used to add the result of a tool use to the content.
-	// The toolID should match the ID used in ToolUse. The content depends
-	// on the tool. If isError is true, the content will be treated as an
+	// The tool ID should match the ID used in ToolUse. The content depends
+	// on the tool. If IsError is true, the content will be treated as an
 	// error interface.
 	//
-	// For standard tools (those with names starting with "std/"), the content
+	// For standard tools (those with names starting with "std/"), the Result
 	// should be a specific struct defined for that tool. For example, the web
 	// search tool expects a WebSearchResult struct.
 	//
 	// For non-standard tools, the content expects anything that can be marshaled
 	// to JSON, including RawMessage.
-	ToolResult(toolID, name string, result any, isError bool) MsgBuilder
+	ToolResult(ToolResult) MsgBuilder
 }
 
 type RawMessage = json.RawMessage
@@ -122,9 +122,27 @@ type Thinking struct {
 }
 
 type ToolUse struct {
-	ID    string // tool ID
-	Name  string // tool Name
-	Input any    // arguments for the tool use
+	ID   string // tool ID
+	Name string // tool Name
+
+	// Arguments for the tool use
+	Input any
+
+	Underlying any // for provider-specific extensions
+}
+
+type ToolResult struct {
+	ID   string // tool ID
+	Name string // tool Name
+
+	// The result of the tool use. The content depends on the tool.
+	// If IsError is true, the content should be treated as an error interface.
+	//
+	// For standard tools (those with names starting with "std/"), the Result
+	// should be a specific struct defined for that tool. For example, the web
+	// search tool expects a WebSearchResult struct.
+	Result  any
+	IsError bool
 
 	Underlying any // for provider-specific extensions
 }
@@ -132,7 +150,9 @@ type ToolUse struct {
 type Part interface {
 	AsThinking() (ret Thinking, ok bool)
 	AsToolUse() (ret ToolUse, ok bool)
+	AsToolResult() (ret ToolResult, ok bool)
 	Text() string
+	Underlying() any
 }
 
 // -----------------------------------------------------------------------------

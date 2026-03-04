@@ -111,63 +111,32 @@ func (p *msgBuilder) ToolUse(toolID, name string, input any) xai.MsgBuilder {
 
 // -----------------------------------------------------------------------------
 
-var stdToolResultConv = map[string]func(toolID string, result any, isError bool) anthropic.BetaContentBlockParamUnion{
-	xai.ToolWebSearch: webSearchResultConv,
-}
-
-func webSearchResultConv(toolID string, result any, isError bool) anthropic.BetaContentBlockParamUnion {
-	if isError {
-		v := result.(error)
-		return anthropic.NewBetaWebSearchToolResultBlock(anthropic.BetaWebSearchToolRequestErrorParam{
-			ErrorCode: anthropic.BetaWebSearchToolResultErrorCode(v.Error()),
-		}, toolID)
-	}
-	v := result.(*xai.WebSearchResult)
-	ret := make([]anthropic.BetaWebSearchResultBlockParam, len(v.Result))
-	for i, item := range v.Result {
-		ret[i] = anthropic.BetaWebSearchResultBlockParam{
-			EncryptedContent: item.Underlying.(string),
-			Title:            item.Title,
-			URL:              item.URL,
-		}
-		if item.PageAge != "" {
-			ret[i].PageAge = param.NewOpt(item.PageAge)
-		}
-	}
-	return anthropic.NewBetaWebSearchToolResultBlock(ret, toolID)
-}
-
-/* TODO(xsw): SearchResult vs. WebSearchResult
-func (p *contentBuilder) searchResult(content xai.TextBuilder, source, title string) xai.ContentBuilder {
-	p.content = append(p.content, anthropic.NewBetaSearchResultBlock(buildTexts(content), source, title))
-	return p
-}
-*/
-
-func (p *msgBuilder) ToolResult(toolID, name string, result any, isError bool) xai.MsgBuilder {
+func (p *msgBuilder) ToolResult(v xai.ToolResult) xai.MsgBuilder {
 	var (
 		content anthropic.BetaContentBlockParamUnion
 	)
-	if strings.HasPrefix(name, "std/") {
-		conv, ok := stdToolResultConv[name]
-		if !ok {
-			panic("unsupported standard tool: " + name)
+	if strings.HasPrefix(v.Name, "std/") {
+		switch v.Name {
+		case xai.ToolWebSearch:
+			in := v.Underlying.(*anthropic.BetaWebSearchToolResultBlock).ToParam()
+			content = anthropic.BetaContentBlockParamUnion{OfWebSearchToolResult: &in}
+		default:
+			panic("unsupported standard tool: " + v.Name)
 		}
-		content = conv(toolID, result, isError)
 	} else {
 		var ret string
-		if isError {
-			ret = result.(error).Error()
-		} else if v, ok := result.(xai.RawMessage); ok {
-			ret = unsafe.String(unsafe.SliceData(v), len(v))
+		if v.IsError {
+			ret = v.Result.(error).Error()
+		} else if msg, ok := v.Result.(xai.RawMessage); ok {
+			ret = unsafe.String(unsafe.SliceData(msg), len(msg))
 		} else {
-			b, err := json.Marshal(result)
+			b, err := json.Marshal(v.Result)
 			if err != nil {
 				panic("failed to marshal tool result: " + err.Error())
 			}
 			ret = unsafe.String(unsafe.SliceData(b), len(b))
 		}
-		content = anthropic.NewBetaToolResultBlock(toolID, ret, isError)
+		content = anthropic.NewBetaToolResultBlock(v.ID, ret, v.IsError)
 	}
 	p.content = append(p.content, content)
 	return p

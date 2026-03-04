@@ -124,8 +124,16 @@ func (p contentBlock) AsToolUse() (ret xai.ToolUse, ok bool) {
 	return
 }
 
+func (p contentBlock) AsToolResult() (ret xai.ToolResult, ok bool) {
+	panic("todo")
+}
+
 func (p contentBlock) Text() string {
 	return p.content.Text
+}
+
+func (p contentBlock) Underlying() any {
+	return p.content
 }
 
 // -----------------------------------------------------------------------------

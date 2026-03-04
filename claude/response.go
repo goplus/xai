@@ -17,6 +17,7 @@
 package claude
 
 import (
+	"errors"
 	"iter"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -63,6 +64,44 @@ func (p contentBlock) AsToolUse() (ret xai.ToolUse, ok bool) {
 		ret.Name = "std/" + string(u.Name)
 		ret.Input = u.Input
 		ret.Underlying = &u
+	case "mcp_tool_use":
+		panic("todo")
+	default:
+		return
+	}
+	ok = true
+	return
+}
+
+func (p contentBlock) AsToolResult() (ret xai.ToolResult, ok bool) {
+	switch p.content.Type {
+	case "web_search_tool_result":
+		u := p.content.AsWebSearchToolResult()
+		ret.ID = u.ToolUseID
+		ret.Name = xai.ToolWebSearch
+		if u.Content.ErrorCode != "" {
+			ret.Result = errors.New(string(u.Content.ErrorCode))
+			ret.IsError = true
+		} else {
+			items := u.Content.OfBetaWebSearchResultBlockArray
+			result := make([]xai.WebSearchResultItem, len(items))
+			for i, item := range items {
+				result[i] = xai.WebSearchResultItem{
+					Title:   item.Title,
+					URL:     item.URL,
+					PageAge: item.PageAge,
+				}
+			}
+			ret.Result = &xai.WebSearchResult{
+				Result:     result,
+				Underlying: &u,
+			}
+		}
+		ret.Underlying = &u
+	case "web_fetch_tool_result", "code_execution_tool_result",
+		"bash_code_execution_tool_result", "text_editor_code_execution_tool_result",
+		"tool_search_tool_result", "mcp_tool_result":
+		panic("todo")
 	default:
 		return
 	}
@@ -72,6 +111,10 @@ func (p contentBlock) AsToolUse() (ret xai.ToolUse, ok bool) {
 
 func (p contentBlock) Text() string {
 	return p.content.Text
+}
+
+func (p contentBlock) Underlying() any {
+	return p.content
 }
 
 // -----------------------------------------------------------------------------

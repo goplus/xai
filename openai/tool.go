@@ -126,30 +126,18 @@ func jsonStringify(v any, errPrompt string) string {
 
 // -----------------------------------------------------------------------------
 
-var stdToolResultConv = map[string]func(toolID string, result any, isError bool) responses.ResponseInputItemUnionParam{
-	xai.ToolWebSearch: webSearchResultConv,
-}
-
-func webSearchResultConv(toolID string, result any, isError bool) responses.ResponseInputItemUnionParam {
-	panic("todo")
-}
-
-func (p *msgBuilder) ToolResult(toolID, name string, result any, isError bool) xai.MsgBuilder {
+func (p *msgBuilder) ToolResult(v xai.ToolResult) xai.MsgBuilder {
 	var (
 		content responses.ResponseInputItemUnionParam
 	)
-	if strings.HasPrefix(name, "std/") {
-		conv, ok := stdToolResultConv[name]
-		if !ok {
-			panic("unsupported standard tool: " + name)
-		}
-		content = conv(toolID, result, isError)
+	if strings.HasPrefix(v.Name, "std/") {
+		panic("todo")
 	} else {
-		if isError {
-			result = map[string]any{"error": result.(error).Error()}
+		if v.IsError {
+			v.Result = map[string]any{"error": v.Result.(error).Error()}
 		}
-		ret := jsonStringify(result, "invalid tool result: ")
-		content = responses.ResponseInputItemParamOfFunctionCallOutput(toolID, ret)
+		ret := jsonStringify(v.Result, "invalid tool result: ")
+		content = responses.ResponseInputItemParamOfFunctionCallOutput(v.ID, ret)
 	}
 	p.content = append(p.content, content)
 	return p

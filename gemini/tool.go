@@ -129,33 +129,26 @@ func dataConv(input any, errPrompt string) map[string]any {
 
 // -----------------------------------------------------------------------------
 
-var stdToolResultConv = map[string]func(toolID string, result any, isError bool) *genai.Part{
-	xai.ToolWebSearch: webSearchResultConv,
-}
-
-func webSearchResultConv(toolID string, result any, isError bool) *genai.Part {
-	// genai.GoogleSearch
-	panic("todo")
-}
-
-func (p *msgBuilder) ToolResult(toolID, name string, result any, isError bool) xai.MsgBuilder {
+func (p *msgBuilder) ToolResult(v xai.ToolResult) xai.MsgBuilder {
 	var (
 		content *genai.Part
 	)
-	if strings.HasPrefix(name, "std/") {
-		conv, ok := stdToolResultConv[name]
-		if !ok {
-			panic("unsupported standard tool: " + name)
-		}
-		content = conv(toolID, result, isError)
+	if strings.HasPrefix(v.Name, "std/") {
+		panic("todo")
 	} else {
 		var ret map[string]any
-		if isError {
-			ret = map[string]any{"error": result.(error).Error()}
+		if v.IsError {
+			ret = map[string]any{"error": v.Result.(error).Error()}
 		} else {
-			ret = dataConv(result, "invalid tool result: ")
+			ret = dataConv(v.Result, "invalid tool result: ")
 		}
-		content = genai.NewPartFromFunctionResponse(name, ret)
+		content = &genai.Part{
+			FunctionResponse: &genai.FunctionResponse{
+				ID:       v.ID,
+				Name:     v.Name,
+				Response: ret,
+			},
+		}
 	}
 	p.content = append(p.content, content)
 	return p
