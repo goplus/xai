@@ -22,7 +22,7 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/packages/ssestream"
-	"github.com/goplus/xai"
+	xai "github.com/goplus/xai/spec"
 )
 
 // -----------------------------------------------------------------------------

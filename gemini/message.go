@@ -19,7 +19,7 @@ package gemini
 import (
 	"unsafe"
 
-	"github.com/goplus/xai"
+	xai "github.com/goplus/xai/spec"
 	"google.golang.org/genai"
 )
 

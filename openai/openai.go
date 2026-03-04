@@ -22,7 +22,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/goplus/xai"
+	xai "github.com/goplus/xai/spec"
 	openai "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/responses"

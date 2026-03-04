@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/goplus/xai"
+	xai "github.com/goplus/xai/spec"
 )
 
 // Do runs the test cases for xai.

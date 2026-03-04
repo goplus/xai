@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/goplus/xai"
+	xai "github.com/goplus/xai/spec"
 	"google.golang.org/genai"
 )
 

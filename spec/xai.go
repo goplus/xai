@@ -25,27 +25,6 @@ import (
 
 // -----------------------------------------------------------------------------
 
-/*
-// Role is the type of a message role, which can be system, assistant, user or tool.
-type Role string
-
-const (
-	// RoleSystem is the role of a system, means the message is a system message.
-	RoleSystem Role = "system"
-
-	// RoleAssistant is the role of an assistant, means the message is returned by AI.
-	RoleAssistant Role = "assistant"
-
-	// RoleUser is the role of a user, means the message is a user message.
-	RoleUser Role = "user"
-
-	// RoleTool is the role of a tool, means the message is a tool call output.
-	RoleTool Role = "tool"
-)
-*/
-
-// -----------------------------------------------------------------------------
-
 type OptionBuilder interface {
 	WithBaseURL(base string) OptionBuilder
 }
