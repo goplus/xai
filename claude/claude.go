@@ -67,9 +67,12 @@ func New(ctx context.Context, uri string) (xai.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	var opts []option.RequestOption
+	opts := anthropic.DefaultClientOptions()
 	if base := params["base"]; len(base) > 0 {
 		opts = append(opts, option.WithBaseURL(base[0]))
+	}
+	if key := strings.TrimSpace(params.Get("key")); key != "" {
+		opts = append(opts, option.WithAPIKey(key))
 	}
 	return &Provider{
 		messages: anthropic.NewBetaMessageService(opts...),

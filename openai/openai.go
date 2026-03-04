@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/goplus/xai"
+	openai "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/responses"
 )
@@ -67,9 +68,12 @@ func New(ctx context.Context, uri string) (xai.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	var opts []option.RequestOption
+	opts := openai.DefaultClientOptions()
 	if base := params["base"]; len(base) > 0 {
 		opts = append(opts, option.WithBaseURL(base[0]))
+	}
+	if key := strings.TrimSpace(params.Get("key")); key != "" {
+		opts = append(opts, option.WithAPIKey(key))
 	}
 	return &Provider{
 		responses: responses.NewResponseService(opts...),
