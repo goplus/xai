@@ -17,7 +17,9 @@
 package openai
 
 import (
+	"encoding/json"
 	"iter"
+	"unsafe"
 
 	"github.com/goplus/xai"
 	"github.com/openai/openai-go/v3/packages/ssestream"
@@ -30,12 +32,43 @@ type contentBlock struct {
 	content *responses.ResponseOutputItemUnion
 }
 
-func (p contentBlock) AsThinking() (xai.Thinking, bool) {
+func (p contentBlock) AsThinking() (ret xai.Thinking, ok bool) {
+	switch p.content.Type {
+	case "reasoning":
+		u := p.content.AsReasoning()
+		ret.Underlying = &u
+	default:
+		return
+	}
+	ok = true
 	panic("todo")
+}
+
+func (p contentBlock) AsToolUse() (ret xai.ToolUse, ok bool) {
+	switch p.content.Type {
+	case "function_call":
+		u := p.content.AsFunctionCall()
+		ret.ID = u.ID
+		ret.Name = u.Name
+		ret.Input = rawMessage(u.Arguments)
+		ret.Underlying = &u
+	case "file_search_call", "web_search_call", "computer_call", "code_interpreter_call",
+		"local_shell_call", "shell_call", "apply_patch_call", "mcp_call", "custom_tool_call":
+		panic("todo")
+	default:
+		return
+	}
+	ok = true
+	return
 }
 
 func (p contentBlock) Text() string {
 	panic("todo")
+}
+
+func rawMessage(msg string) json.RawMessage {
+	b := unsafe.Slice(unsafe.StringData(msg), len(msg))
+	return json.RawMessage(b)
 }
 
 // -----------------------------------------------------------------------------

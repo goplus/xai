@@ -113,11 +113,25 @@ type RawMessage = json.RawMessage
 type Thinking struct {
 	Text      string
 	Signature string // redacted data is saved here, not in Text
-	Redacted  bool
+
+	// true if the thinking is redacted, meaning the Text field is empty and
+	// the Signature field contains the redacted data.
+	Redacted bool
+
+	Underlying any // for provider-specific extensions
+}
+
+type ToolUse struct {
+	ID    string // tool ID
+	Name  string // tool Name
+	Input any    // arguments for the tool use
+
+	Underlying any // for provider-specific extensions
 }
 
 type Part interface {
 	AsThinking() (ret Thinking, ok bool)
+	AsToolUse() (ret ToolUse, ok bool)
 	Text() string
 }
 

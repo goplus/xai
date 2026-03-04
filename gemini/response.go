@@ -108,6 +108,18 @@ func (p contentBlock) AsThinking() (ret xai.Thinking, ok bool) {
 		sig := p.content.ThoughtSignature
 		ret.Signature = unsafe.String(unsafe.SliceData(sig), len(sig))
 		ret.Text = p.content.Text
+		ret.Underlying = p.content
+	}
+	return
+}
+
+func (p contentBlock) AsToolUse() (ret xai.ToolUse, ok bool) {
+	fn := p.content.FunctionCall
+	if ok = fn != nil; ok {
+		ret.ID = fn.ID
+		ret.Name = fn.Name
+		ret.Input = fn.Args
+		ret.Underlying = fn
 	}
 	return
 }

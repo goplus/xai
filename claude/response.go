@@ -36,10 +36,33 @@ func (p contentBlock) AsThinking() (ret xai.Thinking, ok bool) {
 		u := p.content.AsThinking()
 		ret.Signature = u.Signature
 		ret.Text = u.Thinking
+		ret.Underlying = &u
 	case "redacted_thinking":
 		u := p.content.AsRedactedThinking()
 		ret.Signature = u.Data
 		ret.Redacted = true
+		ret.Underlying = &u
+	default:
+		return
+	}
+	ok = true
+	return
+}
+
+func (p contentBlock) AsToolUse() (ret xai.ToolUse, ok bool) {
+	switch p.content.Type {
+	case "tool_use":
+		u := p.content.AsToolUse()
+		ret.ID = u.ID
+		ret.Name = u.Name
+		ret.Input = u.Input
+		ret.Underlying = &u
+	case "server_tool_use":
+		u := p.content.AsServerToolUse()
+		ret.ID = u.ID
+		ret.Name = "std/" + string(u.Name)
+		ret.Input = u.Input
+		ret.Underlying = &u
 	default:
 		return
 	}
