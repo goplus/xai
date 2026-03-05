@@ -1,0 +1,6 @@
+# Build binary
+01_agent_loop
+
+# Agent output files
+_analysis.md
+_plan.md
