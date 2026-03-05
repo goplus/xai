@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - "."
+          - "spec/openai"
+          - "spec/claude"
+          - "spec/gemini"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Vet & Test
+        working-directory: ${{ matrix.module }}
+        run: |
+          go vet ./...
+          go test -v -race ./...
+
+  integration-test:
+    name: Integration Test (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'dev'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: "spec/openai"
+            env_key: OPENAI_API_KEY
+          - module: "spec/claude"
+            env_key: ANTHROPIC_API_KEY
+          - module: "spec/gemini"
+            env_key: GEMINI_API_KEY
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - name: Check secret
+        id: check
+        run: |
+          if [ -z "${!ENV_KEY}" ]; then
+            echo "Secret $ENV_KEY not configured, skipping"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          ENV_KEY: ${{ matrix.env_key }}
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.skip != 'true'
+
+      - uses: actions/setup-go@v5
+        if: steps.check.outputs.skip != 'true'
+        with:
+          go-version: "1.24"
+
+      - name: Run Integration Tests
+        if: steps.check.outputs.skip != 'true'
+        working-directory: ${{ matrix.module }}
+        run: go test -v -race -tags xaitest ./...
