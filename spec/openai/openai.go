@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package claude
+package openai
 
 import (
 	"context"
@@ -22,20 +22,20 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/option"
 	xai "github.com/goplus/xai/spec"
+	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/responses"
 )
 
 // -----------------------------------------------------------------------------
 
 type Service struct {
-	messages anthropic.BetaMessageService
-	tools    tools
+	responses responses.ResponseService
+	tools     tools
 }
 
 func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
-	resp, err := p.messages.New(ctx, buildParams(params), buildOptions(opts)...)
+	resp, err := p.responses.New(ctx, buildParams(params), buildOptions(opts)...)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
@@ -43,39 +43,53 @@ func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Opt
 }
 
 func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
-	resp := p.messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
+	resp := p.responses.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
 	return buildRespIter(resp)
 }
 
 // -----------------------------------------------------------------------------
 
 const (
-	Scheme = "claude"
+	Scheme = "openai"
 )
 
 // New creates a new Service instance based on the scheme in the given URI.
-// uri should be in the format of "claude:base=xxx", where "base" is the base URL
-// of the API endpoint.
+// uri should be in the format of "openai:base=service_base_url&key=api_key".
 //
-// For example, "claude:base=https://api.anthropic.com".
+// `base` is the base URL of the API endpoint.
+// `key` is the API key for authentication.
+// `org` is the organization ID to use for the API requests.
+// `project` is the project ID to use for the API requests.
+// `webhook_secret` is the secret for validating webhook requests.
+//
+// For example, "openai:base=https://api.openai.com/v1/&key=your_api_key".
 func New(ctx context.Context, uri string) (xai.Service, error) {
 	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
 	if err != nil {
 		return nil, err
 	}
-	var opts []option.RequestOption
+	// Remove calls to openai.DefaultClientOptions because we don't suggest users
+	// to set environment variables for API key and base URL. Instead, they should
+	// provide these parameters directly in the URI.
+	opts := []option.RequestOption{option.WithEnvironmentProduction()}
 	if base := params["base"]; len(base) > 0 {
 		opts = append(opts, option.WithBaseURL(base[0]))
 	}
 	if key := params["key"]; len(key) > 0 {
 		opts = append(opts, option.WithAPIKey(key[0]))
 	}
-	if token := params["token"]; len(token) > 0 {
-		opts = append(opts, option.WithAuthToken(token[0]))
+	if org := params["org"]; len(org) > 0 {
+		opts = append(opts, option.WithOrganization(org[0]))
+	}
+	if proj := params["project"]; len(proj) > 0 {
+		opts = append(opts, option.WithProject(proj[0]))
+	}
+	if webhookSec := params["webhook_secret"]; len(webhookSec) > 0 {
+		opts = append(opts, option.WithWebhookSecret(webhookSec[0]))
 	}
 	return &Service{
-		messages: anthropic.NewBetaMessageService(opts...),
-		tools:    make(tools),
+		responses: responses.NewResponseService(opts...),
+		tools:     make(tools),
 	}, nil
 }
 

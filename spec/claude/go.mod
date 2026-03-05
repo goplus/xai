@@ -1,10 +1,10 @@
-module github.com/goplus/xai/openai
+module github.com/goplus/xai/spec/claude
 
 go 1.24
 
 require (
+	github.com/anthropics/anthropic-sdk-go v1.26.0
 	github.com/goplus/xai v0.1.0
-	github.com/openai/openai-go/v3 v3.23.0
 )
 
 require (
@@ -12,6 +12,7 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
+	golang.org/x/sync v0.16.0 // indirect
 )
 
-replace github.com/goplus/xai => ../
+replace github.com/goplus/xai => ../../

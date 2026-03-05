@@ -1,4 +1,4 @@
-module github.com/goplus/xai/gemini
+module github.com/goplus/xai/spec/gemini
 
 go 1.24
 
@@ -26,4 +26,4 @@ require (
 	google.golang.org/protobuf v1.34.2 // indirect
 )
 
-replace github.com/goplus/xai => ../
+replace github.com/goplus/xai => ../../
