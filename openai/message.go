@@ -47,11 +47,11 @@ func buildMessages(in []xai.MsgBuilder, sysPrompt responses.ResponseInputItemUni
 	return
 }
 
-func (p *Provider) UserMsg() xai.MsgBuilder {
+func (p *Service) UserMsg() xai.MsgBuilder {
 	return &msgBuilder{role: responses.EasyInputMessageRoleUser}
 }
 
-func (p *Provider) AssistantMsg() xai.MsgBuilder {
+func (p *Service) AssistantMsg() xai.MsgBuilder {
 	return &msgBuilder{role: responses.EasyInputMessageRoleAssistant}
 }
 
@@ -150,7 +150,7 @@ func (p *textBuilder) Text(text string) xai.TextBuilder {
 	return p
 }
 
-func (p *Provider) Texts(texts ...string) xai.TextBuilder {
+func (p *Service) Texts(texts ...string) xai.TextBuilder {
 	var content responses.ResponseInputMessageContentListParam
 	if len(texts) > 0 {
 		content = make(responses.ResponseInputMessageContentListParam, len(texts))

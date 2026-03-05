@@ -29,12 +29,12 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type Provider struct {
+type Service struct {
 	messages anthropic.BetaMessageService
 	tools    tools
 }
 
-func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
+func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
 	resp, err := p.messages.New(ctx, buildParams(params), buildOptions(opts)...)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
@@ -42,7 +42,7 @@ func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Op
 	return response{resp}, nil
 }
 
-func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
+func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
 	resp := p.messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
 	return buildRespIter(resp)
 }
@@ -53,17 +53,17 @@ const (
 	Scheme = "claude"
 )
 
-// New creates a new Provider instance based on the scheme in the given URI.
+// New creates a new Service instance based on the scheme in the given URI.
 // uri should be in the format of "claude:base=xxx", where "base" is the base URL
 // of the API endpoint.
 //
 // For example, "claude:base=https://api.anthropic.com".
-func New(ctx context.Context, uri string) (xai.Provider, error) {
+func New(ctx context.Context, uri string) (xai.Service, error) {
 	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
 	if err != nil {
 		return nil, err
 	}
-	opts := anthropic.DefaultClientOptions()
+	var opts []option.RequestOption
 	if base := params["base"]; len(base) > 0 {
 		opts = append(opts, option.WithBaseURL(base[0]))
 	}
@@ -73,7 +73,7 @@ func New(ctx context.Context, uri string) (xai.Provider, error) {
 	if token := params["token"]; len(token) > 0 {
 		opts = append(opts, option.WithAuthToken(token[0]))
 	}
-	return &Provider{
+	return &Service{
 		messages: anthropic.NewBetaMessageService(opts...),
 		tools:    make(tools),
 	}, nil

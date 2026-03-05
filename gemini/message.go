@@ -42,11 +42,11 @@ func buildMessages(msgs []xai.MsgBuilder) []*genai.Content {
 	return ret
 }
 
-func (p *Provider) UserMsg() xai.MsgBuilder {
+func (p *Service) UserMsg() xai.MsgBuilder {
 	return &msgBuilder{role: genai.RoleUser}
 }
 
-func (p *Provider) AssistantMsg() xai.MsgBuilder {
+func (p *Service) AssistantMsg() xai.MsgBuilder {
 	return &msgBuilder{role: genai.RoleModel}
 }
 
@@ -124,7 +124,7 @@ func (p *textBuilder) Text(text string) xai.TextBuilder {
 	return p
 }
 
-func (p *Provider) Texts(texts ...string) xai.TextBuilder {
+func (p *Service) Texts(texts ...string) xai.TextBuilder {
 	var parts []*genai.Part
 	if len(texts) > 0 {
 		parts = make([]*genai.Part, len(texts))

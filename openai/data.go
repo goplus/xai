@@ -99,7 +99,7 @@ func (p imageBuilder) FromBase64(mime xai.ImageType, displayName string, data st
 	return makeInputData(string(mime), base64Data(data))
 }
 
-func (p *Provider) Images() xai.ImageBuilder {
+func (p *Service) Images() xai.ImageBuilder {
 	return imageBuilder{}
 }
 
@@ -136,7 +136,7 @@ func (p docBuilder) PlainText(text string) xai.DocumentData {
 	return ret
 }
 
-func (p *Provider) Docs() xai.DocumentBuilder {
+func (p *Service) Docs() xai.DocumentBuilder {
 	return docBuilder{}
 }
 

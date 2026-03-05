@@ -32,7 +32,7 @@ func (p *options) WithBaseURL(base string) xai.OptionBuilder {
 	return p
 }
 
-func (p *Provider) Options() xai.OptionBuilder {
+func (p *Service) Options() xai.OptionBuilder {
 	return &options{}
 }
 

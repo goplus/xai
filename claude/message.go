@@ -40,11 +40,11 @@ func buildMessages(msgs []xai.MsgBuilder) []anthropic.BetaMessageParam {
 	return ret
 }
 
-func (p *Provider) UserMsg() xai.MsgBuilder {
+func (p *Service) UserMsg() xai.MsgBuilder {
 	return &msgBuilder{role: anthropic.BetaMessageParamRoleUser}
 }
 
-func (p *Provider) AssistantMsg() xai.MsgBuilder {
+func (p *Service) AssistantMsg() xai.MsgBuilder {
 	return &msgBuilder{role: anthropic.BetaMessageParamRoleAssistant}
 }
 
@@ -132,7 +132,7 @@ func (p *textBuilder) Text(text string) xai.TextBuilder {
 	return p
 }
 
-func (p *Provider) Texts(texts ...string) xai.TextBuilder {
+func (p *Service) Texts(texts ...string) xai.TextBuilder {
 	var content []anthropic.BetaTextBlockParam
 	if len(texts) > 0 {
 		content = make([]anthropic.BetaTextBlockParam, len(texts))

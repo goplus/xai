@@ -41,11 +41,11 @@ func (p tool) Description(desc string) xai.Tool {
 	return p
 }
 
-func (p *Provider) Tool(name string) xai.Tool {
+func (p *Service) Tool(name string) xai.Tool {
 	return p.tools[name]
 }
 
-func (p *Provider) ToolDef(name string) xai.Tool {
+func (p *Service) ToolDef(name string) xai.Tool {
 	if _, ok := p.tools[name]; ok {
 		panic("tool already defined: " + name)
 	}
@@ -87,7 +87,7 @@ func (p webSearchTool) BlockedDomains(v ...string) xai.WebSearchTool {
 	return p
 }
 
-func (p *Provider) WebSearchTool() xai.WebSearchTool {
+func (p *Service) WebSearchTool() xai.WebSearchTool {
 	return webSearchTool{&genai.GoogleSearch{}}
 }
 

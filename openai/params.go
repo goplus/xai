@@ -85,7 +85,7 @@ func (p *params) TopP(v float64) xai.ParamBuilder {
 	return p
 }
 
-func (p *Provider) Params() xai.ParamBuilder {
+func (p *Service) Params() xai.ParamBuilder {
 	return &params{}
 }
 

@@ -23,19 +23,18 @@ import (
 	"strings"
 
 	xai "github.com/goplus/xai/spec"
-	openai "github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/responses"
 )
 
 // -----------------------------------------------------------------------------
 
-type Provider struct {
+type Service struct {
 	responses responses.ResponseService
 	tools     tools
 }
 
-func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
+func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
 	resp, err := p.responses.New(ctx, buildParams(params), buildOptions(opts)...)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
@@ -43,7 +42,7 @@ func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Op
 	return response{resp}, nil
 }
 
-func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
+func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
 	resp := p.responses.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
 	return buildRespIter(resp)
 }
@@ -54,24 +53,24 @@ const (
 	Scheme = "openai"
 )
 
-// New creates a new Provider instance based on the scheme in the given URI.
+// New creates a new Service instance based on the scheme in the given URI.
 // uri should be in the format of "openai:base=xxx", where "base" is the base URL
 // of the API endpoint.
 //
 // For example, "openai:base=https://api.openai.com".
-func New(ctx context.Context, uri string) (xai.Provider, error) {
+func New(ctx context.Context, uri string) (xai.Service, error) {
 	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
 	if err != nil {
 		return nil, err
 	}
-	opts := openai.DefaultClientOptions()
+	var opts []option.RequestOption
 	if base := params["base"]; len(base) > 0 {
 		opts = append(opts, option.WithBaseURL(base[0]))
 	}
 	if key := params["key"]; len(key) > 0 {
 		opts = append(opts, option.WithAPIKey(key[0]))
 	}
-	return &Provider{
+	return &Service{
 		responses: responses.NewResponseService(opts...),
 		tools:     make(tools),
 	}, nil

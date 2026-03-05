@@ -73,7 +73,7 @@ func (p imageBuilder) FromBase64(mime xai.ImageType, displayName string, data st
 	}, nil
 }
 
-func (p *Provider) Images() xai.ImageBuilder {
+func (p *Service) Images() xai.ImageBuilder {
 	return imageBuilder{}
 }
 
@@ -129,7 +129,7 @@ func (p docBuilder) PlainText(text string) xai.DocumentData {
 	return (*docData)(genai.NewPartFromText(text))
 }
 
-func (p *Provider) Docs() xai.DocumentBuilder {
+func (p *Service) Docs() xai.DocumentBuilder {
 	return docBuilder{}
 }
 

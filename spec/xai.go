@@ -210,7 +210,7 @@ type GenResponse interface {
 
 // -----------------------------------------------------------------------------
 
-type Provider interface {
+type Service interface {
 	// Options returns an `OptionBuilder` that can be used to set options for
 	// generation requests. This includes options like the base URL for the API
 	// endpoint, etc.
@@ -285,22 +285,22 @@ var (
 )
 
 // NewFunc is the function type for creating a new Provider instance from a URI.
-type NewFunc = func(ctx context.Context, uri string) (Provider, error)
+type NewFunc = func(ctx context.Context, uri string) (Service, error)
 
 var (
 	creators = map[string]NewFunc{}
 )
 
 // Register registers a NewFunc for a specific scheme. This allows different
-// providers to be created based on the scheme in the URI.
+// services to be created based on the scheme in the URI.
 func Register(scheme string, creator NewFunc) {
 	creators[scheme] = creator
 }
 
-// New creates a new Provider instance based on the scheme in the given URI. It
+// New creates a new Service instance based on the scheme in the given URI. It
 // looks up the scheme in the registered creators and calls the corresponding
 // NewFunc. If the scheme is not found, it returns an ErrUnknownScheme error.
-func New(ctx context.Context, uri string) (Provider, error) {
+func New(ctx context.Context, uri string) (Service, error) {
 	scheme := schemeOf(uri)
 	if creator, ok := creators[scheme]; ok {
 		return creator(ctx, uri)

@@ -28,12 +28,12 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type Provider struct {
+type Service struct {
 	models genai.Models
 	tools  tools
 }
 
-func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
+func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
 	model, contents, config := buildParams(params)
 	buildOptions(config, opts)
 	resp, err := p.models.GenerateContent(ctx, model, contents, config)
@@ -43,7 +43,7 @@ func (p *Provider) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Op
 	return response{resp}, nil
 }
 
-func (p *Provider) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
+func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
 	model, contents, config := buildParams(params)
 	buildOptions(config, opts)
 	iter := p.models.GenerateContentStream(ctx, model, contents, config)
@@ -60,13 +60,13 @@ const (
 	Scheme = "gemini"
 )
 
-// New creates a new Provider instance based on the scheme in the given URI.
+// New creates a new Service instance based on the scheme in the given URI.
 // uri should be in the format of "gemini:base=xxx&project=xxx", where "base" is
 // the base URL of the API endpoint. "project" is the project ID, which is required
 // when using the Vertex AI.
 //
 // For example, "gemini:base=https://generativelanguage.googleapis.com".
-func New(ctx context.Context, uri string) (xai.Provider, error) {
+func New(ctx context.Context, uri string) (xai.Service, error) {
 	params, err := url.ParseQuery(strings.TrimPrefix(uri, Scheme+":"))
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func New(ctx context.Context, uri string) (xai.Provider, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Provider{
+	return &Service{
 		models: *cli.Models,
 		tools:  make(tools),
 	}, nil
