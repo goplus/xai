@@ -122,7 +122,7 @@ type MsgBuilder interface {
 	DocURL(mime DocumentType, url string) MsgBuilder
 	DocFile(mime DocumentType, fileID string) MsgBuilder
 
-	// Part is returned by GenResponse and can be used to build a message.
+	// Part is used to add a part of the GenResponse message to the content.
 	Part(Part) MsgBuilder
 
 	// Thinking is used to add a thinking block to the content. The content

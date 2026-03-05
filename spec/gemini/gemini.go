@@ -20,6 +20,8 @@ import (
 	"context"
 	"iter"
 	"net/url"
+	"os"
+	"reflect"
 	"strings"
 
 	xai "github.com/goplus/xai/spec"
@@ -72,6 +74,7 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 		return nil, err
 	}
 	var conf genai.ClientConfig
+	setEnvVarProvider(&conf)
 	if base := params["base"]; len(base) > 0 {
 		conf.HTTPOptions.BaseURL = base[0]
 	}
@@ -90,6 +93,28 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 		models: *cli.Models,
 		tools:  make(tools),
 	}, nil
+}
+
+// Remove calls to genai.defaultEnvVarProvider because we don't suggest users
+// to set environment variables for API key and base URL. Instead, they should
+// provide these parameters directly in the URI.
+func setEnvVarProvider(conf *genai.ClientConfig) {
+	v := reflect.ValueOf(conf).Elem().FieldByName("envVarProvider")
+	if v.IsValid() {
+		*(*func() map[string]string)(v.Addr().UnsafePointer()) = envVarProvider
+	}
+}
+
+// envVarProvider only returns GOOGLE_CLOUD_LOCATION and GOOGLE_CLOUD_REGION.
+func envVarProvider() map[string]string {
+	vars := make(map[string]string)
+	if v, ok := os.LookupEnv("GOOGLE_CLOUD_LOCATION"); ok {
+		vars["GOOGLE_CLOUD_LOCATION"] = v
+	}
+	if v, ok := os.LookupEnv("GOOGLE_CLOUD_REGION"); ok {
+		vars["GOOGLE_CLOUD_REGION"] = v
+	}
+	return vars
 }
 
 func init() {
