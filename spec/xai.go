@@ -273,8 +273,11 @@ type OperationResponse interface {
 // Wait is a helper function that waits for an `OperationResponse` to be done by
 // repeatedly calling `Retry` with appropriate sleeping in between. Once the operation
 // is done, it returns the results of the operation.
-func Wait(ctx context.Context, svc Service, resp OperationResponse) (ret Results, err error) {
+func Wait(ctx context.Context, svc Service, resp OperationResponse, progress func(OperationResponse)) (ret Results, err error) {
 	for !resp.Done() {
+		if progress != nil {
+			progress(resp)
+		}
 		resp.Sleep()
 		resp, err = resp.Retry(ctx, svc)
 		if err != nil {
@@ -302,12 +305,12 @@ type Operation interface {
 // Call is a helper function that calls an `Operation` with the given prompt and options,
 // and then waits for the operation to be done. It returns the results of the operation
 // once it's completed.
-func Call(ctx context.Context, svc Service, op Operation, prompt string, opts OptionBuilder) (ret Results, err error) {
+func Call(ctx context.Context, svc Service, op Operation, prompt string, opts OptionBuilder, progress func(OperationResponse)) (ret Results, err error) {
 	resp, err := op.Call(ctx, svc, prompt, opts)
 	if err != nil {
 		return
 	}
-	return Wait(ctx, svc, resp)
+	return Wait(ctx, svc, resp, progress)
 }
 
 // -----------------------------------------------------------------------------
