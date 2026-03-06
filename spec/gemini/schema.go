@@ -17,11 +17,65 @@
 package gemini
 
 import (
+	"encoding/base64"
+	"io"
 	"log"
+	"os"
 	"reflect"
 
 	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai/spec/types"
+	"google.golang.org/genai"
 )
+
+// -----------------------------------------------------------------------------
+
+type image genai.Image
+
+func (p *image) MIME() xai.ImageType {
+	return xai.ImageType(p.MIMEType)
+}
+
+func (p *Service) ImageFrom(mime xai.ImageType, src io.Reader) (xai.Image, error) {
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return nil, err
+	}
+	return p.ImageFromBytes(mime, data), nil
+}
+
+func (p *Service) ImageFromLocal(mime xai.ImageType, fileName string) (xai.Image, error) {
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+	return p.ImageFromBytes(mime, data), nil
+}
+
+func (p *Service) ImageFromStgUri(mime xai.ImageType, stgUri string) xai.Image {
+	return &image{
+		GCSURI:   stgUri,
+		MIMEType: string(mime),
+	}
+}
+
+func (p *Service) ImageFromBytes(mime xai.ImageType, data []byte) xai.Image {
+	return &image{
+		ImageBytes: data,
+		MIMEType:   string(mime),
+	}
+}
+
+func (p *Service) ImageFromBase64(mime xai.ImageType, data string) (xai.Image, error) {
+	b, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	return &image{
+		ImageBytes: b,
+		MIMEType:   string(mime),
+	}, nil
+}
 
 // -----------------------------------------------------------------------------
 
@@ -66,20 +120,20 @@ func getFields(fields []xai.Field, t reflect.Type, n int) []xai.Field {
 	return fields
 }
 
-var allowTypes = map[string]xai.Kind{
-	"Image":                         xai.Image,
-	"ProductImage":                  xai.Image,
-	"ScribbleImage":                 xai.Image,
-	"ReferenceImage":                xai.ReferenceImage,
-	"VideoGenerationReferenceImage": xai.GenVideoReferenceImage,
-	"VideoGenerationMask":           xai.GenVideoMask,
-	"GeneratedVideo":                xai.OutputVideo,
-	"GeneratedImage":                xai.OutputImage,
-	"GeneratedImageMask":            xai.OutputImageMask,
-	"SafetyAttributes":              xai.SafetyAttributes,
+var allowTypes = map[string]types.Kind{
+	"Image":                         types.Image,
+	"ProductImage":                  types.Image,
+	"ScribbleImage":                 types.Image,
+	"ReferenceImage":                types.ReferenceImage,
+	"VideoGenerationReferenceImage": types.GenVideoReferenceImage,
+	"VideoGenerationMask":           types.GenVideoMask,
+	"GeneratedVideo":                types.OutputVideo,
+	"GeneratedImage":                types.OutputImage,
+	"GeneratedImageMask":            types.OutputImageMask,
+	"SafetyAttributes":              types.SafetyAttributes,
 }
 
-func kindOf(t reflect.Type) xai.Kind {
+func kindOf(t reflect.Type) types.Kind {
 	kind := t.Kind()
 	if kind == reflect.Pointer {
 		t = t.Elem()
@@ -87,15 +141,15 @@ func kindOf(t reflect.Type) xai.Kind {
 	}
 	switch kind {
 	case reflect.Int32, reflect.Int64:
-		return xai.Int
+		return types.Int
 	case reflect.Float32, reflect.Float64:
-		return xai.Float
+		return types.Float
 	case reflect.String:
-		return xai.String
+		return types.String
 	case reflect.Bool:
-		return xai.Bool
+		return types.Bool
 	case reflect.Slice:
-		return kindOf(t.Elem()) | xai.List
+		return kindOf(t.Elem()) | types.List
 	case reflect.Struct, reflect.Interface:
 		name := t.Name()
 		if k, ok := allowTypes[name]; ok {
@@ -104,7 +158,7 @@ func kindOf(t reflect.Type) xai.Kind {
 		fallthrough
 	default:
 		log.Panicln("unknown field type:", t)
-		return xai.Invalid
+		return types.Invalid
 	}
 }
 

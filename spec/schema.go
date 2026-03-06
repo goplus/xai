@@ -16,42 +16,53 @@
 
 package xai
 
+import (
+	"io"
+
+	"github.com/goplus/xai/spec/types"
+)
+
 // -----------------------------------------------------------------------------
 
-type Kind uint
+type ImageType string
 
 const (
-	Invalid Kind = iota
-	Bool         // bool
-	Int          // int64
-	Float        // float64
-	String       // string
-
-	Image
-	ReferenceImage
-	Video
-	GenVideoReferenceImage
-	GenVideoMask
-
-	OutputImage     // Generated Image
-	OutputImageMask // Generated ImageMask
-	OutputVideo     // Generated Video
-
-	SafetyAttributes
-
-	List = 0x8000
+	ImageJPEG ImageType = "image/jpeg"
+	ImagePNG  ImageType = "image/png"
+	ImageGIF  ImageType = "image/gif"
+	ImageWebP ImageType = "image/webp"
 )
+
+type DocumentType string
+
+const (
+	DocPlainText DocumentType = "text/plain"
+	DocPDF       DocumentType = "application/pdf"
+)
+
+// -----------------------------------------------------------------------------
 
 type Field struct {
 	Name string
-	Kind Kind
+	Kind types.Kind
 }
 
 type InputSchema interface {
 	Fields() []Field
 }
 
+type Image interface {
+	MIME() ImageType
+}
+
+// -----------------------------------------------------------------------------
+
 type objectFactory interface {
+	ImageFrom(mime ImageType, src io.Reader) (Image, error)
+	ImageFromLocal(mime ImageType, fileName string) (Image, error)
+	ImageFromBase64(mime ImageType, base64 string) (Image, error)
+	ImageFromBytes(mime ImageType, data []byte) Image
+	ImageFromStgUri(mime ImageType, stgUri string) Image
 }
 
 // -----------------------------------------------------------------------------

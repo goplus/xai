@@ -68,22 +68,6 @@ func BlobFromBase64(base64 string) BlobData {
 
 // -----------------------------------------------------------------------------
 
-type ImageType string
-
-const (
-	ImageJPEG ImageType = "image/jpeg"
-	ImagePNG  ImageType = "image/png"
-	ImageGIF  ImageType = "image/gif"
-	ImageWebP ImageType = "image/webp"
-)
-
-type DocumentType string
-
-const (
-	DocPlainText DocumentType = "text/plain"
-	DocPDF       DocumentType = "application/pdf"
-)
-
 type ImageData interface {
 	ImageType() ImageType
 }
