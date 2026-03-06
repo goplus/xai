@@ -165,7 +165,7 @@ type EntityLabels interface {
 }
 
 type OutputImageMask struct {
-	// Optional. The generated image mask.
+	// The generated image mask.
 	Mask Image
 
 	// The detected entities on the segmented area.

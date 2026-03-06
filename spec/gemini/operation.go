@@ -118,8 +118,8 @@ func (p genVideoResp) Results() xai.Results {
 }
 
 type genVideo struct {
+	genai.GenerateVideosSource
 	genai.GenerateVideosConfig
-	Image *genai.Image
 
 	model string
 }
@@ -136,7 +136,8 @@ func (p *genVideo) Call(ctx context.Context, svc xai.Service, prompt string, opt
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}
-	op, err := svc.(*Service).models.GenerateVideos(ctx, p.model, prompt, p.Image, &p.GenerateVideosConfig)
+	p.Prompt = prompt
+	op, err := svc.(*Service).models.GenerateVideosFromSource(ctx, p.model, &p.GenerateVideosSource, &p.GenerateVideosConfig)
 	if err != nil {
 		return
 	}
@@ -173,8 +174,8 @@ func (p *genImage) Call(ctx context.Context, svc xai.Service, prompt string, opt
 // -----------------------------------------------------------------------------
 
 type editImage struct {
-	genai.EditImageConfig
 	References []genai.ReferenceImage
+	genai.EditImageConfig
 
 	model string
 }
@@ -201,8 +202,8 @@ func (p *editImage) Call(ctx context.Context, svc xai.Service, prompt string, op
 // -----------------------------------------------------------------------------
 
 type recontextImage struct {
-	genai.RecontextImageConfig
 	genai.RecontextImageSource
+	genai.RecontextImageConfig
 
 	model string
 }
@@ -230,9 +231,9 @@ func (p *recontextImage) Call(ctx context.Context, svc xai.Service, prompt strin
 // -----------------------------------------------------------------------------
 
 type upscaleImage struct {
-	genai.UpscaleImageConfig
 	Image  *genai.Image
 	Factor string // upscale factor
+	genai.UpscaleImageConfig
 
 	model string
 }
@@ -259,8 +260,8 @@ func (p *upscaleImage) Call(ctx context.Context, svc xai.Service, prompt string,
 // -----------------------------------------------------------------------------
 
 type segmentImage struct {
-	genai.SegmentImageConfig
 	genai.SegmentImageSource
+	genai.SegmentImageConfig
 
 	model string
 }

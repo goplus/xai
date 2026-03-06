@@ -158,6 +158,7 @@ var allowTypes = map[string]types.Kind{
 	"ProductImage":                  types.Image,
 	"ScribbleImage":                 types.Image,
 	"ReferenceImage":                types.ReferenceImage,
+	"Video":                         types.Video,
 	"VideoGenerationReferenceImage": types.GenVideoReferenceImage,
 	"VideoGenerationMask":           types.GenVideoMask,
 	"GeneratedVideo":                types.OutputVideo,
