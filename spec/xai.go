@@ -222,107 +222,6 @@ type GenResponse interface {
 
 // -----------------------------------------------------------------------------
 
-// Action represents a specific operation that can be performed with a model, such as
-// generating a video, editing an image, etc. The available actions may vary depending
-// on the model and service being used. You can use the `Actions` method of a `Service`
-// to get the list of supported actions for a given model, and then use the `Operation`
-// method to get an `Operation` instance for a specific action.
-type Action string
-
-const (
-	GenVideo       Action = "gen_video"
-	GenImage       Action = "gen_image"
-	EditImage      Action = "edit_image"
-	RecontextImage Action = "recontext_image"
-	SegmentImage   Action = "segment_image"
-	UpscaleImage   Action = "upscale_image"
-)
-
-// Params represents the parameters that can be set for an `Operation`.
-type Params interface {
-	// Set sets a parameter for the operation. You can call this method multiple
-	// times to set multiple parameters.
-	Set(name string, val any) Params
-}
-
-// Results represents the results of an `Operation`.
-type Results interface {
-	Len() int
-	At(i int) any
-
-	// Prop retrieves a property value from the results by name.
-	Prop(name string) any
-}
-
-// OperationResponse represents the response from an `Operation`. It provides methods
-// to check the status of the operation, retrieve results when it's done.
-type OperationResponse interface {
-	// Done returns true if the operation is completed.
-	Done() bool
-
-	// Sleep sleeps a suggested amount of time before the next retry.
-	Sleep()
-
-	// Retry retries the operation. It returns a new `OperationResponse` that can be
-	// used to check the status of the operation and retrieve results when it's done.
-	// You can call this method multiple times to keep retrying until the operation
-	// is done.
-	Retry(ctx context.Context, svc Service) (OperationResponse, error)
-
-	// Returns the value of a specific result from the operation.
-	Results() Results
-}
-
-// Wait is a helper function that waits for an `OperationResponse` to be done by
-// repeatedly calling `Retry` with appropriate sleeping in between. Once the operation
-// is done, it returns the results of the operation.
-func Wait(ctx context.Context, svc Service, resp OperationResponse, progress func(OperationResponse)) (ret Results, err error) {
-	for !resp.Done() {
-		if progress != nil {
-			progress(resp)
-		}
-		resp.Sleep()
-		resp, err = resp.Retry(ctx, svc)
-		if err != nil {
-			return
-		}
-	}
-	return resp.Results(), nil
-}
-
-// Operation represents a long-running task that may take some time to complete, such as
-// generating a video or editing an image. You can use an `Operation` to set parameters
-// for the action and then call it with a prompt to start the operation.
-type Operation interface {
-	// InputSchema returns the schema for the input parameters of this operation. This
-	// schema defines the parameters that can be set for this operation, such as the
-	// type and name of each parameter. You can use this schema to understand what
-	// parameters are required or optional for this operation, and to set them correctly
-	// before calling the operation.
-	InputSchema() InputSchema
-
-	// Params returns a `Params` that can be used to set parameters for the operation.
-	Params() Params
-
-	// Call starts the operation with the given prompt. It returns an `OperationResponse`
-	// that can be used to check the status of the operation and retrieve results when
-	// it's done.
-	Call(ctx context.Context, svc Service, prompt string, opts OptionBuilder) (OperationResponse, error)
-}
-
-// Call is a helper function that calls an `Operation` with the given prompt and options,
-// and then waits for the operation to be done. It returns the results of the operation
-// once it's completed.
-func Call(ctx context.Context, svc Service, op Operation, prompt string, opts OptionBuilder, progress func(OperationResponse)) (ret Results, err error) {
-	resp, err := op.Call(ctx, svc, prompt, opts)
-	if err != nil {
-		return
-	}
-	return Wait(ctx, svc, resp, progress)
-}
-
-// -----------------------------------------------------------------------------
-
 // Feature represents the capabilities of a Service. It is used to indicate which
 // features are supported by a particular Service implementation, such as whether
 // it supports the Gen API, GenStream API, or long-running operations.
@@ -342,10 +241,31 @@ type Service interface {
 	// objectFactory creates a new instance of objects defined in the schema.
 	objectFactory
 
+	// operationService provides methods for working with long-running operations.
+	operationService
+
 	// Features returns the capabilities of this Service, which indicates which
 	// features are supported by this Service implementation, such as whether it
 	// supports the Gen API, GenStream API, or long-running operations.
 	Features() Feature
+
+	// Send a structured list of input messages with text and/or image content, and the
+	// model will generate the next message in the conversation.
+	//
+	// The Gen API can be used for either single queries or stateless multi-turn
+	// conversations.
+	//
+	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
+	Gen(ctx context.Context, params ParamBuilder, opts OptionBuilder) (GenResponse, error)
+
+	// Send a structured list of input messages with text and/or image content, and the
+	// model will generate the next message in the conversation.
+	//
+	// The GenStream API can be used for either single queries or stateless multi-turn
+	// conversations.
+	//
+	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
+	GenStream(ctx context.Context, params ParamBuilder, opts OptionBuilder) iter.Seq2[GenResponse, error]
 
 	// Options returns an `OptionBuilder` that can be used to set options for
 	// generation requests. This includes options like the base URL for the API
@@ -393,35 +313,6 @@ type Service interface {
 	// Tool returns a user-defined tool that the model may use, identified by its unique
 	// name. This is used to refer to a tool that has been defined with `ToolDef`.
 	Tool(name string) Tool
-
-	// Send a structured list of input messages with text and/or image content, and the
-	// model will generate the next message in the conversation.
-	//
-	// The Gen API can be used for either single queries or stateless multi-turn
-	// conversations.
-	//
-	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
-	Gen(ctx context.Context, params ParamBuilder, opts OptionBuilder) (GenResponse, error)
-
-	// Send a structured list of input messages with text and/or image content, and the
-	// model will generate the next message in the conversation.
-	//
-	// The GenStream API can be used for either single queries or stateless multi-turn
-	// conversations.
-	//
-	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
-	GenStream(ctx context.Context, params ParamBuilder, opts OptionBuilder) iter.Seq2[GenResponse, error]
-
-	// Actions returns the list of supported actions for the given model.
-	Actions(model Model) []Action
-
-	// Operation returns an `Operation` that can be used to perform the specified action
-	// with the given model. An `Operation` represents a long-running task that may take
-	// some time to complete, such as generating a video or editing an image. You can
-	// use the returned `Operation` to set parameters for the action and then call it
-	// with a prompt to start the operation. The `OperationResponse` can then be used
-	// to check the status of the operation and retrieve results when it's done.
-	Operation(model Model, action Action) (Operation, error)
 }
 
 // -----------------------------------------------------------------------------
