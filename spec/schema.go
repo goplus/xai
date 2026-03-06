@@ -19,7 +19,7 @@ package xai
 import (
 	"io"
 
-	"github.com/goplus/xai/spec/types"
+	"github.com/goplus/xai/types"
 )
 
 // -----------------------------------------------------------------------------

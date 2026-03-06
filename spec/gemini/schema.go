@@ -24,7 +24,7 @@ import (
 	"reflect"
 
 	xai "github.com/goplus/xai/spec"
-	"github.com/goplus/xai/spec/types"
+	"github.com/goplus/xai/types"
 	"google.golang.org/genai"
 )
 
