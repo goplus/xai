@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"go/constant"
 	"go/token"
 	"go/types"
 
@@ -59,10 +60,28 @@ func collectFields(t types.Type, rewriteFlds map[string]string) {
 					name = newName
 				}
 				typ := field.Type()
-				if false && skipType(typ) {
+				if skipType(typ) {
 					continue
 				}
-				echo(" ", name, typ)
+				if tn, ok := typ.(*types.Named); ok {
+					collectStringEnum(name, tn)
+				}
+			}
+		}
+	}
+}
+
+func collectStringEnum(name string, tn *types.Named) {
+	if tb, ok := tn.Underlying().(*types.Basic); ok && tb.Kind() == types.String {
+		echo(" ", name, tn)
+		scope := tn.Obj().Pkg().Scope()
+		names := scope.Names()
+		for _, name := range names {
+			o := scope.Lookup(name)
+			if c, ok := o.(*types.Const); ok {
+				if c.Type() == tn {
+					echo("   ", constant.StringVal(c.Val()))
+				}
 			}
 		}
 	}
