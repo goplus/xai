@@ -200,6 +200,19 @@ func (p *Service) ReferenceImage(img xai.Image, id int32, typ xai.ReferenceImage
 
 // -----------------------------------------------------------------------------
 
+func (p *Service) GenVideoReferenceImages(imgs ...xai.GenVideoReferenceImage) xai.GenVideoReferenceImages {
+	items := make([]*genai.VideoGenerationReferenceImage, len(imgs))
+	for i, img := range imgs {
+		items[i] = &genai.VideoGenerationReferenceImage{
+			Image:         imageOf(img.Image),
+			ReferenceType: genai.VideoGenerationReferenceType(img.ReferenceType),
+		}
+	}
+	return items
+}
+
+// -----------------------------------------------------------------------------
+
 type opInputSchema struct {
 	t reflect.Type
 }

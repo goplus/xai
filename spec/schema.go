@@ -154,6 +154,29 @@ type ReferenceImage any
 
 // -----------------------------------------------------------------------------
 
+// A reference image for video generation.
+type GenVideoReferenceImage struct {
+	// The reference image.
+	Image Image
+
+	// The type of the reference image, which defines how the reference
+	// image will be used to generate the video.
+	//
+	// ReferenceType = "ASSET":
+	// A reference image that provides assets to the generated video,
+	// such as the scene, an object, a character, etc.
+	//
+	// ReferenceType = "STYLE":
+	// A reference image that provides aesthetics including colors,
+	// lighting, texture, etc., to be used as the style of the generated video,
+	// such as 'anime', 'photography', 'origami', etc.
+	ReferenceType string
+}
+
+type GenVideoReferenceImages any
+
+// -----------------------------------------------------------------------------
+
 type Generated interface {
 	generated()
 }
@@ -232,6 +255,7 @@ type objectFactory interface {
 	VideoFromStgUri(mime VideoType, stgUri string) Video
 
 	ReferenceImage(img Image, id int32, typ ReferenceImageType) (ReferenceImage, Configurable)
+	GenVideoReferenceImages(imgs ...GenVideoReferenceImage) GenVideoReferenceImages
 }
 
 // -----------------------------------------------------------------------------

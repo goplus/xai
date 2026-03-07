@@ -72,4 +72,8 @@ func (p *Service) ReferenceImage(img xai.Image, id int32, typ xai.ReferenceImage
 	panic("unsupported")
 }
 
+func (p *Service) GenVideoReferenceImages(imgs ...xai.GenVideoReferenceImage) xai.GenVideoReferenceImages {
+	panic("unsupported")
+}
+
 // -----------------------------------------------------------------------------
