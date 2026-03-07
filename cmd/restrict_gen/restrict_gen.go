@@ -23,7 +23,9 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/goplus/gogen"
 	"golang.org/x/tools/go/packages"
@@ -34,11 +36,13 @@ import (
 type fieldRestriction struct {
 	name       string     // field name
 	typ        types.Type // field type
+	doc        []string   // field doc comment, split by "." and trimmed
 	stringEnum []string   // string enum values, or nil
+	required   bool       // whether the field is required
 }
 
 func (p *fieldRestriction) hasRestriction() bool {
-	return len(p.stringEnum) > 0
+	return len(p.stringEnum) > 0 || p.required
 }
 
 type typeRestriction struct {
@@ -81,6 +85,7 @@ type genCtx struct {
 	strSlice   *types.Slice
 	stringEnum types.Type
 	iLimit     int
+	iRequired  int
 	iValues    int
 	delays     []func()
 }
@@ -100,6 +105,7 @@ func gen(ret *pkgRestriction) {
 		strSlice:   types.NewSlice(str),
 		stringEnum: stringEnum,
 		iLimit:     fieldIndex(restr, "Limit"),
+		iRequired:  fieldIndex(restr, "Required"),
 		iValues:    fieldIndex(stringEnum, "Values"),
 	}
 	for _, r := range ret.types {
@@ -111,11 +117,18 @@ func gen(ret *pkgRestriction) {
 				flds := r.fields
 				for _, fld := range flds {
 					cb.Val(fld.name)
-					cb.Val(ctx.iLimit)
+					n := 0
 					if len(fld.stringEnum) > 0 {
+						cb.Val(ctx.iLimit)
 						genStringEnum(ctx, cb, fld)
+						n += 2
 					}
-					cb.StructLit(restr, 2, true).UnaryOp(token.AND)
+					if fld.required {
+						cb.Val(ctx.iRequired)
+						cb.Val(true)
+						n += 2
+					}
+					cb.StructLit(restr, n, true).UnaryOp(token.AND)
 				}
 				cb.MapLit(mapNameToRestr, len(flds)<<1)
 				return 1
@@ -183,6 +196,35 @@ func stringLit(v ast.Expr) string {
 	panic("stringLit failed")
 }
 
+func fieldDoc(def *ast.TypeSpec, name string) []string {
+	if st, ok := def.Type.(*ast.StructType); ok {
+		for _, field := range st.Fields.List {
+			for _, fieldName := range field.Names {
+				if fieldName.Name == name {
+					parts := strings.Split(field.Doc.Text(), ".")
+					log("\n  //", name+":", parts[0])
+					ret := parts[:0]
+					for i, part := range parts {
+						part = strings.TrimSpace(part)
+						if part != "" {
+							ret = append(ret, part)
+							if i > 0 {
+								log("  //", part)
+							}
+						}
+					}
+					return ret
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func required(doc []string) bool {
+	return !slices.Contains(doc, "Optional")
+}
+
 func getRewriteFlds(pkg *packages.Package) map[string]string {
 	scope := pkg.Types.Scope()
 	if o := scope.Lookup("rewriteFlds"); o != nil {
@@ -214,7 +256,7 @@ func collect(pkg *packages.Package) *pkgRestriction {
 				mthd := t.Method(i)
 				switch mthd.Name() {
 				case "InputSchema":
-					collectType(ret, t, rewriteFlds)
+					collectType(ret, pkg, t, rewriteFlds)
 				}
 			}
 		}
@@ -222,22 +264,32 @@ func collect(pkg *packages.Package) *pkgRestriction {
 	return ret
 }
 
-func collectType(ret *pkgRestriction, t *types.Named, rewriteFlds map[string]string) {
+func collectType(ret *pkgRestriction, pkg *packages.Package, t *types.Named, rewriteFlds map[string]string) {
 	name := t.Obj().Name()
 	log("==>", name)
 	typ := &typeRestriction{typ: t}
-	collectFields(typ, t, rewriteFlds)
+	collectFields(typ, pkg, t, rewriteFlds)
 	if typ.hasRestriction() {
 		ret.types = append(ret.types, typ)
 	}
 }
 
-func collectFields(ret *typeRestriction, t types.Type, rewriteFlds map[string]string) {
-	if struc, ok := t.Underlying().(*types.Struct); ok {
+func collectFields(ret *typeRestriction, pkg *packages.Package, t types.Type, rewriteFlds map[string]string) {
+	typn, ok := t.(*types.Named)
+	if !ok {
+		return
+	}
+	if struc, ok := typn.Underlying().(*types.Struct); ok {
+		o := typn.Obj()
+		at := o.Pkg()
+		if at != pkg.Types && at != nil {
+			pkg = pkg.Imports[at.Path()]
+		}
+		def := decl(pkg, o.Pos()).(*ast.GenDecl).Specs[0].(*ast.TypeSpec)
 		for i, n := 0, struc.NumFields(); i < n; i++ {
 			field := struc.Field(i)
 			if field.Embedded() {
-				collectFields(ret, field.Type(), rewriteFlds)
+				collectFields(ret, pkg, field.Type(), rewriteFlds)
 			} else if field.Exported() {
 				name := field.Name()
 				if newName, ok := rewriteFlds[name]; ok {
@@ -250,7 +302,11 @@ func collectFields(ret *typeRestriction, t types.Type, rewriteFlds map[string]st
 				if false && skipType(typ) {
 					continue
 				}
-				field := &fieldRestriction{name: name, typ: typ}
+				doc := fieldDoc(def, field.Name())
+				field := &fieldRestriction{
+					name: name, typ: typ, doc: doc,
+					required: required(doc),
+				}
 				if tn, ok := typ.(*types.Named); ok {
 					collectStringEnum(field, name, tn)
 				}
@@ -293,7 +349,7 @@ func skipType(t types.Type) bool {
 func main() {
 	fset := token.NewFileSet()
 	conf := &packages.Config{
-		Mode: packages.NeedName | packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
+		Mode: packages.NeedName | packages.NeedTypes | packages.NeedImports | packages.NeedDeps | packages.NeedSyntax,
 		Fset: fset,
 	}
 	pkgs, _ := packages.Load(conf, ".")
