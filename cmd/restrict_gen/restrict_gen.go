@@ -40,17 +40,44 @@ var pkgRewriteFlds = map[string]map[string]string{
 
 // -----------------------------------------------------------------------------
 
-func gen(t *types.Named, rewriteFlds map[string]string) {
-	echo("==>", t.Obj().Name())
-	collectFields(t, rewriteFlds)
+type restrictItem struct {
+	name       string   // field name
+	stringEnum []string // string enum values, or nil
 }
 
-func collectFields(t types.Type, rewriteFlds map[string]string) {
+func (p *restrictItem) hasRestriction() bool {
+	return len(p.stringEnum) > 0
+}
+
+type restrictInfo struct {
+	items []restrictItem // restricted fields
+}
+
+func (p *restrictInfo) hasRestriction() bool {
+	return len(p.items) > 0
+}
+
+func genRestriction(t *types.Named, info *restrictInfo) {
+	echo(">> restriction", t.Obj().Name(), info.items)
+}
+
+func gen(t *types.Named, rewriteFlds map[string]string) *restrictInfo {
+	name := t.Obj().Name()
+	echo("==>", name)
+	ret := &restrictInfo{}
+	collectFields(ret, t, rewriteFlds)
+	if ret.hasRestriction() {
+		genRestriction(t, ret)
+	}
+	return ret
+}
+
+func collectFields(ret *restrictInfo, t types.Type, rewriteFlds map[string]string) {
 	if struc, ok := t.Underlying().(*types.Struct); ok {
 		for i, n := 0, struc.NumFields(); i < n; i++ {
 			field := struc.Field(i)
 			if field.Embedded() {
-				collectFields(field.Type(), rewriteFlds)
+				collectFields(ret, field.Type(), rewriteFlds)
 			} else if field.Exported() {
 				name := field.Name()
 				if newName, ok := rewriteFlds[name]; ok {
@@ -63,15 +90,19 @@ func collectFields(t types.Type, rewriteFlds map[string]string) {
 				if skipType(typ) {
 					continue
 				}
+				item := &restrictItem{name: name}
 				if tn, ok := typ.(*types.Named); ok {
-					collectStringEnum(name, tn)
+					collectStringEnum(item, name, tn)
+				}
+				if item.hasRestriction() {
+					ret.items = append(ret.items, *item)
 				}
 			}
 		}
 	}
 }
 
-func collectStringEnum(name string, tn *types.Named) {
+func collectStringEnum(item *restrictItem, name string, tn *types.Named) {
 	if tb, ok := tn.Underlying().(*types.Basic); ok && tb.Kind() == types.String {
 		echo(" ", name, tn)
 		scope := tn.Obj().Pkg().Scope()
@@ -80,7 +111,9 @@ func collectStringEnum(name string, tn *types.Named) {
 			o := scope.Lookup(name)
 			if c, ok := o.(*types.Const); ok {
 				if c.Type() == tn {
-					echo("   ", constant.StringVal(c.Val()))
+					val := constant.StringVal(c.Val())
+					item.stringEnum = append(item.stringEnum, val)
+					echo("   ", val)
 				}
 			}
 		}
