@@ -21,7 +21,9 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
+	"os"
 
+	"github.com/goplus/gogen"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -40,39 +42,126 @@ var pkgRewriteFlds = map[string]map[string]string{
 
 // -----------------------------------------------------------------------------
 
-type restrictItem struct {
+type fieldRestriction struct {
 	name       string   // field name
 	stringEnum []string // string enum values, or nil
 }
 
-func (p *restrictItem) hasRestriction() bool {
+func (p *fieldRestriction) hasRestriction() bool {
 	return len(p.stringEnum) > 0
 }
 
-type restrictInfo struct {
-	items []restrictItem // restricted fields
+type typeRestriction struct {
+	typ    *types.Named
+	fields []fieldRestriction // restricted fields
 }
 
-func (p *restrictInfo) hasRestriction() bool {
-	return len(p.items) > 0
+func (p *typeRestriction) hasRestriction() bool {
+	return len(p.fields) > 0
 }
 
-func genRestriction(t *types.Named, info *restrictInfo) {
-	echo(">> restriction", t.Obj().Name(), info.items)
+type pkgRestriction struct {
+	pkgName string
+	pkgPath string
+	types   []*typeRestriction
 }
 
-func gen(t *types.Named, rewriteFlds map[string]string) *restrictInfo {
-	name := t.Obj().Name()
-	echo("==>", name)
-	ret := &restrictInfo{}
-	collectFields(ret, t, rewriteFlds)
-	if ret.hasRestriction() {
-		genRestriction(t, ret)
+func (p *pkgRestriction) hasRestriction() bool {
+	return len(p.types) > 0
+}
+
+// -----------------------------------------------------------------------------
+
+func fieldIndex(t types.Type, name string) int {
+	if struc, ok := t.Underlying().(*types.Struct); ok {
+		for i, n := 0, struc.NumFields(); i < n; i++ {
+			field := struc.Field(i)
+			if field.Name() == name {
+				return i
+			}
+		}
+	}
+	panic("fieldIndex failed: " + name)
+}
+
+func gen(ret *pkgRestriction) {
+	out := gogen.NewPackage(ret.pkgPath, ret.pkgName, nil)
+	xai := out.Import("github.com/goplus/xai/spec")
+	str := types.Typ[types.String]
+	strSlice := types.NewSlice(str)
+	restr := xai.Ref("Restriction").Type()
+	stringEnum := xai.Ref("StringEnum").Type()
+	iValues := fieldIndex(stringEnum, "Values")
+	iLimit := fieldIndex(restr, "Limit")
+	ptrRestr := types.NewPointer(restr)           // *xai.Restriction
+	mapNameToRestr := types.NewMap(str, ptrRestr) // map[string]*xai.Restriction
+	scope := out.Types.Scope()
+	for _, r := range ret.types {
+		typName := r.typ.Obj().Name()
+		log("==> restriction", typName)
+		name := "restriction_" + typName
+		out.NewVarDefs(scope).NewAndInit(func(cb *gogen.CodeBuilder) int {
+			flds := r.fields
+			for _, fld := range flds {
+				log("  ", fld.name, fld.stringEnum)
+				cb.Val(fld.name)
+				cb.Val(iLimit)
+				if vals := fld.stringEnum; len(vals) > 0 {
+					cb.Val(iValues)
+					for _, val := range vals {
+						cb.Val(val)
+					}
+					cb.SliceLit(strSlice, len(vals)).
+						StructLit(stringEnum, 2, true).UnaryOp(token.AND)
+				}
+				cb.StructLit(restr, 2, true).UnaryOp(token.AND)
+			}
+			cb.MapLit(mapNameToRestr, len(flds)<<1)
+			return 1
+		}, token.NoPos, nil, name)
+	}
+	err := out.WriteTo(os.Stdout)
+	if err != nil {
+		log("genRestriction failed:", err)
+		os.Exit(1)
+	}
+}
+
+// -----------------------------------------------------------------------------
+
+func collect(pkg *packages.Package) *pkgRestriction {
+	pkgPath := pkg.PkgPath
+	rewriteFlds := pkgRewriteFlds[pkgPath]
+	log("package", pkgPath, rewriteFlds)
+	scope := pkg.Types.Scope()
+	names := scope.Names()
+	ret := &pkgRestriction{pkgName: pkg.Name, pkgPath: pkgPath}
+	for _, name := range names {
+		o := scope.Lookup(name)
+		if t, ok := o.Type().(*types.Named); ok {
+			for i, n := 0, t.NumMethods(); i < n; i++ {
+				mthd := t.Method(i)
+				switch mthd.Name() {
+				case "InputSchema":
+					collectType(ret, t, rewriteFlds)
+				}
+			}
+		}
 	}
 	return ret
 }
 
-func collectFields(ret *restrictInfo, t types.Type, rewriteFlds map[string]string) {
+func collectType(ret *pkgRestriction, t *types.Named, rewriteFlds map[string]string) {
+	name := t.Obj().Name()
+	log("==>", name)
+	typ := &typeRestriction{typ: t}
+	collectFields(typ, t, rewriteFlds)
+	if typ.hasRestriction() {
+		ret.types = append(ret.types, typ)
+	}
+}
+
+func collectFields(ret *typeRestriction, t types.Type, rewriteFlds map[string]string) {
 	if struc, ok := t.Underlying().(*types.Struct); ok {
 		for i, n := 0, struc.NumFields(); i < n; i++ {
 			field := struc.Field(i)
@@ -90,21 +179,21 @@ func collectFields(ret *restrictInfo, t types.Type, rewriteFlds map[string]strin
 				if skipType(typ) {
 					continue
 				}
-				item := &restrictItem{name: name}
+				field := &fieldRestriction{name: name}
 				if tn, ok := typ.(*types.Named); ok {
-					collectStringEnum(item, name, tn)
+					collectStringEnum(field, name, tn)
 				}
-				if item.hasRestriction() {
-					ret.items = append(ret.items, *item)
+				if field.hasRestriction() {
+					ret.fields = append(ret.fields, *field)
 				}
 			}
 		}
 	}
 }
 
-func collectStringEnum(item *restrictItem, name string, tn *types.Named) {
+func collectStringEnum(ret *fieldRestriction, name string, tn *types.Named) {
 	if tb, ok := tn.Underlying().(*types.Basic); ok && tb.Kind() == types.String {
-		echo(" ", name, tn)
+		log(" ", name, tn)
 		scope := tn.Obj().Pkg().Scope()
 		names := scope.Names()
 		for _, name := range names {
@@ -112,8 +201,8 @@ func collectStringEnum(item *restrictItem, name string, tn *types.Named) {
 			if c, ok := o.(*types.Const); ok {
 				if c.Type() == tn {
 					val := constant.StringVal(c.Val())
-					item.stringEnum = append(item.stringEnum, val)
-					echo("   ", val)
+					ret.stringEnum = append(ret.stringEnum, val)
+					log("   ", val)
 				}
 			}
 		}
@@ -128,6 +217,8 @@ func skipType(t types.Type) bool {
 	return ok
 }
 
+// -----------------------------------------------------------------------------
+
 func main() {
 	fset := token.NewFileSet()
 	conf := &packages.Config{
@@ -136,27 +227,17 @@ func main() {
 	}
 	pkgs, _ := packages.Load(conf, ".")
 	for _, pkg := range pkgs {
-		rewriteFlds := pkgRewriteFlds[pkg.PkgPath]
-		echo("package", pkg.PkgPath, rewriteFlds)
-		scope := pkg.Types.Scope()
-		names := scope.Names()
-		for _, name := range names {
-			o := scope.Lookup(name)
-			if t, ok := o.Type().(*types.Named); ok {
-				for i, n := 0, t.NumMethods(); i < n; i++ {
-					mthd := t.Method(i)
-					switch mthd.Name() {
-					case "InputSchema":
-						gen(t, rewriteFlds)
-					}
-				}
-			}
+		ret := collect(pkg)
+		if ret.hasRestriction() {
+			gen(ret)
 		}
 	}
 }
 
-func echo(v ...any) {
-	fmt.Println(v...)
+// -----------------------------------------------------------------------------
+
+func log(v ...any) {
+	fmt.Fprintln(os.Stderr, v...)
 }
 
 // -----------------------------------------------------------------------------
