@@ -327,6 +327,18 @@ func newParams(params any) *opParams {
 func (p *opParams) Set(name string, val any) xai.Params {
 	fld := p.v.FieldByName(name)
 	if fld.CanSet() {
+		if val == nil {
+			fld.SetZero()
+			return p
+		}
+		switch v := val.(type) {
+		case *image:
+			val = (*genai.Image)(v)
+		case *video:
+			val = (*genai.Video)(v)
+		case *xai.SafetyAttributes:
+			val = safetyAttributesOf(v)
+		}
 		v := reflect.ValueOf(val)
 		vkind := v.Kind()
 		if vkind >= reflect.Bool && vkind <= reflect.Float64 {
@@ -355,6 +367,8 @@ func setBasic(fld, v reflect.Value, vkind reflect.Kind) {
 		}
 	} else if vkind >= reflect.Float32 && vkind <= reflect.Float64 {
 		fld.SetFloat(v.Float())
+	} else if vkind == reflect.Bool {
+		fld.SetBool(v.Bool())
 	} else {
 		fld.Set(v)
 	}
@@ -376,19 +390,21 @@ func (p *opResults) XGo_Attr(name string) any {
 	if kind == reflect.Invalid {
 		return nil
 	}
-	if kind == reflect.Pointer {
-		if fld.IsNil() {
-			return nil
-		}
-		fld := fld.Elem()
-		kind = fld.Kind()
-	}
 	if kind >= reflect.Int && kind <= reflect.Int64 {
 		return fld.Int()
 	} else if kind >= reflect.Float32 && kind <= reflect.Float64 {
 		return fld.Float()
+	} else if kind == reflect.Bool {
+		return fld.Bool()
 	}
-	return fld.Interface()
+	v := fld.Interface()
+	if kind == reflect.Pointer {
+		switch v := v.(type) {
+		case *genai.SafetyAttributes:
+			return safetyAttributes(v)
+		}
+	}
+	return v
 }
 
 // -----------------------------------------------------------------------------
@@ -435,6 +451,16 @@ func safetyAttributes(v *genai.SafetyAttributes) *xai.SafetyAttributes {
 		return nil
 	}
 	return &xai.SafetyAttributes{
+		Categories: v.Categories,
+		Scores:     v.Scores,
+	}
+}
+
+func safetyAttributesOf(v *xai.SafetyAttributes) *genai.SafetyAttributes {
+	if v == nil {
+		return nil
+	}
+	return &genai.SafetyAttributes{
 		Categories: v.Categories,
 		Scores:     v.Scores,
 	}
