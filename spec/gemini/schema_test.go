@@ -95,3 +95,27 @@ func TestOutputSchema(t *testing.T) {
 }
 
 // -----------------------------------------------------------------------------
+
+const (
+	maskSchema    = "[{MaskMode 4} {SegmentationClasses 32770} {MaskDilation 3}]"
+	controlSchema = "[{ControlType 4} {EnableControlImageComputation 1}]"
+	styleSchema   = "[{StyleDescription 4}]"
+	subjectSchema = "[{SubjectType 4} {SubjectDescription 4}]"
+)
+
+func TestConfSchema(t *testing.T) {
+	cases := []schemaTestCase{
+		{new(genai.MaskReferenceConfig), maskSchema},
+		{new(genai.ControlReferenceConfig), controlSchema},
+		{new(genai.StyleReferenceConfig), styleSchema},
+		{new(genai.SubjectReferenceConfig), subjectSchema},
+	}
+	for _, c := range cases {
+		flds := fmt.Sprint(newInputSchema(c.v).Fields())
+		if flds != c.want {
+			t.Fatalf("TestConfSchema failed: %T - %v\n", c.v, flds)
+		}
+	}
+}
+
+// -----------------------------------------------------------------------------
