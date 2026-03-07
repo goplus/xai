@@ -76,4 +76,8 @@ func (p *Service) GenVideoReferenceImages(imgs ...xai.GenVideoReferenceImage) xa
 	panic("unsupported")
 }
 
+func (p *Service) GenVideoMask(img xai.Image, maskMode string) xai.GenVideoMask {
+	panic("unsupported")
+}
+
 // -----------------------------------------------------------------------------

@@ -158,6 +158,18 @@ func (p *Service) VideoFromBase64(mime xai.VideoType, data string) (xai.Video, e
 
 // -----------------------------------------------------------------------------
 
+func (p *Service) GenVideoMask(img xai.Image, maskMode string) xai.GenVideoMask {
+	ret := &genai.VideoGenerationMask{
+		MaskMode: genai.VideoGenerationMaskMode(maskMode),
+	}
+	if img != nil {
+		ret.Image = imageOf(img)
+	}
+	return ret
+}
+
+// -----------------------------------------------------------------------------
+
 type config[T any] struct {
 	conf *T
 }
