@@ -17,6 +17,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -25,6 +27,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unsafe"
 
 	"github.com/goplus/gogen"
 	"golang.org/x/tools/go/packages"
@@ -33,14 +36,14 @@ import (
 // -----------------------------------------------------------------------------
 
 type fieldRestriction struct {
-	orgName     string     // original field name
-	newName     string     // new field name after rewrite
-	typ         types.Type // field type
-	enumName    string     // suggested enum type name, or empty
-	doc         []string   // field doc comment, split by "." and trimmed
-	stringEnum  []string   // string enum values, or nil
-	docEnumVals []string   // enum values parsed from doc comment, or nil
-	required    bool       // whether the field is required
+	orgName      string     // original field name
+	newName      string     // new field name after rewrite
+	typ          types.Type // field type
+	enumSuggName string     // suggested enum type name, or empty
+	doc          []string   // field doc comment, split by "." and trimmed
+	stringEnum   []string   // string enum values, or nil
+	docEnumVals  []string   // enum values parsed from doc comment, or nil
+	required     bool       // whether the field is required
 }
 
 func (p *fieldRestriction) hasRestriction() bool {
@@ -149,13 +152,21 @@ func gen(ret *pkgRestriction) {
 	}
 }
 
+func checksum(vals []string) string {
+	v := strings.Join(vals, "\n")
+	hash := sha256.Sum256(unsafe.Slice(unsafe.StringData(v), len(v)))
+	return base64.RawStdEncoding.EncodeToString(hash[:])
+}
+
 func genStringEnum(ctx *genCtx, cb *gogen.CodeBuilder, fld *fieldRestriction) {
-	typObj := fld.typ.(*types.Named).Obj()
-	typKey := typObj.Pkg().Path() + "." + typObj.Name()
+	typKey := checksum(fld.stringEnum)
 	v, ok := ctx.enums[typKey]
 	if !ok {
 		scope := ctx.scope
-		name := fld.enumName
+		name := fld.enumSuggName
+		if scope.Lookup(name) != nil { // avoid name conflict
+			name += strconv.Itoa(scope.Len() + 1)
+		}
 		ctx.out.NewVarDefs(scope).NewAndInit(func(cb *gogen.CodeBuilder) int {
 			vals := fld.stringEnum
 			cb.Val(ctx.iValues)
@@ -315,6 +326,10 @@ func collectFields(ret *typeRestriction, pkg *packages.Package, t types.Type, re
 				collectRestrictionByDoc(field, doc)
 				if tn, ok := typ.(*types.Named); ok {
 					collectStringEnum(field, tn)
+				} else if tb, ok := typ.(*types.Basic); ok && tb.Kind() == types.String {
+					field.enumSuggName = "enum_" + at.Name() + "_" + name
+					field.stringEnum = field.docEnumVals
+					field.docEnumVals = nil
 				}
 				if field.hasRestriction() {
 					ret.fields = append(ret.fields, field)
@@ -341,7 +356,6 @@ func checkEnumDoc(part string) (val string, ok bool) {
 }
 
 func collectRestrictionByDoc(ret *fieldRestriction, doc []string) {
-	// optional := !ret.required
 	for _, part := range doc {
 		if enumDoc, ok := checkEnumDoc(part); ok {
 			docEnumVals := strings.Split(enumDoc, ", ")
@@ -387,9 +401,13 @@ func collectStringEnum(ret *fieldRestriction, tn *types.Named) {
 			}
 		}
 		if len(ret.stringEnum) > 0 {
-			ret.enumName = "enum_" + tobj.Pkg().Name() + "_" + tobj.Name()
+			ret.enumSuggName = "enum_" + suggestName(tobj)
 		}
 	}
+}
+
+func suggestName(o types.Object) string {
+	return o.Pkg().Name() + "_" + o.Name()
 }
 
 func skipType(t types.Type) bool {

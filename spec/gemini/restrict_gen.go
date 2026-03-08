@@ -4,15 +4,19 @@ package gemini
 
 import "github.com/goplus/xai/spec"
 
-var restriction_editImage = map[string]*xai.Restriction{"Prompt": &xai.Restriction{Required: true}, "References": &xai.Restriction{Required: true}, "SafetyFilterLevel": &xai.Restriction{Limit: enum_genai_SafetyFilterLevel}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration}, "Language": &xai.Restriction{Limit: enum_genai_ImagePromptLanguage}, "EditMode": &xai.Restriction{Limit: enum_genai_EditMode}}
-var restriction_genImage = map[string]*xai.Restriction{"Prompt": &xai.Restriction{Required: true}, "SafetyFilterLevel": &xai.Restriction{Limit: enum_genai_SafetyFilterLevel}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration}, "Language": &xai.Restriction{Limit: enum_genai_ImagePromptLanguage}}
-var restriction_genVideo = map[string]*xai.Restriction{"CompressionQuality": &xai.Restriction{Limit: enum_genai_VideoCompressionQuality}}
+var restriction_editImage = map[string]*xai.Restriction{"Prompt": &xai.Restriction{Required: true}, "References": &xai.Restriction{Required: true}, "AspectRatio": &xai.Restriction{Limit: enum_genai_AspectRatio}, "SafetyFilterLevel": &xai.Restriction{Limit: enum_genai_SafetyFilterLevel}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration}, "Language": &xai.Restriction{Limit: enum_genai_ImagePromptLanguage}, "EditMode": &xai.Restriction{Limit: enum_genai_EditMode}}
+var restriction_genImage = map[string]*xai.Restriction{"Prompt": &xai.Restriction{Required: true}, "AspectRatio": &xai.Restriction{Limit: enum_genai_AspectRatio}, "SafetyFilterLevel": &xai.Restriction{Limit: enum_genai_SafetyFilterLevel}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration}, "Language": &xai.Restriction{Limit: enum_genai_ImagePromptLanguage}}
+var restriction_genVideo = map[string]*xai.Restriction{"AspectRatio": &xai.Restriction{Limit: enum_genai_AspectRatio8}, "Resolution": &xai.Restriction{Limit: enum_genai_Resolution}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration10}, "CompressionQuality": &xai.Restriction{Limit: enum_genai_VideoCompressionQuality}}
 var restriction_recontextImage = map[string]*xai.Restriction{"PersonImage": &xai.Restriction{Required: true}, "SafetyFilterLevel": &xai.Restriction{Limit: enum_genai_SafetyFilterLevel}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration}}
 var restriction_segmentImage = map[string]*xai.Restriction{"Image": &xai.Restriction{Required: true}, "Mode": &xai.Restriction{Limit: enum_genai_SegmentMode}}
 var restriction_upscaleImage = map[string]*xai.Restriction{"Image": &xai.Restriction{Required: true}, "Factor": &xai.Restriction{Required: true}, "SafetyFilterLevel": &xai.Restriction{Limit: enum_genai_SafetyFilterLevel}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration}}
+var enum_genai_AspectRatio = &xai.StringEnum{Values: []string{"1:1", "3:4", "4:3", "9:16", "16:9"}}
 var enum_genai_SafetyFilterLevel = &xai.StringEnum{Values: []string{"BLOCK_LOW_AND_ABOVE", "BLOCK_MEDIUM_AND_ABOVE", "BLOCK_NONE", "BLOCK_ONLY_HIGH"}}
 var enum_genai_PersonGeneration = &xai.StringEnum{Values: []string{"ALLOW_ADULT", "ALLOW_ALL", "DONT_ALLOW"}}
 var enum_genai_ImagePromptLanguage = &xai.StringEnum{Values: []string{"auto", "en", "es", "hi", "ja", "ko", "pt", "zh"}}
 var enum_genai_EditMode = &xai.StringEnum{Values: []string{"EDIT_MODE_BGSWAP", "EDIT_MODE_CONTROLLED_EDITING", "EDIT_MODE_DEFAULT", "EDIT_MODE_INPAINT_INSERTION", "EDIT_MODE_INPAINT_REMOVAL", "EDIT_MODE_OUTPAINT", "EDIT_MODE_PRODUCT_IMAGE", "EDIT_MODE_STYLE"}}
+var enum_genai_AspectRatio8 = &xai.StringEnum{Values: []string{"16:9 (landscape)", "9:16 (portrait)"}}
+var enum_genai_Resolution = &xai.StringEnum{Values: []string{"720p", "1080p"}}
+var enum_genai_PersonGeneration10 = &xai.StringEnum{Values: []string{"dont_allow", "allow_adult"}}
 var enum_genai_VideoCompressionQuality = &xai.StringEnum{Values: []string{"LOSSLESS", "OPTIMIZED"}}
 var enum_genai_SegmentMode = &xai.StringEnum{Values: []string{"BACKGROUND", "FOREGROUND", "INTERACTIVE", "PROMPT", "SEMANTIC"}}
