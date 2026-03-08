@@ -33,7 +33,8 @@ import (
 // -----------------------------------------------------------------------------
 
 type fieldRestriction struct {
-	name       string     // field name
+	orgName    string     // original field name
+	newName    string     // new field name after rewrite
 	typ        types.Type // field type
 	doc        []string   // field doc comment, split by "." and trimmed
 	stringEnum []string   // string enum values, or nil
@@ -115,7 +116,7 @@ func gen(ret *pkgRestriction) {
 			varDefs.NewAndInit(func(cb *gogen.CodeBuilder) int {
 				flds := r.fields
 				for _, fld := range flds {
-					cb.Val(fld.name)
+					cb.Val(fld.newName)
 					n := 0
 					if len(fld.stringEnum) > 0 {
 						cb.Val(ctx.iLimit)
@@ -292,7 +293,8 @@ func collectFields(ret *typeRestriction, pkg *packages.Package, t types.Type, re
 			if field.Embedded() {
 				collectFields(ret, pkg, field.Type(), rewriteFlds)
 			} else if field.Exported() {
-				name := field.Name()
+				orgName := field.Name()
+				name := orgName
 				if newName, ok := rewriteFlds[name]; ok {
 					if newName == "" {
 						continue
@@ -303,13 +305,14 @@ func collectFields(ret *typeRestriction, pkg *packages.Package, t types.Type, re
 				if false && skipType(typ) {
 					continue
 				}
-				doc := fieldDoc(def, field.Name())
+				doc := fieldDoc(def, orgName)
 				field := &fieldRestriction{
-					name: name, typ: typ, doc: doc,
-					required: required(doc),
+					newName: name, orgName: orgName,
+					typ: typ, doc: doc, required: required(doc),
 				}
+				collectRestByDoc(field, doc)
 				if tn, ok := typ.(*types.Named); ok {
-					collectStringEnum(field, name, tn)
+					collectStringEnum(field, tn)
 				}
 				if field.hasRestriction() {
 					ret.fields = append(ret.fields, field)
@@ -319,9 +322,12 @@ func collectFields(ret *typeRestriction, pkg *packages.Package, t types.Type, re
 	}
 }
 
-func collectStringEnum(ret *fieldRestriction, name string, tn *types.Named) {
+func collectRestByDoc(ret *fieldRestriction, doc []string) {
+}
+
+func collectStringEnum(ret *fieldRestriction, tn *types.Named) {
 	if tb, ok := tn.Underlying().(*types.Basic); ok && tb.Kind() == types.String {
-		log(" ", name, tn)
+		log(" ", ret.newName, tn)
 		scope := tn.Obj().Pkg().Scope()
 		names := scope.Names()
 		for _, name := range names {
