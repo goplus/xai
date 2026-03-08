@@ -196,15 +196,30 @@ func stringLit(v ast.Expr) string {
 	panic("stringLit failed")
 }
 
+func isSpace(c byte) bool {
+	return c == ' ' || c == '\n' || c == '\r' || c == '\t'
+}
+
+func spaceStart(s string) bool {
+	return len(s) > 0 && isSpace(s[0])
+}
+
 func fieldDoc(def *ast.TypeSpec, name string) []string {
 	if st, ok := def.Type.(*ast.StructType); ok {
 		for _, field := range st.Fields.List {
 			for _, fieldName := range field.Names {
 				if fieldName.Name == name {
-					doc := strings.TrimSuffix(field.Doc.Text(), ".\n")
-					parts := strings.Split(doc, ". ")
+					parts := strings.Split(field.Doc.Text(), ".")
+					last := len(parts) - 1
 					ret := parts[:0]
 					for i, part := range parts {
+						if i != last && !spaceStart(parts[i+1]) {
+							// If the next part does not start with space, it is likely
+							// a continuation of the current part (e.g. number values),
+							// so we join them together.
+							parts[i+1] = part + "." + parts[i+1]
+							continue
+						}
 						part = strings.TrimSpace(part)
 						if part != "" {
 							ret = append(ret, part)
