@@ -30,6 +30,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/gogen"
+	"github.com/qiniu/x/stringutil"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -43,13 +44,13 @@ type fieldRestriction struct {
 	doc          []string   // field doc comment, split by "." and trimmed
 	stringEnum   []string   // string enum values, or nil
 	docEnumVals  []string   // enum values parsed from doc comment, or nil
-	optionalIf   []string   // optional if the fields are provided, or nil
 	notAllowedIf []string   // not allowed if the fields are provided, or nil
+	optionalIf   []string   // optional if the fields are provided, or nil
 	required     bool       // whether the field is required
 }
 
 func (p *fieldRestriction) hasRestriction() bool {
-	return len(p.stringEnum) > 0 || p.required
+	return len(p.stringEnum)+len(p.optionalIf)+len(p.notAllowedIf) > 0 || p.required
 }
 
 type typeRestriction struct {
@@ -86,15 +87,18 @@ func fieldIndex(t types.Type, name string) int {
 }
 
 type genCtx struct {
-	enums      map[string]types.Object
-	out        *gogen.Package
-	scope      *types.Scope
-	strSlice   *types.Slice
-	stringEnum types.Type
-	iLimit     int
-	iRequired  int
-	iValues    int
-	delays     []func()
+	enums         map[string]types.Object
+	out           *gogen.Package
+	scope         *types.Scope
+	strSlice      *types.Slice
+	stringEnum    types.Type
+	restr         types.Type
+	iLimit        int
+	iRequired     int
+	iOptionalIf   int
+	iNotAllowedIf int
+	iValues       int
+	delays        []func()
 }
 
 func gen(ret *pkgRestriction) {
@@ -106,14 +110,17 @@ func gen(ret *pkgRestriction) {
 	ptrRestr := types.NewPointer(restr)           // *xai.Restriction
 	mapNameToRestr := types.NewMap(str, ptrRestr) // map[string]*xai.Restriction
 	ctx := &genCtx{
-		out:        out,
-		scope:      out.Types.Scope(),
-		enums:      make(map[string]types.Object),
-		strSlice:   types.NewSlice(str),
-		stringEnum: stringEnum,
-		iLimit:     fieldIndex(restr, "Limit"),
-		iRequired:  fieldIndex(restr, "Required"),
-		iValues:    fieldIndex(stringEnum, "Values"),
+		out:           out,
+		scope:         out.Types.Scope(),
+		enums:         make(map[string]types.Object),
+		strSlice:      types.NewSlice(str),
+		stringEnum:    stringEnum,
+		restr:         restr,
+		iLimit:        fieldIndex(restr, "Limit"),
+		iNotAllowedIf: fieldIndex(restr, "NotAllowedIf"),
+		iOptionalIf:   fieldIndex(restr, "OptionalIf"),
+		iRequired:     fieldIndex(restr, "Required"),
+		iValues:       fieldIndex(stringEnum, "Values"),
 	}
 	for _, r := range ret.types {
 		typName := r.typ.Obj().Name()
@@ -124,18 +131,7 @@ func gen(ret *pkgRestriction) {
 				flds := r.fields
 				for _, fld := range flds {
 					cb.Val(fld.newName)
-					n := 0
-					if len(fld.stringEnum) > 0 {
-						cb.Val(ctx.iLimit)
-						genStringEnum(ctx, cb, fld)
-						n += 2
-					}
-					if fld.required {
-						cb.Val(ctx.iRequired)
-						cb.Val(true)
-						n += 2
-					}
-					cb.StructLit(restr, n, true).UnaryOp(token.AND)
+					genRestriction(ctx, cb, fld)
 				}
 				cb.MapLit(mapNameToRestr, len(flds)<<1)
 				return 1
@@ -154,10 +150,36 @@ func gen(ret *pkgRestriction) {
 	}
 }
 
-func checksum(vals []string) string {
-	v := strings.Join(vals, "\n")
-	hash := sha256.Sum256(unsafe.Slice(unsafe.StringData(v), len(v)))
-	return base64.RawStdEncoding.EncodeToString(hash[:])
+func genRestriction(ctx *genCtx, cb *gogen.CodeBuilder, fld *fieldRestriction) {
+	n := 0
+	if len(fld.stringEnum) > 0 {
+		cb.Val(ctx.iLimit)
+		genStringEnum(ctx, cb, fld)
+		n += 2
+	}
+	if len(fld.notAllowedIf) > 0 {
+		cb.Val(ctx.iNotAllowedIf)
+		genStrSlice(ctx, cb, fld.notAllowedIf)
+		n += 2
+	}
+	if len(fld.optionalIf) > 0 {
+		cb.Val(ctx.iOptionalIf)
+		genStrSlice(ctx, cb, fld.optionalIf)
+		n += 2
+	}
+	if fld.required {
+		cb.Val(ctx.iRequired)
+		cb.Val(true)
+		n += 2
+	}
+	cb.StructLit(ctx.restr, n, true).UnaryOp(token.AND)
+}
+
+func genStrSlice(ctx *genCtx, cb *gogen.CodeBuilder, vals []string) {
+	for _, val := range vals {
+		cb.Val(val)
+	}
+	cb.SliceLit(ctx.strSlice, len(vals))
 }
 
 func genStringEnum(ctx *genCtx, cb *gogen.CodeBuilder, fld *fieldRestriction) {
@@ -172,17 +194,20 @@ func genStringEnum(ctx *genCtx, cb *gogen.CodeBuilder, fld *fieldRestriction) {
 		ctx.out.NewVarDefs(scope).NewAndInit(func(cb *gogen.CodeBuilder) int {
 			vals := fld.stringEnum
 			cb.Val(ctx.iValues)
-			for _, val := range vals {
-				cb.Val(val)
-			}
-			cb.SliceLit(ctx.strSlice, len(vals)).
-				StructLit(ctx.stringEnum, 2, true).UnaryOp(token.AND)
+			genStrSlice(ctx, cb, vals)
+			cb.StructLit(ctx.stringEnum, 2, true).UnaryOp(token.AND)
 			return 1
 		}, token.NoPos, nil, name)
 		v = scope.Lookup(name)
 		ctx.enums[typKey] = v
 	}
 	cb.Val(v)
+}
+
+func checksum(vals []string) string {
+	v := strings.Join(vals, "\n")
+	hash := sha256.Sum256(unsafe.Slice(unsafe.StringData(v), len(v)))
+	return base64.RawStdEncoding.EncodeToString(hash[:])
 }
 
 // -----------------------------------------------------------------------------
@@ -416,6 +441,19 @@ func collectRestrictionByDoc(ret *fieldRestriction, doc []string) {
 			ret.docEnumVals = docEnumVals
 		} else if !checkOptionalIf(ret, part) {
 			checkNotAllowedIf(ret, part)
+		}
+	}
+	capitalizeNames(ret.newName, ret.optionalIf, "OptionalIf")
+	capitalizeNames(ret.newName, ret.notAllowedIf, "NotAllowedIf")
+}
+
+func capitalizeNames(newName string, names []string, what string) {
+	if len(names) > 0 {
+		log(" ", newName, what)
+		for i, name := range names {
+			name = stringutil.Capitalize(name)
+			names[i] = name
+			log("   ", name)
 		}
 	}
 }
