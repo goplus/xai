@@ -28,34 +28,49 @@ import (
 // -----------------------------------------------------------------------------
 
 func (p *Service) Actions(model xai.Model) []xai.Action {
-	return []xai.Action{
-		xai.GenVideo,
-		xai.GenImage,
-		xai.EditImage,
-		xai.RecontextImage,
-		xai.SegmentImage,
-		xai.UpscaleImage,
+	if p.backend == nil {
+		return nil
 	}
+	return p.backend.Actions(model)
+}
+
+func (p *Service) supportsAction(model xai.Model, action xai.Action) bool {
+	for _, item := range p.Actions(model) {
+		if item == action {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *Service) Operation(model xai.Model, action xai.Action) (op xai.Operation, err error) {
+	if !p.supportsAction(model, action) {
+		return nil, xai.ErrNotFound
+	}
 	switch action {
 	case xai.GenVideo:
-		op = &genVideo{}
+		op = &genVideo{model: string(model)}
 	case xai.GenImage:
-		op = &genImage{}
+		op = &genImage{model: string(model)}
 	case xai.EditImage:
-		op = &editImage{}
+		op = &editImage{model: string(model)}
 	case xai.RecontextImage:
-		op = &recontextImage{}
+		op = &recontextImage{model: string(model)}
 	case xai.SegmentImage:
-		op = &segmentImage{}
+		op = &segmentImage{model: string(model)}
 	case xai.UpscaleImage:
-		op = &upscaleImage{}
+		op = &upscaleImage{model: string(model)}
 	default:
 		err = xai.ErrNotFound
 	}
 	return
+}
+
+// -----------------------------------------------------------------------------
+
+// NewSyncResponse wraps results into a synchronous OperationResponse (Done() == true).
+func NewSyncResponse(ret xai.Results) xai.OperationResponse {
+	return util.NewSimpleResp(ret)
 }
 
 // -----------------------------------------------------------------------------
@@ -73,7 +88,7 @@ func (p genVideoResp) Sleep() {
 }
 
 func (p genVideoResp) Retry(ctx context.Context, svc xai.Service) (xai.OperationResponse, error) {
-	op, err := svc.(*Service).ops.GetVideosOperation(ctx, p.op, nil)
+	op, err := svc.(BackendService).Backend().GetVideosOperation(ctx, p.op, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +98,13 @@ func (p genVideoResp) Retry(ctx context.Context, svc xai.Service) (xai.Operation
 func (p genVideoResp) Results() xai.Results {
 	ret := p.op.Response
 	return util.NewVideoResults[*genai.GeneratedVideo, adapter](ret, ret.GeneratedVideos)
+}
+
+func (p genVideoResp) TaskID() string {
+	if p.op != nil && p.op.Name != "" {
+		return p.op.Name
+	}
+	return ""
 }
 
 type genVideo struct {
@@ -97,14 +119,14 @@ func (p *genVideo) InputSchema() xai.InputSchema {
 }
 
 func (p *genVideo) Params() xai.Params {
-	return newParams(p)
+	return NewParams(p)
 }
 
 func (p *genVideo) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}
-	op, err := svc.(*Service).models.GenerateVideosFromSource(ctx, p.model, &p.GenerateVideosSource, &p.GenerateVideosConfig)
+	op, err := svc.(BackendService).Backend().GenerateVideosFromSource(ctx, p.model, &p.GenerateVideosSource, &p.GenerateVideosConfig)
 	if err != nil {
 		return
 	}
@@ -125,14 +147,14 @@ func (p *genImage) InputSchema() xai.InputSchema {
 }
 
 func (p *genImage) Params() xai.Params {
-	return newParams(p)
+	return NewParams(p)
 }
 
 func (p *genImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}
-	op, err := svc.(*Service).models.GenerateImages(ctx, p.model, p.Prompt, &p.GenerateImagesConfig)
+	op, err := svc.(BackendService).Backend().GenerateImages(ctx, p.model, p.Prompt, &p.GenerateImagesConfig)
 	if err != nil {
 		return
 	}
@@ -154,14 +176,14 @@ func (p *editImage) InputSchema() xai.InputSchema {
 }
 
 func (p *editImage) Params() xai.Params {
-	return newParams(p)
+	return NewParams(p)
 }
 
 func (p *editImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}
-	op, err := svc.(*Service).models.EditImage(ctx, p.model, p.Prompt, p.References, &p.EditImageConfig)
+	op, err := svc.(BackendService).Backend().EditImage(ctx, p.model, p.Prompt, p.References, &p.EditImageConfig)
 	if err != nil {
 		return
 	}
@@ -182,14 +204,14 @@ func (p *recontextImage) InputSchema() xai.InputSchema {
 }
 
 func (p *recontextImage) Params() xai.Params {
-	return newParams(p)
+	return NewParams(p)
 }
 
 func (p *recontextImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}
-	op, err := svc.(*Service).models.RecontextImage(ctx, p.model, &p.RecontextImageSource, &p.RecontextImageConfig)
+	op, err := svc.(BackendService).Backend().RecontextImage(ctx, p.model, &p.RecontextImageSource, &p.RecontextImageConfig)
 	if err != nil {
 		return
 	}
@@ -211,14 +233,14 @@ func (p *upscaleImage) InputSchema() xai.InputSchema {
 }
 
 func (p *upscaleImage) Params() xai.Params {
-	return newParams(p)
+	return NewParams(p)
 }
 
 func (p *upscaleImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}
-	op, err := svc.(*Service).models.UpscaleImage(ctx, p.model, p.Image, p.Factor, &p.UpscaleImageConfig)
+	op, err := svc.(BackendService).Backend().UpscaleImage(ctx, p.model, p.Image, p.Factor, &p.UpscaleImageConfig)
 	if err != nil {
 		return
 	}
@@ -239,14 +261,14 @@ func (p *segmentImage) InputSchema() xai.InputSchema {
 }
 
 func (p *segmentImage) Params() xai.Params {
-	return newParams(p)
+	return NewParams(p)
 }
 
 func (p *segmentImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}
-	op, err := svc.(*Service).models.SegmentImage(ctx, p.model, &p.SegmentImageSource, &p.SegmentImageConfig)
+	op, err := svc.(BackendService).Backend().SegmentImage(ctx, p.model, &p.SegmentImageSource, &p.SegmentImageConfig)
 	if err != nil {
 		return
 	}
