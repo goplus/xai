@@ -17,13 +17,7 @@
 package openai
 
 import (
-	"encoding/json"
-	"strings"
-	"unsafe"
-
 	xai "github.com/goplus/xai/spec"
-	"github.com/openai/openai-go/v3/packages/param"
-	"github.com/openai/openai-go/v3/responses"
 )
 
 // -----------------------------------------------------------------------------
@@ -31,15 +25,16 @@ import (
 type tools map[string]tool
 
 type tool struct {
-	tool *responses.FunctionToolParam
+	def *toolDef
 }
 
 func (p tool) UnderlyingAssignTo(ret any) {
-	ret.(*responses.ToolUnionParam).OfFunction = p.tool
+	td := ret.(*toolDef)
+	*td = *p.def
 }
 
 func (p tool) Description(desc string) xai.Tool {
-	p.tool.Description = param.NewOpt(desc)
+	p.def.Description = desc
 	return p
 }
 
@@ -51,7 +46,7 @@ func (p *Service) ToolDef(name string) xai.Tool {
 	if _, ok := p.tools[name]; ok {
 		panic("tool already defined: " + name)
 	}
-	ret := tool{&responses.FunctionToolParam{Name: name}}
+	ret := tool{&toolDef{Name: name}}
 	p.tools[name] = ret
 	return ret
 }
@@ -59,80 +54,28 @@ func (p *Service) ToolDef(name string) xai.Tool {
 // -----------------------------------------------------------------------------
 
 type webSearchTool struct {
-	param *responses.WebSearchToolParam
+	def *toolDef
 }
 
 func (p webSearchTool) UnderlyingAssignTo(ret any) {
-	ret.(*responses.ToolUnionParam).OfWebSearch = p.param
+	td := ret.(*toolDef)
+	*td = *p.def
 }
 
 func (p webSearchTool) MaxUses(v int64) xai.WebSearchTool {
-	// openai web search tool does not support max uses
 	return p
 }
 
 func (p webSearchTool) AllowedDomains(v ...string) xai.WebSearchTool {
-	p.param.Filters.AllowedDomains = v
 	return p
 }
 
 func (p webSearchTool) BlockedDomains(v ...string) xai.WebSearchTool {
-	// openai web search tool does not support blocked domains
 	return p
 }
 
 func (p *Service) WebSearchTool() xai.WebSearchTool {
-	return webSearchTool{&responses.WebSearchToolParam{
-		Type: "web_search_2025_08_26",
-	}}
-}
-
-// -----------------------------------------------------------------------------
-
-func (p *msgBuilder) ToolUse(v xai.ToolUse) xai.MsgBuilder {
-	var (
-		content responses.ResponseInputItemUnionParam
-	)
-	if strings.HasPrefix(v.Name, "std/") {
-		panic("todo")
-	} else {
-		args := jsonStringify(v.Input, "invalid tool input: ")
-		content = responses.ResponseInputItemParamOfFunctionCall(v.ID, args, v.Name)
-	}
-	return p.addNonMsg(content)
-}
-
-func jsonStringify(v any, errPrompt string) string {
-	var args []byte
-	if v, ok := v.(json.RawMessage); ok {
-		args = []byte(v)
-	} else {
-		var err error
-		args, err = json.Marshal(v)
-		if err != nil {
-			panic(errPrompt + err.Error())
-		}
-	}
-	return unsafe.String(unsafe.SliceData(args), len(args))
-}
-
-// -----------------------------------------------------------------------------
-
-func (p *msgBuilder) ToolResult(v xai.ToolResult) xai.MsgBuilder {
-	var (
-		content responses.ResponseInputItemUnionParam
-	)
-	if strings.HasPrefix(v.Name, "std/") {
-		panic("todo")
-	} else {
-		if v.IsError {
-			v.Result = map[string]any{"error": v.Result.(error).Error()}
-		}
-		ret := jsonStringify(v.Result, "invalid tool result: ")
-		content = responses.ResponseInputItemParamOfFunctionCallOutput(v.ID, ret)
-	}
-	p.content = append(p.content, content)
-	return p
+	return webSearchTool{&toolDef{IsWebSearch: true}}
 }
 
 // -----------------------------------------------------------------------------

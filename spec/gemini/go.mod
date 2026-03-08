@@ -1,6 +1,6 @@
 module github.com/goplus/xai/spec/gemini
 
-go 1.25.5
+go 1.24.5
 
 require (
 	github.com/goplus/xai v0.1.0

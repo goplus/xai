@@ -36,6 +36,25 @@ func (p *Service) Options() xai.OptionBuilder {
 	return &options{}
 }
 
+// WithThinking returns an OptionBuilder with thinking enabled or disabled.
+// Pass svc.Options() as the first argument. Only effective for OpenAI-compatible services.
+// Use thinking-enabled models like deepseek-v3.2-251201 for best results.
+func WithThinking(ob xai.OptionBuilder, enabled bool) xai.OptionBuilder {
+	if p, ok := ob.(*options); ok {
+		return p.withThinking(enabled)
+	}
+	return ob
+}
+
+func (p *options) withThinking(enabled bool) *options {
+	typ := "disabled"
+	if enabled {
+		typ = "enabled"
+	}
+	p.opts = append(p.opts, option.WithJSONSet("thinking", map[string]string{"type": typ}))
+	return p
+}
+
 func buildOptions(opts xai.OptionBuilder) (ret []option.RequestOption) {
 	if p, ok := opts.(*options); ok {
 		ret = p.opts
