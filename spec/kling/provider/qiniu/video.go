@@ -25,8 +25,8 @@ import (
 
 // Video API endpoints.
 const (
-	EndpointVideos           = "/v1/videos"
-	EndpointVideoTaskStatus  = "/v1/videos/"
+	EndpointVideos          = "/v1/videos"
+	EndpointVideoTaskStatus = "/v1/videos/"
 )
 
 // VideoRequest holds the body for a video API request.
@@ -130,6 +130,19 @@ func buildV3VideoRequest(p *video.V3VideoParams) *VideoRequest {
 	body := map[string]any{
 		"model":  p.Model(),
 		"prompt": p.Prompt,
+	}
+	setOptionalBool(body, "multi_shot", p.MultiShot)
+	setOptionalString(body, "shot_type", p.ShotType)
+	if len(p.MultiPrompt) > 0 {
+		mpList := make([]map[string]any, len(p.MultiPrompt))
+		for i, mp := range p.MultiPrompt {
+			mpList[i] = map[string]any{
+				"index":    mp.Index,
+				"prompt":   mp.Prompt,
+				"duration": mp.Duration,
+			}
+		}
+		body["multi_prompt"] = mpList
 	}
 	setOptionalString(body, "input_reference", p.InputReference)
 	setOptionalString(body, "sound", p.Sound)

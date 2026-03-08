@@ -22,9 +22,9 @@ import "github.com/goplus/xai/spec/kling/internal"
 type ImageRefType string
 
 const (
-	ImageTypeRef        ImageRefType = ""             // 普通参考图（主体、场景、风格等）
-	ImageTypeFirstFrame ImageRefType = "first_frame"  // 首帧
-	ImageTypeEndFrame   ImageRefType = "end_frame"    // 尾帧
+	ImageTypeRef        ImageRefType = ""            // 普通参考图（主体、场景、风格等）
+	ImageTypeFirstFrame ImageRefType = "first_frame" // 首帧
+	ImageTypeEndFrame   ImageRefType = "end_frame"   // 尾帧
 )
 
 // VideoReferType 参考视频类型
@@ -107,19 +107,19 @@ func (p *O1VideoParams) Model() string { return internal.ModelKlingVideoO1 }
 // V26VideoParams for kling-v2-6 through v2-9.
 type V26VideoParams struct {
 	videoParamsMarker
-	ModelName             string            `json:"model"` // kling-v2-6, kling-v2-7, etc.
-	Prompt                string            `json:"prompt"`
-	InputReference        string            `json:"input_reference,omitempty"`
-	ImageTail             string            `json:"image_tail,omitempty"`
-	NegativePrompt        string            `json:"negative_prompt,omitempty"`
-	Mode                  string            `json:"mode,omitempty"`
-	Seconds               string            `json:"seconds,omitempty"`
-	Size                  string            `json:"size,omitempty"`
-	Sound                 string            `json:"sound,omitempty"`
-	ImageURL              string            `json:"image_url,omitempty"`
-	VideoURL              string            `json:"video_url,omitempty"`
-	CharacterOrientation  string            `json:"character_orientation,omitempty"`
-	KeepOriginalSound     KeepOriginalSound `json:"keep_original_sound,omitempty"`
+	ModelName            string            `json:"model"` // kling-v2-6, kling-v2-7, etc.
+	Prompt               string            `json:"prompt"`
+	InputReference       string            `json:"input_reference,omitempty"`
+	ImageTail            string            `json:"image_tail,omitempty"`
+	NegativePrompt       string            `json:"negative_prompt,omitempty"`
+	Mode                 string            `json:"mode,omitempty"`
+	Seconds              string            `json:"seconds,omitempty"`
+	Size                 string            `json:"size,omitempty"`
+	Sound                string            `json:"sound,omitempty"`
+	ImageURL             string            `json:"image_url,omitempty"`
+	VideoURL             string            `json:"video_url,omitempty"`
+	CharacterOrientation string            `json:"character_orientation,omitempty"`
+	KeepOriginalSound    KeepOriginalSound `json:"keep_original_sound,omitempty"`
 }
 
 func (p *V26VideoParams) Model() string { return p.ModelName }
@@ -127,18 +127,21 @@ func (p *V26VideoParams) Model() string { return p.ModelName }
 // V3VideoParams for kling-v3.
 type V3VideoParams struct {
 	videoParamsMarker
-	ModelName      string `json:"model"`
-	Prompt         string `json:"prompt"`
-	InputReference string `json:"input_reference,omitempty"`
-	Sound          string `json:"sound,omitempty"`
-	Mode           string `json:"mode,omitempty"`
-	Seconds        string `json:"seconds,omitempty"`
-	Size           string `json:"size,omitempty"`
+	ModelName      string            `json:"model"`
+	Prompt         string            `json:"prompt"`
+	InputReference string            `json:"input_reference,omitempty"`
+	MultiShot      bool              `json:"multi_shot,omitempty"`
+	ShotType       string            `json:"shot_type,omitempty"`
+	MultiPrompt    []MultiPromptItem `json:"multi_prompt,omitempty"`
+	Sound          string            `json:"sound,omitempty"`
+	Mode           string            `json:"mode,omitempty"`
+	Seconds        string            `json:"seconds,omitempty"`
+	Size           string            `json:"size,omitempty"`
 }
 
 func (p *V3VideoParams) Model() string { return p.ModelName }
 
-// MultiPromptItem for multi_shot (V3-omni).
+// MultiPromptItem for multi_shot (V3/V3-omni).
 type MultiPromptItem struct {
 	Index    int    `json:"index"`
 	Prompt   string `json:"prompt"`
@@ -148,17 +151,17 @@ type MultiPromptItem struct {
 // V3OmniVideoParams for kling-v3-omni.
 type V3OmniVideoParams struct {
 	videoParamsMarker
-	ModelName   string           `json:"model"`
-	Prompt      string           `json:"prompt"`
-	MultiShot   bool             `json:"multi_shot,omitempty"`
-	ShotType    string           `json:"shot_type,omitempty"`
+	ModelName   string            `json:"model"`
+	Prompt      string            `json:"prompt"`
+	MultiShot   bool              `json:"multi_shot,omitempty"`
+	ShotType    string            `json:"shot_type,omitempty"`
 	MultiPrompt []MultiPromptItem `json:"multi_prompt,omitempty"`
-	ImageList   []ImageInput     `json:"image_list,omitempty"`
-	VideoList   []VideoRef       `json:"video_list,omitempty"`
-	Sound       string           `json:"sound,omitempty"`
-	Mode        string           `json:"mode,omitempty"`
-	Seconds     string           `json:"seconds,omitempty"`
-	Size        string           `json:"size,omitempty"`
+	ImageList   []ImageInput      `json:"image_list,omitempty"`
+	VideoList   []VideoRef        `json:"video_list,omitempty"`
+	Sound       string            `json:"sound,omitempty"`
+	Mode        string            `json:"mode,omitempty"`
+	Seconds     string            `json:"seconds,omitempty"`
+	Size        string            `json:"size,omitempty"`
 }
 
 func (p *V3OmniVideoParams) Model() string { return p.ModelName }

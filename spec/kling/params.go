@@ -92,8 +92,8 @@ const (
 // Example:
 //
 //	op.Params().Set(kling.ParamMultiPrompt, []kling.MultiPromptItem{
-//	    {Index: 0, Prompt: "first scene", Duration: "3"},
-//	    {Index: 1, Prompt: "second scene", Duration: "2"},
+//	    {Index: 1, Prompt: "first scene", Duration: "3"},
+//	    {Index: 2, Prompt: "second scene", Duration: "2"},
 //	})
 type MultiPromptItem = video.MultiPromptItem
 

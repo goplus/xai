@@ -27,6 +27,9 @@ func SchemaV3Video() []xai.Field {
 	return []xai.Field{
 		{Name: internal.ParamPrompt, Kind: types.String},
 		{Name: internal.ParamInputReference, Kind: types.String},
+		{Name: internal.ParamMultiShot, Kind: types.Bool},
+		{Name: internal.ParamShotType, Kind: types.String},
+		{Name: internal.ParamMultiPrompt, Kind: types.List},
 		{Name: internal.ParamSound, Kind: types.String},
 		{Name: internal.ParamMode, Kind: types.String},
 		{Name: internal.ParamSeconds, Kind: types.String},

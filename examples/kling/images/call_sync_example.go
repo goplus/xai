@@ -32,11 +32,13 @@ func RunCallSyncExample() {
 	svc, err := shared.NewService()
 	if err != nil {
 		fmt.Println("Error:", err)
+		return
 	}
 	model := xai.Model(kling.ModelKlingV1)
 	op, err := svc.Operation(model, xai.GenImage)
 	if err != nil {
 		fmt.Println("Error:", err)
+		return
 	}
 	op.Params().Set(kling.ParamPrompt, "一只可爱的橘猫坐在窗台上看着夕阳,照片风格,高清画质")
 	op.Params().Set(kling.ParamAspectRatio, kling.Aspect16x9)

@@ -188,6 +188,40 @@ func TestBuildV21VideoRequest(t *testing.T) {
 	}
 }
 
+func TestBuildV3VideoRequestWithMultiPrompt(t *testing.T) {
+	params := &video.V3VideoParams{
+		ModelName: kling.ModelKlingV3,
+		Prompt:    "a city short film",
+		MultiShot: true,
+		ShotType:  "customize",
+		MultiPrompt: []video.MultiPromptItem{
+			{Index: 1, Prompt: "scene 1", Duration: "3"},
+			{Index: 2, Prompt: "scene 2", Duration: "2"},
+		},
+		Mode:    "pro",
+		Seconds: "5",
+	}
+
+	req, err := BuildVideoRequest(kling.ModelKlingV3, params)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if req.Body["multi_shot"] != true {
+		t.Error("expected multi_shot to be true")
+	}
+	if req.Body["shot_type"] != "customize" {
+		t.Errorf("expected shot_type customize, got %v", req.Body["shot_type"])
+	}
+	multiPrompt, ok := req.Body["multi_prompt"].([]map[string]any)
+	if !ok {
+		t.Fatal("expected multi_prompt to be []map[string]any")
+	}
+	if len(multiPrompt) != 2 {
+		t.Errorf("expected 2 multi_prompt items, got %d", len(multiPrompt))
+	}
+}
+
 func TestBuildV3OmniVideoRequest(t *testing.T) {
 	params := &video.V3OmniVideoParams{
 		ModelName: kling.ModelKlingV3Omni,

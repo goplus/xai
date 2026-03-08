@@ -26,13 +26,13 @@
 // image_list 参数说明：
 //   - 每个 ImageInput 包含 Image（URL/Base64）和可选的 Type 字段
 //   - Type 可选值：
-//     - "" (ImageTypeRef): 普通参考图（主体、场景、风格等）
-//     - "first_frame" (ImageTypeFirstFrame): 首帧
-//     - "end_frame" (ImageTypeEndFrame): 尾帧
+//   - "" (ImageTypeRef): 普通参考图（主体、场景、风格等）
+//   - "first_frame" (ImageTypeFirstFrame): 首帧
+//   - "end_frame" (ImageTypeEndFrame): 尾帧
 //
 // multi_shot 参数说明：
 //   - multi_shot: true 启用多镜头模式
-//   - shot_type: "auto"（自动）或 "manual"（手动）
+//   - shot_type: "auto"（自动）或 "customize"（自定义）
 //   - multi_prompt: 分段提示词列表，每段包含 index、prompt、duration
 package main
 
@@ -50,6 +50,28 @@ import (
 func RunKlingV3Omni() {
 	svc, _ := shared.NewService()
 	ctx := context.Background()
+
+	// =========================================================================
+	// 8. multi_shot - 多镜头分段视频（自定义分镜）
+	// =========================================================================
+	// shot_type="customize" 时必须提供 multi_prompt，
+	// 且各段 duration 之和应等于 seconds（此处 4+3+3=10）。
+	fmt.Println("--- multi_shot (customize) ---")
+	op8, _ := svc.Operation(xai.Model(kling.ModelKlingV3Omni), xai.GenVideo)
+	op8.Params().
+		Set(kling.ParamPrompt, "产品展示视频").
+		Set(kling.ParamMultiShot, true).
+		Set(kling.ParamShotType, "customize"). // 自定义分镜
+		Set(kling.ParamMultiPrompt, []kling.MultiPromptItem{
+			{Index: 1, Prompt: "产品全景展示，旋转", Duration: "4"},
+			{Index: 2, Prompt: "产品细节特写", Duration: "3"},
+			{Index: 3, Prompt: "产品使用场景", Duration: "3"},
+		}).
+		Set(kling.ParamSize, kling.Size1920x1080).
+		Set(kling.ParamMode, kling.ModePro).
+		Set(kling.ParamSeconds, kling.Seconds10)
+	results8, _ := xai.Call(ctx, svc, op8, svc.Options(), nil)
+	printVideoResults("kling-v3-omni", "multi_shot-customize", results8)
 
 	// =========================================================================
 	// 1. text2video - 纯文本生成视频
@@ -141,7 +163,7 @@ func RunKlingV3Omni() {
 		Set(kling.ParamSize, kling.Size1920x1080).
 		Set(kling.ParamMode, kling.ModePro).
 		Set(kling.ParamSeconds, kling.Seconds5).
-		Set(kling.ParamSound, kling.SoundOn)          // 启用音频
+		Set(kling.ParamSound, kling.SoundOn) // 启用音频
 	results6, _ := xai.Call(ctx, svc, op6, svc.Options(), nil)
 	printVideoResults("kling-v3-omni", "sound_video", results6)
 
@@ -153,36 +175,16 @@ func RunKlingV3Omni() {
 	op7, _ := svc.Operation(xai.Model(kling.ModelKlingV3Omni), xai.GenVideo)
 	op7.Params().
 		Set(kling.ParamPrompt, "一部微电影").
-		Set(kling.ParamMultiShot, true).              // 启用多镜头
-		Set(kling.ParamShotType, "auto").             // 自动分镜
+		Set(kling.ParamMultiShot, true).  // 启用多镜头
+		Set(kling.ParamShotType, "auto"). // 自动分镜
 		Set(kling.ParamMultiPrompt, []kling.MultiPromptItem{
-			{Index: 0, Prompt: "清晨，阳光洒进房间", Duration: "3"},
-			{Index: 1, Prompt: "主角起床，伸懒腰", Duration: "2"},
-			{Index: 2, Prompt: "主角走出门，迎接新的一天", Duration: "3"},
+			{Index: 1, Prompt: "清晨，阳光洒进房间", Duration: "3"},
+			{Index: 2, Prompt: "主角起床，伸懒腰", Duration: "2"},
+			{Index: 3, Prompt: "主角走出门，迎接新的一天", Duration: "3"},
 		}).
 		Set(kling.ParamSize, kling.Size1920x1080).
 		Set(kling.ParamMode, kling.ModePro)
 	results7, _ := xai.Call(ctx, svc, op7, svc.Options(), nil)
 	printVideoResults("kling-v3-omni", "multi_shot-auto", results7)
 
-	// =========================================================================
-	// 8. multi_shot - 多镜头分段视频（手动分镜）
-	// =========================================================================
-	// shot_type="manual" 严格按照指定时长分配
-	fmt.Println("--- multi_shot (manual) ---")
-	op8, _ := svc.Operation(xai.Model(kling.ModelKlingV3Omni), xai.GenVideo)
-	op8.Params().
-		Set(kling.ParamPrompt, "产品展示视频").
-		Set(kling.ParamMultiShot, true).
-		Set(kling.ParamShotType, "manual").           // 手动分镜
-		Set(kling.ParamMultiPrompt, []kling.MultiPromptItem{
-			{Index: 0, Prompt: "产品全景展示，旋转", Duration: "4"},
-			{Index: 1, Prompt: "产品细节特写", Duration: "3"},
-			{Index: 2, Prompt: "产品使用场景", Duration: "3"},
-		}).
-		Set(kling.ParamSize, kling.Size1920x1080).
-		Set(kling.ParamMode, kling.ModePro).
-		Set(kling.ParamSeconds, kling.Seconds10)
-	results8, _ := xai.Call(ctx, svc, op8, svc.Options(), nil)
-	printVideoResults("kling-v3-omni", "multi_shot-manual", results8)
 }
