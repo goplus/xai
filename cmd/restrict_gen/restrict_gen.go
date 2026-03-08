@@ -33,16 +33,17 @@ import (
 // -----------------------------------------------------------------------------
 
 type fieldRestriction struct {
-	orgName    string     // original field name
-	newName    string     // new field name after rewrite
-	typ        types.Type // field type
-	doc        []string   // field doc comment, split by "." and trimmed
-	stringEnum []string   // string enum values, or nil
-	required   bool       // whether the field is required
+	orgName     string     // original field name
+	newName     string     // new field name after rewrite
+	typ         types.Type // field type
+	doc         []string   // field doc comment, split by "." and trimmed
+	stringEnum  []string   // string enum values, or nil
+	docEnumVals []string   // enum values parsed from doc comment, or nil
+	required    bool       // whether the field is required
 }
 
 func (p *fieldRestriction) hasRestriction() bool {
-	return len(p.stringEnum) > 0 || p.required
+	return len(p.stringEnum) > 0 || len(p.docEnumVals) > 0 || p.required
 }
 
 type typeRestriction struct {
@@ -268,7 +269,7 @@ func collect(pkg *packages.Package) *pkgRestriction {
 
 func collectType(ret *pkgRestriction, pkg *packages.Package, t *types.Named, rewriteFlds map[string]string) {
 	name := t.Obj().Name()
-	log("==>", name)
+	log("\n==>", name)
 	typ := &typeRestriction{typ: t}
 	collectFields(typ, pkg, t, rewriteFlds)
 	if typ.hasRestriction() {
@@ -310,7 +311,7 @@ func collectFields(ret *typeRestriction, pkg *packages.Package, t types.Type, re
 					newName: name, orgName: orgName,
 					typ: typ, doc: doc, required: required(doc),
 				}
-				collectRestByDoc(field, doc)
+				collectRestrictionByDoc(field, doc)
 				if tn, ok := typ.(*types.Named); ok {
 					collectStringEnum(field, tn)
 				}
@@ -322,7 +323,50 @@ func collectFields(ret *typeRestriction, pkg *packages.Package, t types.Type, re
 	}
 }
 
-func collectRestByDoc(ret *fieldRestriction, doc []string) {
+func checkEnumDoc(part string) (val string, ok bool) {
+	const (
+		prefix1 = "Supported values are: "
+		prefix2 = "Supported values are "
+		suffix  = " are supported"
+	)
+	val, ok = strings.CutSuffix(part, suffix)
+	if !ok {
+		val, ok = strings.CutPrefix(part, prefix1)
+		if !ok {
+			val, ok = strings.CutPrefix(part, prefix2)
+		}
+	}
+	return
+}
+
+func collectRestrictionByDoc(ret *fieldRestriction, doc []string) {
+	// optional := !ret.required
+	for _, part := range doc {
+		if enumDoc, ok := checkEnumDoc(part); ok {
+			docEnumVals := strings.Split(enumDoc, ", ")
+			last := len(docEnumVals) - 1
+			lastVal := docEnumVals[last]
+			if v, ok := strings.CutPrefix(lastVal, "and "); ok {
+				docEnumVals[last] = v
+			} else if v1, v2, ok := strings.Cut(lastVal, " and "); ok {
+				docEnumVals = docEnumVals[:last]
+				if v1 != "" {
+					docEnumVals = append(docEnumVals, v1)
+				}
+				docEnumVals = append(docEnumVals, v2)
+			}
+			log(" ", ret.newName, "DocEnumVals")
+			for i, val := range docEnumVals {
+				n := len(val)
+				if n > 2 && val[0] == '"' && val[n-1] == '"' {
+					val = val[1 : n-1]
+					docEnumVals[i] = val
+				}
+				log("   ", val)
+			}
+			ret.docEnumVals = docEnumVals
+		}
+	}
 }
 
 func collectStringEnum(ret *fieldRestriction, tn *types.Named) {
