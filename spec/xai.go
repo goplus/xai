@@ -28,6 +28,9 @@ var (
 	// or an action that does not exist.
 	ErrNotFound = errors.New("not found")
 
+	// ErrNotSupported is returned when a requested operation is not supported by the service.
+	ErrNotSupported = errors.New("not supported")
+
 	// ErrUnknownScheme is returned when an unknown scheme is encountered in a URL.
 	ErrUnknownScheme = errors.New("unknown scheme")
 )

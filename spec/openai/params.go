@@ -18,48 +18,47 @@ package openai
 
 import (
 	xai "github.com/goplus/xai/spec"
-	"github.com/openai/openai-go/v3/packages/param"
-	"github.com/openai/openai-go/v3/responses"
-	"github.com/openai/openai-go/v3/shared"
 )
 
 // -----------------------------------------------------------------------------
 
 type params struct {
-	params responses.ResponseNewParams
-	sys    responses.ResponseInputMessageContentListParam
-	msgs   []xai.MsgBuilder
+	req  genRequest
+	msgs []xai.MsgBuilder
 }
 
 func (p *params) System(v xai.TextBuilder) xai.ParamBuilder {
-	p.sys = buildTexts(v)
+	p.req.System = buildTexts(v)
 	return p
 }
 
 func (p *params) Messages(msgs ...xai.MsgBuilder) xai.ParamBuilder {
-	// we will merge system prompt and messages into input param in buildParams
-	// so we just store the messages here
 	p.msgs = msgs
 	return p
 }
 
 func (p *params) Tools(tools ...xai.ToolBase) xai.ParamBuilder {
-	p.params.Tools = buildTools(tools)
+	p.req.Tools = make([]*toolDef, len(tools))
+	for i, v := range tools {
+		td := &toolDef{}
+		v.UnderlyingAssignTo(td)
+		p.req.Tools[i] = td
+	}
 	return p
 }
 
 func (p *params) Model(model xai.Model) xai.ParamBuilder {
-	p.params.Model = shared.ResponsesModel(model) // TODO(xsw): validate model
+	p.req.Model = string(model)
 	return p
 }
 
 func (p *params) MaxOutputTokens(v int64) xai.ParamBuilder {
-	p.params.MaxOutputTokens = param.NewOpt(v)
+	p.req.MaxOutputTokens = v
 	return p
 }
 
 func (p *params) Compact(maxInputTokens int64) xai.ParamBuilder {
-	panic("todo")
+	return p
 }
 
 func (p *params) Container(v string) xai.ParamBuilder {
@@ -71,17 +70,18 @@ func (p *params) InferenceGeo(v string) xai.ParamBuilder {
 }
 
 func (p *params) Temperature(v float64) xai.ParamBuilder {
-	p.params.Temperature = param.NewOpt(v)
+	p.req.Temperature = v
+	p.req.HasTemperature = true
 	return p
 }
 
 func (p *params) TopK(v int64) xai.ParamBuilder {
-	// openai does not support top_k, use top_p instead
 	return p
 }
 
 func (p *params) TopP(v float64) xai.ParamBuilder {
-	p.params.TopP = param.NewOpt(v)
+	p.req.TopP = v
+	p.req.HasTopP = true
 	return p
 }
 
@@ -89,16 +89,18 @@ func (p *Service) Params() xai.ParamBuilder {
 	return &params{}
 }
 
-func buildParams(in xai.ParamBuilder) responses.ResponseNewParams {
+func buildParams(in xai.ParamBuilder) *genRequest {
 	p := in.(*params)
-	// TODO(xsw): check param values
-	// Merge system prompt and messages into input param
-	var sys responses.ResponseInputItemUnionParam
-	if len(p.sys) > 0 {
-		sys = responses.ResponseInputItemParamOfMessage(p.sys, responses.EasyInputMessageRoleSystem)
+	// Build messages
+	p.req.Messages = make([]*message, len(p.msgs))
+	for i, mb := range p.msgs {
+		if ext, ok := mb.(msgBuilderExt); ok {
+			p.req.Messages[i] = ext.msgBuilder.getMessage()
+		} else {
+			p.req.Messages[i] = mb.(*msgBuilder).getMessage()
+		}
 	}
-	p.params.Input = buildMessages(p.msgs, sys)
-	return p.params
+	return &p.req
 }
 
 // -----------------------------------------------------------------------------

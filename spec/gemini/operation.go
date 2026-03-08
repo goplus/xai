@@ -79,6 +79,10 @@ func (p simpleResp[T]) Results() xai.Results {
 	return p.ret
 }
 
+func (p simpleResp[T]) TaskID() string {
+	return ""
+}
+
 type genImageResp = simpleResp[*outputImages]
 type genImageMaskResp = simpleResp[*outputImageMasks]
 
@@ -115,6 +119,13 @@ func (p genVideoResp) Retry(ctx context.Context, svc xai.Service) (xai.Operation
 func (p genVideoResp) Results() xai.Results {
 	ret := p.op.Response
 	return &outputVideos{results(ret), ret.GeneratedVideos}
+}
+
+func (p genVideoResp) TaskID() string {
+	if p.op != nil && p.op.Name != "" {
+		return p.op.Name
+	}
+	return ""
 }
 
 type genVideo struct {

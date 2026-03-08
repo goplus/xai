@@ -68,6 +68,10 @@ type OperationResponse interface {
 
 	// Results returns the result from the operation.
 	Results() Results
+
+	// TaskID returns the task ID for async operations. Empty for sync (immediate) responses.
+	// Callers can persist this to DB and later use GetTask to resume polling.
+	TaskID() string
 }
 
 // Wait is a helper function that waits for an `OperationResponse` to be done by
@@ -107,15 +111,32 @@ type Operation interface {
 	Call(ctx context.Context, svc Service, opts OptionBuilder) (OperationResponse, error)
 }
 
+// CallSync starts the operation and returns the OperationResponse. Callers can then
+// use Wait to poll until the operation is done.
+func CallSync(ctx context.Context, svc Service, op Operation, opts OptionBuilder) (OperationResponse, error) {
+	return op.Call(ctx, svc, opts)
+}
+
 // Call is a helper function that calls an `Operation` with the given options, and then
 // waits for the operation to be done. It returns the results of the operation once it's
 // completed.
 func Call(ctx context.Context, svc Service, op Operation, opts OptionBuilder, progress func(OperationResponse)) (ret Results, err error) {
-	resp, err := op.Call(ctx, svc, opts)
+	resp, err := CallSync(ctx, svc, op, opts)
 	if err != nil {
 		return
 	}
 	return Wait(ctx, svc, resp, progress)
+}
+
+// GetTask returns an OperationResponse for an existing task by taskID.
+// Use when resuming from DB. Returns error if the service does not support it.
+func GetTask(ctx context.Context, svc Service, model Model, action Action, taskID string) (OperationResponse, error) {
+	if tr, ok := svc.(interface {
+		GetTask(ctx context.Context, model Model, action Action, taskID string) (OperationResponse, error)
+	}); ok {
+		return tr.GetTask(ctx, model, action, taskID)
+	}
+	return nil, ErrNotSupported
 }
 
 // -----------------------------------------------------------------------------

@@ -32,3 +32,8 @@ go.work.sum
 .vscode/
 
 .DS_Store
+
+# Kling example output
+examples/kling/output/results.txt
+images
+video
