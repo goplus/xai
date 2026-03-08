@@ -35,3 +35,5 @@ go.work.sum
 
 # Kling example output
 examples/kling/output/results.txt
+images
+video
