@@ -36,6 +36,7 @@ type fieldRestriction struct {
 	orgName     string     // original field name
 	newName     string     // new field name after rewrite
 	typ         types.Type // field type
+	enumName    string     // suggested enum type name, or empty
 	doc         []string   // field doc comment, split by "." and trimmed
 	stringEnum  []string   // string enum values, or nil
 	docEnumVals []string   // enum values parsed from doc comment, or nil
@@ -43,7 +44,7 @@ type fieldRestriction struct {
 }
 
 func (p *fieldRestriction) hasRestriction() bool {
-	return len(p.stringEnum) > 0 || len(p.docEnumVals) > 0 || p.required
+	return len(p.stringEnum) > 0 || p.required
 }
 
 type typeRestriction struct {
@@ -80,7 +81,7 @@ func fieldIndex(t types.Type, name string) int {
 }
 
 type genCtx struct {
-	enums      map[*types.Named]types.Object
+	enums      map[string]types.Object
 	out        *gogen.Package
 	scope      *types.Scope
 	strSlice   *types.Slice
@@ -102,7 +103,7 @@ func gen(ret *pkgRestriction) {
 	ctx := &genCtx{
 		out:        out,
 		scope:      out.Types.Scope(),
-		enums:      make(map[*types.Named]types.Object),
+		enums:      make(map[string]types.Object),
 		strSlice:   types.NewSlice(str),
 		stringEnum: stringEnum,
 		iLimit:     fieldIndex(restr, "Limit"),
@@ -149,12 +150,12 @@ func gen(ret *pkgRestriction) {
 }
 
 func genStringEnum(ctx *genCtx, cb *gogen.CodeBuilder, fld *fieldRestriction) {
-	typ := fld.typ.(*types.Named)
-	v, ok := ctx.enums[typ]
+	typObj := fld.typ.(*types.Named).Obj()
+	typKey := typObj.Pkg().Path() + "." + typObj.Name()
+	v, ok := ctx.enums[typKey]
 	if !ok {
 		scope := ctx.scope
-		o := typ.Obj()
-		name := "enum_" + o.Pkg().Name() + "_" + o.Name()
+		name := fld.enumName
 		ctx.out.NewVarDefs(scope).NewAndInit(func(cb *gogen.CodeBuilder) int {
 			vals := fld.stringEnum
 			cb.Val(ctx.iValues)
@@ -166,7 +167,7 @@ func genStringEnum(ctx *genCtx, cb *gogen.CodeBuilder, fld *fieldRestriction) {
 			return 1
 		}, token.NoPos, nil, name)
 		v = scope.Lookup(name)
-		ctx.enums[typ] = v
+		ctx.enums[typKey] = v
 	}
 	cb.Val(v)
 }
@@ -372,17 +373,21 @@ func collectRestrictionByDoc(ret *fieldRestriction, doc []string) {
 func collectStringEnum(ret *fieldRestriction, tn *types.Named) {
 	if tb, ok := tn.Underlying().(*types.Basic); ok && tb.Kind() == types.String {
 		log(" ", ret.newName, tn)
-		scope := tn.Obj().Pkg().Scope()
+		tobj := tn.Obj()
+		scope := tobj.Pkg().Scope()
 		names := scope.Names()
 		for _, name := range names {
-			o := scope.Lookup(name)
-			if c, ok := o.(*types.Const); ok {
+			obj := scope.Lookup(name)
+			if c, ok := obj.(*types.Const); ok {
 				if c.Type() == tn {
 					val := constant.StringVal(c.Val())
 					ret.stringEnum = append(ret.stringEnum, val)
 					log("   ", val)
 				}
 			}
+		}
+		if len(ret.stringEnum) > 0 {
+			ret.enumName = "enum_" + tobj.Pkg().Name() + "_" + tobj.Name()
 		}
 	}
 }
