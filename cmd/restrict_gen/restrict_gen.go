@@ -201,8 +201,8 @@ func fieldDoc(def *ast.TypeSpec, name string) []string {
 		for _, field := range st.Fields.List {
 			for _, fieldName := range field.Names {
 				if fieldName.Name == name {
-					parts := strings.Split(field.Doc.Text(), ".")
-					log("\n  //", name+":", parts[0])
+					doc := strings.TrimSuffix(field.Doc.Text(), ".\n")
+					parts := strings.Split(doc, ". ")
 					ret := parts[:0]
 					for i, part := range parts {
 						part = strings.TrimSpace(part)
@@ -210,6 +210,8 @@ func fieldDoc(def *ast.TypeSpec, name string) []string {
 							ret = append(ret, part)
 							if i > 0 {
 								log("  //", part)
+							} else {
+								log("\n  //", name+":", part)
 							}
 						}
 					}
