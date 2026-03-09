@@ -18,6 +18,7 @@ package gemini
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	xai "github.com/goplus/xai/spec"
@@ -107,6 +108,18 @@ func (p genVideoResp) TaskID() string {
 	return ""
 }
 
+func (p genVideoResp) GetError() error {
+	if p.op == nil || p.op.Error == nil {
+		return nil
+	}
+	m := p.op.Error
+	msg, _ := m["message"].(string)
+	if msg == "" {
+		msg = "video generation failed"
+	}
+	return fmt.Errorf("%s", msg)
+}
+
 type genVideo struct {
 	genai.GenerateVideosSource
 	genai.GenerateVideosConfig
@@ -123,6 +136,9 @@ func (p *genVideo) Params() xai.Params {
 }
 
 func (p *genVideo) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
+	if err := validateGenVideoConfig(p.model, &p.GenerateVideosSource, &p.GenerateVideosConfig); err != nil {
+		return nil, err
+	}
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}

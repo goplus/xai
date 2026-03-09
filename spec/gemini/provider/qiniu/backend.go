@@ -38,6 +38,7 @@ const (
 	endpointChatCompletions = "chat/completions"
 	endpointImagesGenerate  = "images/generations"
 	endpointImagesEdit      = "images/edits"
+	endpointVideosGenerate  = "videos/generations"
 )
 
 var errStreamStopped = errors.New("qiniu: stream stopped")
@@ -51,14 +52,22 @@ func newBackend(cli *client) *backend {
 }
 
 func (p *backend) Actions(model xai.Model) []xai.Action {
-	if !isGeminiModel(model) {
+	switch {
+	case isVeoModel(model):
+		return []xai.Action{xai.GenVideo}
+	case isGeminiModel(model):
+		return []xai.Action{xai.GenImage, xai.EditImage}
+	default:
 		return nil
 	}
-	return []xai.Action{xai.GenImage, xai.EditImage}
 }
 
 func isGeminiModel(model xai.Model) bool {
 	return strings.Contains(strings.ToLower(string(model)), "gemini")
+}
+
+func isVeoModel(model xai.Model) bool {
+	return strings.Contains(strings.ToLower(string(model)), "veo")
 }
 
 func (p *backend) GenerateContent(ctx context.Context, model string, contents []*genai.Content, config *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
@@ -110,14 +119,6 @@ func (p *backend) GenerateContentStream(ctx context.Context, model string, conte
 			yield(nil, err)
 		}
 	}
-}
-
-func (p *backend) GenerateVideosFromSource(ctx context.Context, model string, source *genai.GenerateVideosSource, config *genai.GenerateVideosConfig) (*genai.GenerateVideosOperation, error) {
-	return nil, xai.ErrNotSupported
-}
-
-func (p *backend) GetVideosOperation(ctx context.Context, op *genai.GenerateVideosOperation, config *genai.GetOperationConfig) (*genai.GenerateVideosOperation, error) {
-	return nil, xai.ErrNotSupported
 }
 
 func (p *backend) GenerateImages(ctx context.Context, model string, prompt string, config *genai.GenerateImagesConfig) (*genai.GenerateImagesResponse, error) {

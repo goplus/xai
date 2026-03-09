@@ -1,17 +1,21 @@
 # Examples
 
-Runnable demos for Kling image and video generation via the xai API. Organized by model, with one `.go` file per model.
+Runnable demos for multiple providers/models via the xai API.
 
 ## Quick Start
 
 ```bash
-# Run all (models + images + video)
+# Run Kling examples
 go run ./examples/kling
 
 # List models, actions, and schema only
 go run ./examples/kling models
 
-# Run by model
+# Run Veo examples
+go run ./examples/veo
+go run ./examples/veo all
+
+# Run by model (Kling)
 go run ./examples/kling kling-v2-1
 go run ./examples/kling/images kling-v2-1
 go run ./examples/kling/video kling-v2-6
@@ -32,6 +36,16 @@ go run ./examples/kling kling-v2-1
 ```
 examples/
 ├── README.md
+├── veo/
+│   ├── README.md
+│   ├── main.go
+│   ├── veo_2_0_generate_001.go
+│   ├── veo_2_0_generate_exp.go
+│   ├── veo_2_0_generate_preview.go
+│   ├── veo_3_0_generate_preview.go
+│   ├── veo_3_0_fast_generate_preview.go
+│   ├── veo_3_1_generate_preview.go
+│   └── veo_3_1_fast_generate_preview.go
 ├── shared/
 │   └── service.go          # NewService, NewServiceForModels
 └── kling/
@@ -64,6 +78,8 @@ examples/
 **Image models**: kling-v1, kling-v1-5, kling-v2, kling-v2-new, kling-v2-1, kling-image-o1
 
 **Video models**: kling-v2-1, kling-v2-5-turbo, kling-v2-6, kling-video-o1, kling-v3, kling-v3-omni
+
+**Veo models**: veo-2.0-generate-001, veo-2.0-generate-exp, veo-2.0-generate-preview, veo-3.0-generate-preview, veo-3.0-fast-generate-preview, veo-3.1-generate-preview, veo-3.1-fast-generate-preview
 
 ## CallSync + TaskID
 

@@ -95,6 +95,17 @@ func (c *client) postJSONAt(ctx context.Context, baseURL, path string, payload a
 	return json.Unmarshal(data, out)
 }
 
+func (c *client) getJSONAt(ctx context.Context, baseURL, path string, out any) error {
+	data, err := c.doWithRetry(ctx, http.MethodGet, baseURL, path, nil)
+	if err != nil {
+		return err
+	}
+	if out == nil {
+		return nil
+	}
+	return json.Unmarshal(data, out)
+}
+
 func (c *client) postStreamAt(ctx context.Context, baseURL, path string, payload any) (io.ReadCloser, error) {
 	resp, err := c.doStreamWithRetry(ctx, baseURL, path, payload)
 	if err != nil {
@@ -130,9 +141,15 @@ func (c *client) buildCurlCommand(method, url string, body []byte) string {
 }
 
 func (c *client) doWithRetry(ctx context.Context, method, baseURL, path string, payload any) ([]byte, error) {
-	body, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
+	var (
+		body []byte
+		err  error
+	)
+	if payload != nil {
+		body, err = json.Marshal(payload)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	url := strings.TrimSuffix(baseURL, "/") + "/" + strings.TrimPrefix(path, "/")
@@ -178,8 +195,13 @@ func (c *client) doWithRetry(ctx context.Context, method, baseURL, path string, 
 
 		requestID := resp.Header.Get("X-Request-Id")
 		c.logDebug("Response status: %d, request_id: %s", resp.StatusCode, requestID)
-		if c.debugLog && len(data) > 0 {
-			c.logDebug("Response body: %s", string(data))
+		if (c.debugLog || os.Getenv("QINIU_DEBUG") != "") && len(data) > 0 {
+			msg := string(data)
+			if c.logger != nil {
+				c.logger.Printf("[qiniu] response: %s", msg)
+			} else {
+				fmt.Printf("[qiniu] response: %s\n", msg)
+			}
 		}
 
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
@@ -355,4 +377,3 @@ func (c *client) do(ctx context.Context, method, url string, body []byte) (*http
 	req.Header.Set("Accept", "application/json")
 	return c.http.Do(req)
 }
-

@@ -2,6 +2,8 @@
 
 本文档基于七牛云 Qnagic OpenAI 兼容接口整理，覆盖 Gemini 图像模型在 Qiniu Provider 下的接入方式。
 
+> Veo 视频模型文档请查看 [veo.md](veo.md)。
+
 ## 1. 概述
 
 | 项目 | 说明 |
@@ -14,7 +16,7 @@
 
 ## 2. 模型清单
 
-以下模型按同一套接口使用：
+以下 Gemini 图像模型按同一套接口使用：
 
 - `gemini-2.5-flash-image`
 - `gemini-3.0-pro-image-preview`
@@ -30,7 +32,7 @@
 
 > 说明：当前 `spec/gemini/provider/qiniu` 已实现双通路：  
 > 1) `Gen/GenStream` 走 OpenAI 兼容 `chat/completions`；  
-> 2) `Operation` 的 `GenImage/EditImage` 走 `images/generations` 与 `images/edits`。
+> 2) `Operation` 的 `GenImage/EditImage` 走 `images/generations` 与 `images/edits`。  
 >
 > provider 内的 `ImageFrom* / VideoFrom* / ReferenceImage` 等 objectFactory 能力直接委托给 `spec/gemini`，qiniu 仅负责协议与端点适配。
 
@@ -302,6 +304,8 @@ curl --location --request POST 'https://api.qnaigc.com/v1/images/edits' \
 - `GenImage`：`Prompt`、`AspectRatio`、`NumberOfImages`（来自 `genai.GenerateImagesConfig`）
 - `EditImage`：`Prompt`、`References`、`AspectRatio`、`NumberOfImages`（来自 `genai.EditImageConfig`）
 
+Veo 视频能力请查看 [veo.md](veo.md)。
+
 使用示例：
 
 ```go
@@ -324,3 +328,4 @@ func main() {
 - [Gemini Chat Completions（397191373e0）](https://apidocs.qnaigc.com/397191373e0)
 - [Gemini Images Generations（397191374e0）](https://apidocs.qnaigc.com/397191374e0)
 - [Gemini Images Edits（397191375e0）](https://apidocs.qnaigc.com/397191375e0)
+- [Veo 文档（veo.md）](veo.md)

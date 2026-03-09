@@ -74,6 +74,13 @@ type OperationResponse interface {
 	TaskID() string
 }
 
+// OperationResponseWithError is an optional interface. When implemented, GetError
+// returns the error when the operation failed (e.g. content policy violation).
+type OperationResponseWithError interface {
+	OperationResponse
+	GetError() error
+}
+
 // Wait is a helper function that waits for an `OperationResponse` to be done by
 // repeatedly calling `Retry` with appropriate sleeping in between. Once the operation
 // is done, it returns the results of the operation.
@@ -86,6 +93,11 @@ func Wait(ctx context.Context, svc Service, resp OperationResponse, progress fun
 		resp, err = resp.Retry(ctx, svc)
 		if err != nil {
 			return
+		}
+	}
+	if errResp, ok := resp.(OperationResponseWithError); ok {
+		if opErr := errResp.GetError(); opErr != nil {
+			return resp.Results(), opErr
 		}
 	}
 	return resp.Results(), nil
