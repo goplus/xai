@@ -18,6 +18,8 @@ package xai
 
 import (
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"io"
 
 	"github.com/goplus/xai/types"
@@ -60,6 +62,19 @@ type StringEnum struct {
 
 func (*StringEnum) valueLimit() {}
 
+// Contains returns true if value is in the allowed Values.
+func (s *StringEnum) Contains(value string) bool {
+	if s == nil {
+		return false
+	}
+	for _, v := range s.Values {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
 // -----------------------------------------------------------------------------
 
 type Field struct {
@@ -87,6 +102,25 @@ type Restriction struct {
 	// Required indicates whether the parameter is required.
 	// If a parameter is required, it must be provided by the user.
 	Required bool
+}
+
+// ErrValueNotAllowed is returned when a param value is not in the allowed enum.
+var ErrValueNotAllowed = errors.New("xai: param value not in allowed values")
+
+// ValidateString checks if value is allowed when Limit is *StringEnum.
+// Returns nil if Limit is nil or not *StringEnum, or if value is in Values.
+func (r *Restriction) ValidateString(name, value string) error {
+	if r == nil || r.Limit == nil || value == "" {
+		return nil
+	}
+	enum, ok := r.Limit.(*StringEnum)
+	if !ok {
+		return nil
+	}
+	if enum.Contains(value) {
+		return nil
+	}
+	return fmt.Errorf("%w: param %q value %q not in %v", ErrValueNotAllowed, name, value, enum.Values)
 }
 
 // InputSchema represents the schema of `Params`.
@@ -259,6 +293,15 @@ type OutputImage struct {
 
 func (*OutputImage) generated() {}
 
+// URL returns the storage URI of the output image.
+// Returns empty string if the image is nil or has no storage URI.
+func (o *OutputImage) URL() string {
+	if o.Image != nil {
+		return o.Image.StgUri()
+	}
+	return ""
+}
+
 // An entity representing the segmented area.
 type EntityLabel struct {
 	// Optional. The label of the segmented entity.
@@ -291,6 +334,15 @@ type OutputVideo struct {
 }
 
 func (*OutputVideo) generated() {}
+
+// URL returns the storage URI of the output video.
+// Returns empty string if the video is nil or has no storage URI.
+func (o *OutputVideo) URL() string {
+	if o.Video != nil {
+		return o.Video.StgUri()
+	}
+	return ""
+}
 
 // -----------------------------------------------------------------------------
 

@@ -18,6 +18,7 @@ package gemini
 
 import (
 	"context"
+	"errors"
 	"iter"
 	"net/url"
 	"reflect"
@@ -30,19 +31,37 @@ import (
 // -----------------------------------------------------------------------------
 
 type Service struct {
-	models genai.Models
-	ops    genai.Operations
-	tools  tools
+	backend Backend
+	tools   tools
+}
+
+// NewWithBackend creates a gemini Service with a custom backend implementation.
+func NewWithBackend(backend Backend) *Service {
+	if backend == nil {
+		panic("gemini: nil backend")
+	}
+	return &Service{
+		backend: backend,
+		tools:   make(tools),
+	}
 }
 
 func (p *Service) Features() xai.Feature {
 	return xai.FeatureGen | xai.FeatureGenStream | xai.FeatureOperation
 }
 
+// Backend returns the underlying Backend implementation.
+func (p *Service) Backend() Backend {
+	return p.backend
+}
+
 func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
 	model, contents, config := buildGenParams(params)
 	buildOptions(config, opts)
-	resp, err := p.models.GenerateContent(ctx, model, contents, config)
+	if p.backend == nil {
+		return nil, errors.New("gemini: backend not configured")
+	}
+	resp, err := p.backend.GenerateContent(ctx, model, contents, config)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
@@ -52,7 +71,12 @@ func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Opt
 func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
 	model, contents, config := buildGenParams(params)
 	buildOptions(config, opts)
-	iter := p.models.GenerateContentStream(ctx, model, contents, config)
+	if p.backend == nil {
+		return func(yield func(xai.GenResponse, error) bool) {
+			yield(nil, errors.New("gemini: backend not configured"))
+		}
+	}
+	iter := p.backend.GenerateContentStream(ctx, model, contents, config)
 	return func(yield func(xai.GenResponse, error) bool) {
 		iter(func(resp *genai.GenerateContentResponse, err error) bool {
 			return yield(response{resp}, err)
@@ -99,11 +123,7 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Service{
-		models: *cli.Models,
-		ops:    *cli.Operations,
-		tools:  make(tools),
-	}, nil
+	return NewWithBackend(newGenAIBackend(*cli.Models, *cli.Operations)), nil
 }
 
 // Remove calls to genai.defaultEnvVarProvider because we don't suggest users

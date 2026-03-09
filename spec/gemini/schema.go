@@ -293,7 +293,7 @@ func kindOf(t reflect.Type) types.Kind {
 		kind = t.Kind()
 	}
 	switch kind {
-	case reflect.Int32, reflect.Int64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return types.Int
 	case reflect.Float32, reflect.Float64:
 		return types.Float
@@ -317,6 +317,17 @@ func kindOf(t reflect.Type) types.Kind {
 
 func newInputSchema(params any, restriction map[string]*xai.Restriction) xai.InputSchema {
 	return &inputSchema{t: reflect.TypeOf(params).Elem(), restriction: restriction}
+}
+
+// NewInputSchema creates an InputSchema by reflecting on the struct fields of params.
+// params must be a pointer to a struct.
+func NewInputSchema(params any) xai.InputSchema {
+	return newInputSchema(params, nil)
+}
+
+// NewInputSchemaEx creates an InputSchema with field restrictions.
+func NewInputSchemaEx(params any, restriction map[string]*xai.Restriction) xai.InputSchema {
+	return newInputSchema(params, restriction)
 }
 
 // -----------------------------------------------------------------------------
@@ -371,6 +382,11 @@ func (adapter) OutputVideoFrom(item *genai.GeneratedVideo) *xai.OutputVideo {
 
 func newParams(params any) *util.Params[adapter] {
 	return util.NewParams[adapter](params)
+}
+
+// NewParams creates a reflection-based Params setter for the given struct pointer.
+func NewParams(params any) xai.Params {
+	return newParams(params)
 }
 
 // -----------------------------------------------------------------------------

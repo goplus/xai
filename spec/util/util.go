@@ -258,4 +258,8 @@ func (p SimpleResp[T]) Results() xai.Results {
 	return p.ret
 }
 
+func (p SimpleResp[T]) TaskID() string {
+	return ""
+}
+
 // -----------------------------------------------------------------------------
