@@ -18,9 +18,12 @@ package openai
 
 import (
 	"context"
+	"fmt"
 	"iter"
+	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	xai "github.com/goplus/xai/spec"
 	"github.com/openai/openai-go/v3/option"
@@ -28,24 +31,53 @@ import (
 
 // -----------------------------------------------------------------------------
 
+const defaultAPIBaseURL = "https://api.openai.com/v1/"
+
+type httpDoer interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // Service implements xai.Service using OpenAI APIs.
 // It supports both v3 (Responses API) and v1 (Chat Completions API).
 type Service struct {
-	provider provider
-	tools    tools
+	provider       provider
+	tools          tools
+	baseURL        string
+	apiKey         string
+	httpClient     httpDoer
+	httpClientOnce sync.Once
 }
 
 func (p *Service) Features() xai.Feature {
-	return p.provider.Features()
+	if p.provider == nil {
+		return xai.FeatureOperation
+	}
+	return p.provider.Features() | xai.FeatureOperation
 }
 
 func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
+	if p.provider == nil {
+		return nil, xai.ErrNotSupported
+	}
 	req := buildParams(params)
+	if len(req.Messages) == 0 {
+		return nil, fmt.Errorf("openai: at least one message is required")
+	}
 	return p.provider.Gen(ctx, req, buildOptions(opts))
 }
 
 func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
+	if p.provider == nil {
+		return func(yield func(xai.GenResponse, error) bool) {
+			yield(nil, xai.ErrNotSupported)
+		}
+	}
 	req := buildParams(params)
+	if len(req.Messages) == 0 {
+		return func(yield func(xai.GenResponse, error) bool) {
+			yield(nil, fmt.Errorf("openai: at least one message is required"))
+		}
+	}
 	return func(yield func(xai.GenResponse, error) bool) {
 		for resp, err := range p.provider.GenStream(ctx, req, buildOptions(opts)) {
 			if !yield(resp, err) {
@@ -79,47 +111,32 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	_ = query // reserved for future use
-	return &Service{
-		provider: newV3Provider(opts),
-		tools:    make(tools),
-	}, nil
+	return newService(newV3Provider(opts), query), nil
 }
 
 // NewV1 creates a new Service instance using v1 Chat Completions API.
 // uri should be in the format of "openai-v1:base=service_base_url&key=api_key".
+// When base and key are provided, uses extended response parsing to support
+// APIs that return an "images" field (e.g. Qiniu gemini-2.5-flash-image).
 func NewV1(ctx context.Context, uri string) (xai.Service, error) {
 	query, opts, err := parseURI(uri, SchemeV1)
 	if err != nil {
 		return nil, err
 	}
-	_ = query // reserved for future use
-	return &Service{
-		provider: newV1Provider(opts),
-		tools:    make(tools),
-	}, nil
+	base := normalizeAPIBaseURL(queryFirst(query, "base"))
+	key := queryFirst(query, "key")
+	return newService(newV1Provider(opts, base, key), query), nil
 }
 
-// NewV1WithQiniu creates a Service with Qiniu-specific extensions (e.g. images in
-// chat completion responses). Use this for Qiniu API (api.qnaigc.com) when the
-// model can return images (e.g. gemini-2.5-flash-image).
-func NewV1WithQiniu(ctx context.Context, uri string) (xai.Service, error) {
-	query, opts, err := parseURI(uri, SchemeV1)
+// NewVideoOnly creates a Service that only supports video operations (e.g. Sora).
+// Gen and GenStream return xai.ErrNotSupported.
+// uri should be in the format of "openai-v1:base=service_base_url&key=api_key".
+func NewVideoOnly(ctx context.Context, uri string) (xai.Service, error) {
+	query, _, err := parseURI(uri, SchemeV1)
 	if err != nil {
 		return nil, err
 	}
-	base := ""
-	if b := query["base"]; len(b) > 0 {
-		base = b[0]
-	}
-	key := ""
-	if k := query["key"]; len(k) > 0 {
-		key = k[0]
-	}
-	return &Service{
-		provider: newQiniuV1Provider(opts, base, key),
-		tools:    make(tools),
-	}, nil
+	return newService(newVideoOnlyProvider(), query), nil
 }
 
 func parseURI(uri, scheme string) (url.Values, []option.RequestOption, error) {
@@ -144,6 +161,30 @@ func parseURI(uri, scheme string) (url.Values, []option.RequestOption, error) {
 		opts = append(opts, option.WithWebhookSecret(webhookSec[0]))
 	}
 	return query, opts, nil
+}
+
+func newService(p provider, query url.Values) *Service {
+	return &Service{
+		provider: p,
+		tools:    make(tools),
+		baseURL:  normalizeAPIBaseURL(queryFirst(query, "base")),
+		apiKey:   queryFirst(query, "key"),
+	}
+}
+
+func queryFirst(query url.Values, key string) string {
+	if v := query.Get(key); v != "" {
+		return v
+	}
+	return ""
+}
+
+func normalizeAPIBaseURL(base string) string {
+	base = strings.TrimSpace(base)
+	if base == "" {
+		base = defaultAPIBaseURL
+	}
+	return strings.TrimSuffix(base, "/") + "/"
 }
 
 func init() {

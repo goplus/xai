@@ -15,6 +15,10 @@ go run ./examples/kling models
 go run ./examples/veo
 go run ./examples/veo all
 
+# Run Sora examples
+go run ./examples/sora
+go run ./examples/sora all
+
 # Run by model (Kling)
 go run ./examples/kling kling-v2-1
 go run ./examples/kling/images kling-v2-1
@@ -36,6 +40,10 @@ go run ./examples/kling kling-v2-1
 ```
 examples/
 ├── README.md
+├── sora/
+│   ├── README.md
+│   ├── main.go
+│   └── urls.go
 ├── veo/
 │   ├── README.md
 │   ├── main.go
@@ -80,6 +88,8 @@ examples/
 **Video models**: kling-v2-1, kling-v2-5-turbo, kling-v2-6, kling-video-o1, kling-v3, kling-v3-omni
 
 **Veo models**: veo-2.0-generate-001, veo-2.0-generate-exp, veo-2.0-generate-preview, veo-3.0-generate-preview, veo-3.0-fast-generate-preview, veo-3.1-generate-preview, veo-3.1-fast-generate-preview
+
+**Sora models**: sora-2, sora-2-pro
 
 ## CallSync + TaskID
 

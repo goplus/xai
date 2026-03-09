@@ -18,6 +18,7 @@ package qiniu
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -48,29 +49,47 @@ func WithBaseURL(u string) ClientOption {
 }
 
 // NewService creates an OpenAI-compatible Service backed by Qiniu API (api.qnaigc.com).
-// It uses provider_v1 (Chat Completions API).
+// It uses provider_v1 (Chat Completions API) for Gen/GenStream and supports
+// Sora video operations via Service.Operation(..., xai.GenVideo).
 // The token can be passed directly or read from QINIU_API_KEY env when empty.
+// Panics on error; use NewServiceWithError to handle errors.
 func NewService(token string, opts ...ClientOption) *openai.Service {
+	svc, err := NewServiceWithError(token, opts...)
+	if err != nil {
+		panic("qiniu: " + err.Error())
+	}
+	return svc
+}
+
+// NewServiceWithError creates an OpenAI-compatible Service backed by Qiniu API.
+// Returns an error if the API key is missing or service creation fails.
+func NewServiceWithError(token string, opts ...ClientOption) (*openai.Service, error) {
 	if token == "" {
 		token = os.Getenv("QINIU_API_KEY")
+	}
+	if token == "" {
+		return nil, fmt.Errorf("API key is required (set QINIU_API_KEY or pass token)")
 	}
 	cfg := &clientConfig{baseURL: DefaultBaseURL}
 	for _, opt := range opts {
 		opt(cfg)
 	}
 	uri := openai.SchemeV1 + ":base=" + cfg.baseURL + "&key=" + url.QueryEscape(token)
-	svc, err := openai.NewV1WithQiniu(context.Background(), uri)
+	svc, err := openai.NewV1(context.Background(), uri)
 	if err != nil {
-		panic("qiniu: " + err.Error())
+		return nil, err
 	}
-	return svc.(*openai.Service)
+	return svc.(*openai.Service), nil
 }
 
 // Register registers the Qiniu-backed OpenAI service with xai under scheme "qiniu".
 // After calling Register(token), xai.New(ctx, "qiniu:") returns the Qiniu service.
 // Token can be empty to use QINIU_API_KEY from environment.
 func Register(token string, opts ...ClientOption) {
-	svc := NewService(token, opts...)
+	svc, err := NewServiceWithError(token, opts...)
+	if err != nil {
+		panic("qiniu: " + err.Error())
+	}
 	xai.Register("qiniu", func(ctx context.Context, uri string) (xai.Service, error) {
 		// Allow override via uri: qiniu:key=xxx or qiniu:base=xxx&key=xxx
 		if uri == "" {
@@ -95,6 +114,6 @@ func Register(token string, opts ...ClientOption) {
 		if base != DefaultBaseURL {
 			opts = append(opts, WithBaseURL(base))
 		}
-		return NewService(tok, opts...), nil
+		return NewServiceWithError(tok, opts...)
 	})
 }

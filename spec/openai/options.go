@@ -31,11 +31,13 @@ import (
 // -----------------------------------------------------------------------------
 
 type options struct {
-	opts []option.RequestOption
+	opts    []option.RequestOption
+	baseURL string
 }
 
 func (p *options) WithBaseURL(base string) xai.OptionBuilder {
-	p.opts = append(p.opts, option.WithBaseURL(base))
+	p.baseURL = strings.TrimSpace(base)
+	p.opts = append(p.opts, option.WithBaseURL(p.baseURL))
 	return p
 }
 
@@ -140,6 +142,13 @@ func buildOptions(opts xai.OptionBuilder) (ret []option.RequestOption) {
 		ret = p.opts
 	}
 	return
+}
+
+func baseURLOption(opts xai.OptionBuilder) string {
+	if p, ok := opts.(*options); ok {
+		return p.baseURL
+	}
+	return ""
 }
 
 // -----------------------------------------------------------------------------

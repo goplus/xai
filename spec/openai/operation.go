@@ -16,16 +16,38 @@
 
 package openai
 
-import xai "github.com/goplus/xai/spec"
+import (
+	"context"
+
+	xai "github.com/goplus/xai/spec"
+)
 
 // -----------------------------------------------------------------------------
 
 func (p *Service) Actions(model xai.Model) []xai.Action {
-	panic("todo")
+	if isSoraModel(model) {
+		return []xai.Action{xai.GenVideo}
+	}
+	return nil
 }
 
 func (p *Service) Operation(model xai.Model, action xai.Action) (op xai.Operation, err error) {
-	panic("todo")
+	if action != xai.GenVideo || !isSoraModel(model) {
+		return nil, xai.ErrNotFound
+	}
+	return &genVideo{model: string(model)}, nil
+}
+
+// GetTask returns the current status for an existing Sora video task.
+func (p *Service) GetTask(ctx context.Context, model xai.Model, action xai.Action, taskID string) (xai.OperationResponse, error) {
+	if action != xai.GenVideo || !isSoraModel(model) {
+		return nil, xai.ErrNotFound
+	}
+	task, err := p.getVideoTask(ctx, p.baseURL, taskID)
+	if err != nil {
+		return nil, err
+	}
+	return newVideoResp(task, p.baseURL), nil
 }
 
 // -----------------------------------------------------------------------------

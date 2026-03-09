@@ -9,6 +9,7 @@ OpenAI-compatible implementation of [xai.Service](https://github.com/goplus/xai/
 - **Streaming** and non-streaming generation
 - **Tools** (function calling) and **Web Search** tool
 - **Thinking / reasoning** and **compaction** blocks
+- **Video operations**: `Operation(model, xai.GenVideo)` for `sora-*` models
 - **Provider extensions**: Qiniu provider with `ImageURLWithDetail`, `VideoFile`
 
 ## Installation
@@ -246,6 +247,67 @@ opts := svc.Options().WithBaseURL("https://custom.endpoint/v1/")
 resp, err := svc.Gen(ctx, params, opts)
 ```
 
+### Video Operations (Sora)
+
+`spec/openai` supports async video generation for `sora-*` models through `xai.GenVideo`.
+
+```go
+op, err := svc.Operation(xai.Model("sora-2"), xai.GenVideo)
+if err != nil {
+    panic(err)
+}
+
+op.Params().
+    Set("Prompt", "A cute orange cat chasing butterflies in a sunny garden").
+    Set("Seconds", "4").
+    Set("Size", "1280x720")
+
+resp, err := xai.CallSync(ctx, svc, op, nil)
+if err != nil {
+    panic(err)
+}
+fmt.Println("task_id:", resp.TaskID())
+
+results, err := xai.Wait(ctx, svc, resp, nil)
+if err != nil {
+    panic(err)
+}
+for i := 0; i < results.Len(); i++ {
+    out := results.At(i).(*xai.OutputVideo)
+    fmt.Println(out.URL())
+}
+```
+
+Supported params for `op.Params().Set(...)`:
+
+| Param | Required | Notes |
+|------|----------|-------|
+| `Prompt` | Yes | Prompt for generation or remix |
+| `InputReference` | No | URL / `xai.Image` / `xai.Video` |
+| `Seconds` | No | `4`, `8`, `12` |
+| `Size` | No | `720x1280`, `1280x720`, `1024x1792`, `1792x1024` |
+| `RemixFromVideoID` | No | Switches to remix endpoint |
+
+Remix example:
+
+```go
+op.Params().
+    Set("Prompt", "Change to a neon cyberpunk night scene").
+    Set("RemixFromVideoID", "qvideo-user123-1766453713089395279")
+```
+
+Resume polling from a saved task ID:
+
+```go
+resp, err := xai.GetTask(ctx, svc, xai.Model("sora-2"), xai.GenVideo, taskID)
+if err != nil {
+    panic(err)
+}
+results, err := xai.Wait(ctx, svc, resp, nil)
+```
+
+Detailed Qiniu mapping doc: [provider/qiniu/sora.md](provider/qiniu/sora.md)
+
 ## v3 vs v1
 
 | Aspect | v3 (Responses API) | v1 (Chat Completions) |
@@ -277,7 +339,8 @@ qiniu.Register("your_token")
 svc, _ := xai.New(ctx, "qiniu:")
 ```
 
-Qiniu supports `ImageURLWithDetail` (including `ultra_high`) and `VideoFile` (qfile-xxx).
+Qiniu supports `ImageURLWithDetail` (including `ultra_high`), `VideoFile` (qfile-xxx),
+and Sora video operations (`xai.GenVideo`) for `sora-*` models.
 
 ## Package Structure
 
@@ -287,18 +350,21 @@ spec/openai/
 ├── openai.go           # Service, New, NewV1, URI parsing
 ├── provider.go         # Internal provider interface, genRequest
 ├── provider_v3.go      # v3 Responses API implementation
-├── provider_v1.go     # v1 Chat Completions implementation
+├── provider_v1.go      # v1 Chat Completions implementation
 ├── params.go           # ParamBuilder
 ├── options.go          # OptionBuilder
 ├── message.go          # MsgBuilder, MsgBuilderExt
-├── response.go         # Response types, contentBlock, buildOutputToInput
+├── response_v3.go      # v3 response adapters
+├── response_v1.go      # v1 response adapters
 ├── tool.go             # Tool, ToolDef, WebSearchTool
 ├── data.go             # ImageBuilder, DocumentBuilder
-├── schema.go           # Image/Video builders (unsupported stubs)
-├── operation.go        # Actions, Operation (todo)
+├── schema.go           # Image/Video object factories
+├── operation.go        # Action routing
+├── operation_video.go  # Sora video operation implementation
 └── provider/
     └── qiniu/
-        └── service.go  # Qiniu-backed Service
+        ├── service.go  # Qiniu-backed Service
+        └── sora.md     # Sora API mapping (Qiniu)
 ```
 
 ## Examples
@@ -320,6 +386,9 @@ go run ./examples/openai image-ultra
 go run ./examples/openai video
 go run ./examples/openai video-fileid
 go run ./examples/openai multi-video
+
+# Sora video generation (async operation)
+go run ./examples/sora text-to-video
 
 # Streaming
 STREAM=1 go run ./examples/openai text

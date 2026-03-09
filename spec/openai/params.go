@@ -90,14 +90,19 @@ func (p *Service) Params() xai.ParamBuilder {
 }
 
 func buildParams(in xai.ParamBuilder) *genRequest {
-	p := in.(*params)
+	p, ok := in.(*params)
+	if !ok {
+		panic("openai: use Service.Params() to create ParamBuilder")
+	}
 	// Build messages
 	p.req.Messages = make([]*message, len(p.msgs))
 	for i, mb := range p.msgs {
 		if ext, ok := mb.(msgBuilderExt); ok {
 			p.req.Messages[i] = ext.msgBuilder.getMessage()
+		} else if msg, ok := mb.(*msgBuilder); ok {
+			p.req.Messages[i] = msg.getMessage()
 		} else {
-			p.req.Messages[i] = mb.(*msgBuilder).getMessage()
+			panic("openai: use Service.UserMsg() or Service.AssistantMsg() to create MsgBuilder")
 		}
 	}
 	return &p.req

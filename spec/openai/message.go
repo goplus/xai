@@ -18,6 +18,7 @@ package openai
 
 import (
 	"encoding/json"
+	"fmt"
 
 	xai "github.com/goplus/xai/spec"
 )
@@ -85,7 +86,8 @@ func (p *msgBuilder) Text(text string) xai.MsgBuilder {
 }
 
 func (p *msgBuilder) Image(image xai.ImageData) xai.MsgBuilder {
-	panic("todo")
+	// TODO: not yet implemented; use ImageURL or ImageFile instead
+	return p
 }
 
 func (p *msgBuilder) ImageURL(mime xai.ImageType, url string) xai.MsgBuilder {
@@ -101,7 +103,8 @@ func (p *msgBuilder) ImageFile(mime xai.ImageType, fileID string) xai.MsgBuilder
 }
 
 func (p *msgBuilder) Doc(doc xai.DocumentData) xai.MsgBuilder {
-	panic("todo")
+	// TODO: not yet implemented; use DocURL or DocFile instead
+	return p
 }
 
 func (p *msgBuilder) DocURL(mime xai.DocumentType, url string) xai.MsgBuilder {
@@ -117,7 +120,8 @@ func (p *msgBuilder) VideoFile(fileID string, format string) xai.MsgBuilder {
 }
 
 func (p *msgBuilder) Part(part xai.Part) xai.MsgBuilder {
-	panic("todo")
+	// TODO: not yet implemented
+	return p
 }
 
 func (p *msgBuilder) Thinking(v xai.Thinking) xai.MsgBuilder {
@@ -152,8 +156,12 @@ func (p *msgBuilder) ToolUse(v xai.ToolUse) xai.MsgBuilder {
 
 func (p *msgBuilder) ToolResult(v xai.ToolResult) xai.MsgBuilder {
 	var result any = v.Result
-	if v.IsError {
-		result = map[string]any{"error": v.Result.(error).Error()}
+	if v.IsError && v.Result != nil {
+		if err, ok := v.Result.(error); ok {
+			result = map[string]any{"error": err.Error()}
+		} else {
+			result = map[string]any{"error": fmt.Sprintf("%v", v.Result)}
+		}
 	}
 	resultJSON, err := json.Marshal(result)
 	if err != nil {
