@@ -231,7 +231,7 @@ type inputSchema struct {
 	restriction map[string]*xai.Restriction
 }
 
-func (p *inputSchema) Restrict(name string) *xai.Restriction {
+func (p *inputSchema) Restriction(name string) *xai.Restriction {
 	return p.restriction[name]
 }
 

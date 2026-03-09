@@ -4,8 +4,8 @@ go 1.24
 
 require (
 	github.com/goplus/xai v0.1.0
-	github.com/goplus/xai/claude v0.0.0
-	github.com/goplus/xai/openai v0.0.0
+	github.com/goplus/xai/spec/claude v0.0.0
+	github.com/goplus/xai/spec/openai v0.0.0
 )
 
 require (
@@ -20,6 +20,6 @@ require (
 
 replace (
 	github.com/goplus/xai => ../../../
-	github.com/goplus/xai/claude => ../../../claude
-	github.com/goplus/xai/openai => ../../../openai
+	github.com/goplus/xai/spec/claude => ../../../spec/claude
+	github.com/goplus/xai/spec/openai => ../../../spec/openai
 )

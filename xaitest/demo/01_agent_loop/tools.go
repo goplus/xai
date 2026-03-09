@@ -40,7 +40,7 @@ type toolWithInputSchema interface {
 	InputSchema(string) xai.Tool
 }
 
-func registerTools(provider xai.Provider, root string, tools []LocalTool) {
+func registerTools(provider xai.Service, root string, tools []LocalTool) {
 	for _, tool := range tools {
 		t := provider.ToolDef(tool.Name())
 		t.Description(tool.Description())

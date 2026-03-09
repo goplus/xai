@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/goplus/xai/claude"
-	_ "github.com/goplus/xai/openai"
 	xai "github.com/goplus/xai/spec"
+	_ "github.com/goplus/xai/spec/claude"
+	_ "github.com/goplus/xai/spec/openai"
 )
 
 const (
@@ -67,7 +67,7 @@ func main() {
 	registerTools(provider, absTarget, tools)
 
 	if err := runAgent(ctx, AgentConfig{
-		Provider:  provider,
+		Service:   provider,
 		Model:     *model,
 		Task:      *task,
 		TargetDir: absTarget,

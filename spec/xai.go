@@ -21,6 +21,7 @@ import (
 	"errors"
 	"iter"
 	"strings"
+	"time"
 )
 
 var (
@@ -35,7 +36,8 @@ var (
 // -----------------------------------------------------------------------------
 
 type OptionBuilder interface {
-	WithBaseURL(base string) OptionBuilder
+	BaseURL(base string) OptionBuilder
+	Timeout(timeout time.Duration) OptionBuilder
 }
 
 // -----------------------------------------------------------------------------

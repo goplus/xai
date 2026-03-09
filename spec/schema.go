@@ -94,9 +94,9 @@ type InputSchema interface {
 	// Fields returns the list of fields defined in the schema.
 	Fields() []Field
 
-	// Restrict returns the `Restriction` for the parameter with the given name. It
+	// Restriction returns the `Restriction` for the parameter with the given name. It
 	// returns nil if there is no restriction for the parameter.
-	Restrict(name string) *Restriction
+	Restriction(name string) *Restriction
 }
 
 // Params represents the parameters that can be set.

@@ -17,6 +17,8 @@
 package openai
 
 import (
+	"time"
+
 	xai "github.com/goplus/xai/spec"
 	"github.com/openai/openai-go/v3/option"
 )
@@ -27,8 +29,13 @@ type options struct {
 	opts []option.RequestOption
 }
 
-func (p *options) WithBaseURL(base string) xai.OptionBuilder {
+func (p *options) BaseURL(base string) xai.OptionBuilder {
 	p.opts = append(p.opts, option.WithBaseURL(base))
+	return p
+}
+
+func (p *options) Timeout(timeout time.Duration) xai.OptionBuilder {
+	p.opts = append(p.opts, option.WithRequestTimeout(timeout))
 	return p
 }
 

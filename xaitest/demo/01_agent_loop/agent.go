@@ -20,7 +20,7 @@ import (
 
 // AgentConfig holds everything the agent needs. No hardcoded phases or filenames.
 type AgentConfig struct {
-	Provider        xai.Provider
+	Service         xai.Service
 	Model           string
 	Task            string // user instruction: what to do, what files to produce, content requirements
 	TargetDir       string // absolute path to the codebase to examine
@@ -78,7 +78,7 @@ func runAgent(ctx context.Context, cfg AgentConfig) error {
 
 	toolRefs := make([]xai.ToolBase, 0, len(cfg.Tools))
 	for _, t := range cfg.Tools {
-		toolRefs = append(toolRefs, cfg.Provider.Tool(t.Name()))
+		toolRefs = append(toolRefs, cfg.Service.Tool(t.Name()))
 	}
 	toolIndex := buildToolIndex(cfg.Tools)
 
@@ -93,19 +93,19 @@ func runAgent(ctx context.Context, cfg AgentConfig) error {
 	sysPrompt := buildSystemPrompt(cfg.TargetDir, absOutput)
 
 	// The Task is the complete user instruction — filenames, content structure, everything.
-	history := []xai.MsgBuilder{cfg.Provider.UserMsg().Text(cfg.Task)}
+	history := []xai.MsgBuilder{cfg.Service.UserMsg().Text(cfg.Task)}
 
 	for turn := 0; turn < cfg.MaxTurns; turn++ {
 		fmt.Printf("\n-- Turn %d/%d --\n", turn+1, cfg.MaxTurns)
 
-		resp, err := cfg.Provider.Gen(ctx,
-			cfg.Provider.Params().
+		resp, err := cfg.Service.Gen(ctx,
+			cfg.Service.Params().
 				Model(xai.Model(cfg.Model)).
 				MaxOutputTokens(cfg.MaxOutputTokens).
-				System(cfg.Provider.Texts(sysPrompt)).
+				System(cfg.Service.Texts(sysPrompt)).
 				Messages(history...).
 				Tools(toolRefs...),
-			cfg.Provider.Options(),
+			cfg.Service.Options(),
 		)
 		if err != nil {
 			return fmt.Errorf("gen: %w", err)
@@ -130,7 +130,7 @@ func runAgent(ctx context.Context, cfg AgentConfig) error {
 				break
 			}
 			// No output yet — nudge the agent to keep working.
-			history = append(history, cfg.Provider.UserMsg().Text(
+			history = append(history, cfg.Service.UserMsg().Text(
 				"You haven't produced any deliverables yet. Please continue working.",
 			))
 			continue
@@ -162,7 +162,7 @@ func runAgent(ctx context.Context, cfg AgentConfig) error {
 		}
 		wg.Wait()
 
-		trMsg := cfg.Provider.UserMsg()
+		trMsg := cfg.Service.UserMsg()
 		for _, r := range results {
 			val := any(r.out)
 			if r.isError {

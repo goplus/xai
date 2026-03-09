@@ -17,6 +17,8 @@
 package gemini
 
 import (
+	"time"
+
 	xai "github.com/goplus/xai/spec"
 	"google.golang.org/genai"
 )
@@ -27,8 +29,13 @@ type options struct {
 	opts genai.HTTPOptions
 }
 
-func (p *options) WithBaseURL(base string) xai.OptionBuilder {
+func (p *options) BaseURL(base string) xai.OptionBuilder {
 	p.opts.BaseURL = base
+	return p
+}
+
+func (p *options) Timeout(timeout time.Duration) xai.OptionBuilder {
+	p.opts.Timeout = &timeout
 	return p
 }
 
