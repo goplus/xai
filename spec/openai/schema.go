@@ -17,53 +17,111 @@
 package openai
 
 import (
+	"encoding/base64"
 	"io"
+	"os"
 
 	xai "github.com/goplus/xai/spec"
 )
 
 // -----------------------------------------------------------------------------
 
+type image struct {
+	mime xai.ImageType
+	blob xai.BlobData
+	uri  string
+}
+
+func (p *image) Type() xai.ImageType { return p.mime }
+func (p *image) Blob() xai.BlobData  { return p.blob }
+func (p *image) StgUri() string      { return p.uri }
+
+type video struct {
+	mime xai.VideoType
+	blob xai.BlobData
+	uri  string
+}
+
+func (p *video) Type() xai.VideoType { return p.mime }
+func (p *video) Blob() xai.BlobData  { return p.blob }
+func (p *video) StgUri() string      { return p.uri }
+
 func (p *Service) ImageFrom(mime xai.ImageType, src io.Reader) (xai.Image, error) {
-	panic("unsupported")
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return nil, err
+	}
+	return p.ImageFromBytes(mime, data), nil
 }
 
 func (p *Service) ImageFromLocal(mime xai.ImageType, fileName string) (xai.Image, error) {
-	panic("unsupported")
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+	return p.ImageFromBytes(mime, data), nil
 }
 
 func (p *Service) ImageFromStgUri(mime xai.ImageType, stgUri string) xai.Image {
-	panic("unsupported")
+	return &image{
+		mime: mime,
+		uri:  stgUri,
+	}
 }
 
 func (p *Service) ImageFromBytes(mime xai.ImageType, data []byte) xai.Image {
-	panic("unsupported")
+	return &image{
+		mime: mime,
+		blob: xai.BlobFromRaw(data),
+	}
 }
 
 func (p *Service) ImageFromBase64(mime xai.ImageType, data string) (xai.Image, error) {
-	panic("unsupported")
+	raw, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	return p.ImageFromBytes(mime, raw), nil
 }
 
 // -----------------------------------------------------------------------------
 
 func (p *Service) VideoFrom(mime xai.VideoType, src io.Reader) (xai.Video, error) {
-	panic("unsupported")
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return nil, err
+	}
+	return p.VideoFromBytes(mime, data), nil
 }
 
 func (p *Service) VideoFromLocal(mime xai.VideoType, fileName string) (xai.Video, error) {
-	panic("unsupported")
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+	return p.VideoFromBytes(mime, data), nil
 }
 
 func (p *Service) VideoFromStgUri(mime xai.VideoType, stgUri string) xai.Video {
-	panic("unsupported")
+	return &video{
+		mime: mime,
+		uri:  stgUri,
+	}
 }
 
 func (p *Service) VideoFromBytes(mime xai.VideoType, data []byte) xai.Video {
-	panic("unsupported")
+	return &video{
+		mime: mime,
+		blob: xai.BlobFromRaw(data),
+	}
 }
 
 func (p *Service) VideoFromBase64(mime xai.VideoType, data string) (xai.Video, error) {
-	panic("unsupported")
+	raw, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return nil, err
+	}
+	return p.VideoFromBytes(mime, raw), nil
 }
 
 // -----------------------------------------------------------------------------
