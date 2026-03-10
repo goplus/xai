@@ -1,6 +1,6 @@
 module github.com/goplus/xai/spec/openai
 
-go 1.24
+go 1.25.0
 
 require (
 	github.com/goplus/xai v0.1.0

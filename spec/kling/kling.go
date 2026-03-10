@@ -24,6 +24,7 @@ import (
 
 	xai "github.com/goplus/xai/spec"
 	"github.com/goplus/xai/spec/geno"
+	"golang.org/x/oauth2"
 )
 
 // -----------------------------------------------------------------------------
@@ -58,7 +59,16 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 		return nil, err
 	}
 
-	svc := geno.NewService[adapter](nil)
+	var src oauth2.TokenSource
+	if token := params["token"]; len(token) > 0 {
+		src = oauth2.StaticTokenSource(&oauth2.Token{
+			AccessToken: token[0],
+		})
+	} else {
+		panic("token is required")
+	}
+
+	svc := geno.NewService[adapter](oauth2.NewClient(ctx, src))
 	c := svc.HTTPClient()
 	if base := params["base"]; len(base) > 0 {
 		c.BaseURL(base[0])
