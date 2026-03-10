@@ -140,10 +140,12 @@ func (p *Request) Json(v any) error {
 }
 
 // Do sends the HTTP request and returns the response.
-func (p *Request) Do(ctx context.Context, opts *HTTPOptions) (*http.Response, error) {
+// options can be nil, in which case the client's settings will be used.
+func (p *Request) Do(ctx context.Context, options xai.OptionBuilder) (*http.Response, error) {
 	var baseURL *url.URL
 	var timeout *time.Duration
-	if opts != nil {
+	if options != nil {
+		opts := options.(*HTTPOptions)
 		baseURL = opts.baseURL
 		timeout = opts.timeout
 	}

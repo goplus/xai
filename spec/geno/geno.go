@@ -115,7 +115,7 @@ func (p *Operation) Call(ctx context.Context, svc xai.Service, opts xai.OptionBu
 		return
 	}
 
-	ret, err := req.Do(ctx, opts.(*HTTPOptions))
+	ret, err := req.Do(ctx, opts)
 	if err != nil {
 		return
 	}
