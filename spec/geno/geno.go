@@ -97,9 +97,15 @@ func (p *Operation) Set(name string, val any) xai.Params {
 }
 
 func (p *Operation) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	ret, err := p.req.Do(ctx, opts.(*HTTPOptions))
+	req := p.req
+	err = req.Json(p.body)
 	if err != nil {
-		return nil, err
+		return
+	}
+
+	ret, err := req.Do(ctx, opts.(*HTTPOptions))
+	if err != nil {
+		return
 	}
 	defer ret.Body.Close()
 
@@ -107,7 +113,7 @@ func (p *Operation) Call(ctx context.Context, svc xai.Service, opts xai.OptionBu
 	dec := json.NewDecoder(ret.Body)
 	err = dec.Decode(&body)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	_ = body
