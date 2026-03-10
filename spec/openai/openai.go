@@ -21,6 +21,7 @@ import (
 	"iter"
 	"net/url"
 	"strings"
+	"time"
 
 	xai "github.com/goplus/xai/spec"
 	"github.com/openai/openai-go/v3/option"
@@ -61,6 +62,7 @@ const (
 // uri should be in the format of "openai:base=service_base_url&key=api_key".
 //
 // `base` is the base URL of the API endpoint.
+// `timeout` is the request timeout duration (e.g., "30s").
 // `key` is the API key for authentication.
 // `org` is the organization ID to use for the API requests.
 // `project` is the project ID to use for the API requests.
@@ -78,6 +80,13 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 	opts := []option.RequestOption{option.WithEnvironmentProduction()}
 	if base := params["base"]; len(base) > 0 {
 		opts = append(opts, option.WithBaseURL(base[0]))
+	}
+	if timeout := params["timeout"]; len(timeout) > 0 {
+		d, err := time.ParseDuration(timeout[0])
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, option.WithRequestTimeout(d))
 	}
 	if key := params["key"]; len(key) > 0 {
 		opts = append(opts, option.WithAPIKey(key[0]))

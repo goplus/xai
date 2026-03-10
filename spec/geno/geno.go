@@ -41,11 +41,13 @@ type ActionInfo struct {
 }
 
 type serviceAdapter interface {
+	// Actions returns the list of actions supported by the given model.
+	Actions(model xai.Model) []xai.Action
+
 	// ActionInfo returns the ActionInfo for the given action. The implementation of
 	// this method should determine the path, model parameter name, and response creator
 	// function based on the action.
 	ActionInfo(action xai.Action) ActionInfo
-	Actions(model xai.Model) []xai.Action
 }
 
 type Service[T serviceAdapter] struct {

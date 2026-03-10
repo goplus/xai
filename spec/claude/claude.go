@@ -21,6 +21,7 @@ import (
 	"iter"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -74,6 +75,7 @@ const (
 // uri should be in the format of "claude:base=service_base_url&key=api_key".
 //
 // `base` is the base URL of the API endpoint.
+// `timeout` is the request timeout duration (e.g., "30s").
 // `key` is the API key for authentication (don't use both `key` and `token`).
 // `token` is the authentication token for the API requests.
 //
@@ -89,6 +91,13 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 	opts := []option.RequestOption{option.WithEnvironmentProduction()}
 	if base := params["base"]; len(base) > 0 {
 		opts = append(opts, option.WithBaseURL(base[0]))
+	}
+	if timeout := params["timeout"]; len(timeout) > 0 {
+		d, err := time.ParseDuration(timeout[0])
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, option.WithRequestTimeout(d))
 	}
 	if key := params["key"]; len(key) > 0 {
 		opts = append(opts, option.WithAPIKey(key[0]))

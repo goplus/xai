@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 
 	xai "github.com/goplus/xai/spec"
 	"google.golang.org/genai"
@@ -70,6 +71,7 @@ const (
 // uri should be in the format of "gemini:base=service_base_url&key=api_key".
 //
 // `base` is the base URL of the API endpoint.
+// `timeout` is the request timeout duration (e.g., "30s").
 // `key` is the API key for authentication for Gemini backend.
 // `project` is the project ID for Vertex AI backend.
 // `location` is the location for Vertex AI backend.
@@ -87,6 +89,13 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 	}
 	if key := params["key"]; len(key) > 0 {
 		conf.APIKey = key[0]
+	}
+	if timeout := params["timeout"]; len(timeout) > 0 {
+		d, err := time.ParseDuration(timeout[0])
+		if err != nil {
+			return nil, err
+		}
+		conf.HTTPOptions.Timeout = &d
 	}
 	if project := params["project"]; len(project) > 0 {
 		conf.Project = project[0]

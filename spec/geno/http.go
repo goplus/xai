@@ -70,7 +70,8 @@ func (p *Client) BaseURL(baseURL string) *Client {
 	return p
 }
 
-// Timeout sets the timeout for the client's HTTP requests.
+// Timeout sets the timeout for each request attempt. This should be smaller than the
+// timeout defined in the context, which spans all retries.
 func (p *Client) Timeout(timeout time.Duration) *Client {
 	p.client.Timeout = timeout
 	return p
