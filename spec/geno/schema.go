@@ -24,55 +24,55 @@ import (
 
 // -----------------------------------------------------------------------------
 
-func (p *Service[T]) ImageFrom(mime xai.ImageType, src io.Reader) (xai.Image, error) {
+func (p *ServiceBase) ImageFrom(mime xai.ImageType, src io.Reader) (xai.Image, error) {
 	panic("todo")
 }
 
-func (p *Service[T]) ImageFromLocal(mime xai.ImageType, fileName string) (xai.Image, error) {
+func (p *ServiceBase) ImageFromLocal(mime xai.ImageType, fileName string) (xai.Image, error) {
 	panic("todo")
 }
 
-func (p *Service[T]) ImageFromBase64(mime xai.ImageType, base64 string) (xai.Image, error) {
+func (p *ServiceBase) ImageFromBase64(mime xai.ImageType, base64 string) (xai.Image, error) {
 	panic("todo")
 }
 
-func (p *Service[T]) ImageFromBytes(mime xai.ImageType, data []byte) xai.Image {
+func (p *ServiceBase) ImageFromBytes(mime xai.ImageType, data []byte) xai.Image {
 	panic("todo")
 }
 
-func (p *Service[T]) ImageFromStgUri(mime xai.ImageType, stgUri string) xai.Image {
-	panic("todo")
-}
-
-// -----------------------------------------------------------------------------
-
-func (p *Service[T]) VideoFrom(mime xai.VideoType, src io.Reader) (xai.Video, error) {
-	panic("todo")
-}
-func (p *Service[T]) VideoFromLocal(mime xai.VideoType, fileName string) (xai.Video, error) {
-	panic("todo")
-}
-func (p *Service[T]) VideoFromBase64(mime xai.VideoType, base64 string) (xai.Video, error) {
-	panic("todo")
-}
-func (p *Service[T]) VideoFromBytes(mime xai.VideoType, data []byte) xai.Video {
-	panic("todo")
-}
-func (p *Service[T]) VideoFromStgUri(mime xai.VideoType, stgUri string) xai.Video {
+func (p *ServiceBase) ImageFromStgUri(mime xai.ImageType, stgUri string) xai.Image {
 	panic("todo")
 }
 
 // -----------------------------------------------------------------------------
 
-func (p *Service[T]) ReferenceImage(img xai.Image, id int32, typ xai.ReferenceImageType) (xai.ReferenceImage, xai.Configurable) {
+func (p *ServiceBase) VideoFrom(mime xai.VideoType, src io.Reader) (xai.Video, error) {
+	panic("todo")
+}
+func (p *ServiceBase) VideoFromLocal(mime xai.VideoType, fileName string) (xai.Video, error) {
+	panic("todo")
+}
+func (p *ServiceBase) VideoFromBase64(mime xai.VideoType, base64 string) (xai.Video, error) {
+	panic("todo")
+}
+func (p *ServiceBase) VideoFromBytes(mime xai.VideoType, data []byte) xai.Video {
+	panic("todo")
+}
+func (p *ServiceBase) VideoFromStgUri(mime xai.VideoType, stgUri string) xai.Video {
 	panic("todo")
 }
 
-func (p *Service[T]) GenVideoReferenceImages(imgs ...xai.GenVideoReferenceImage) xai.GenVideoReferenceImages {
+// -----------------------------------------------------------------------------
+
+func (p *ServiceBase) ReferenceImage(img xai.Image, id int32, typ xai.ReferenceImageType) (xai.ReferenceImage, xai.Configurable) {
 	panic("todo")
 }
 
-func (p *Service[T]) GenVideoMask(img xai.Image, maskMode string) xai.GenVideoMask {
+func (p *ServiceBase) GenVideoReferenceImages(imgs ...xai.GenVideoReferenceImage) xai.GenVideoReferenceImages {
+	panic("todo")
+}
+
+func (p *ServiceBase) GenVideoMask(img xai.Image, maskMode string) xai.GenVideoMask {
 	panic("todo")
 }
 

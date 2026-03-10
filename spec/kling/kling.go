@@ -80,9 +80,6 @@ func New(ctx context.Context, uri string) (xai.Service, error) {
 		}
 		c.Timeout(d)
 	}
-	if token := params["token"]; len(token) > 0 {
-		panic("todo")
-	}
 	return svc, nil
 }
 

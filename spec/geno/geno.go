@@ -26,6 +26,22 @@ import (
 
 // -----------------------------------------------------------------------------
 
+type ServiceBase struct {
+	c Client
+}
+
+// HTTPClient returns the underlying HTTP client used by the service.
+func (p *ServiceBase) HTTPClient() *Client {
+	return &p.c
+}
+
+// implement xai.Service
+func (p *ServiceBase) Options() xai.OptionBuilder {
+	return new(HTTPOptions)
+}
+
+// -----------------------------------------------------------------------------
+
 // ResponseCreator is a function type that creates an xai.OperationResponse from
 // a given HTTP response body.
 type ResponseCreator func(c *Client, body map[string]any) (xai.OperationResponse, error)
@@ -51,25 +67,15 @@ type serviceAdapter interface {
 }
 
 type Service[T serviceAdapter] struct {
-	c       Client
+	ServiceBase
 	adapter T
 }
 
 // NewService creates a new Service with the provided HTTP client.
 func NewService[T serviceAdapter](client *http.Client) *Service[T] {
 	return &Service[T]{
-		c: *NewClient(client),
+		ServiceBase: ServiceBase{c: *NewClient(client)},
 	}
-}
-
-// HTTPClient returns the underlying HTTP client used by the service.
-func (p *Service[T]) HTTPClient() *Client {
-	return &p.c
-}
-
-// implement xai.Service
-func (p *Service[T]) Options() xai.OptionBuilder {
-	return new(HTTPOptions)
 }
 
 // implement xai.Service
