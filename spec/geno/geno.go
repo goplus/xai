@@ -45,10 +45,12 @@ type serviceAdapter interface {
 	// this method should determine the path, model parameter name, and response creator
 	// function based on the action.
 	ActionInfo(action xai.Action) ActionInfo
+	Actions(model xai.Model) []xai.Action
 }
 
 type Service[T serviceAdapter] struct {
-	c Client
+	c       Client
+	adapter T
 }
 
 // NewService creates a new Service with the provided HTTP client.
@@ -69,9 +71,13 @@ func (p *Service[T]) Options() xai.OptionBuilder {
 }
 
 // implement xai.Service
+func (p *Service[T]) Actions(model xai.Model) []xai.Action {
+	return p.adapter.Actions(model)
+}
+
+// implement xai.Service
 func (p *Service[T]) Operation(model xai.Model, action xai.Action) (xai.Operation, error) {
-	var adapter T
-	ai := adapter.ActionInfo(action)
+	ai := p.adapter.ActionInfo(action)
 	req, err := p.c.NewRequest(http.MethodPost, ai.Path)
 	if err != nil {
 		return nil, err
