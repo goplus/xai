@@ -26,42 +26,49 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// ResponseCreator is a function type that creates an xai.OperationResponse from
+// a given HTTP response body.
+type ResponseCreator func(c *Client, body map[string]any) (xai.OperationResponse, error)
+
+// ActionInfo contains information about an action, including the path to call for
+// the action, the name of the parameter for the model, and a function to create a
+// response from the HTTP response body.
 type ActionInfo struct {
-	Path           string   // path to call for the action, e.g. "/v1/images/generations"
-	ModelParamName string   // name of the parameter for the model, e.g. "model_name"
-	QueryPath      string   // path to query status for the action, e.g. "/v1/images/generations/{id}"
-	QueryID        []string // e.g. ["data", "task_id"] for resp["data"]["task_id"]
+	Path           string // path to call for the action, e.g. "/v1/images/generations"
+	ModelParamName string // name of the parameter for the model, e.g. "model_name"
+	NewResponse    ResponseCreator
 }
 
-type adapter interface {
+type serviceAdapter interface {
+	// ActionInfo returns the ActionInfo for the given action. The implementation of
+	// this method should determine the path, model parameter name, and response creator
+	// function based on the action.
 	ActionInfo(action xai.Action) ActionInfo
 }
 
-// -----------------------------------------------------------------------------
-
-type ServiceBase[T adapter] struct {
+type Service[T serviceAdapter] struct {
 	c Client
 }
 
-// NewServiceBase creates a new ServiceBase with the provided HTTP client.
-func NewServiceBase[T adapter](client *http.Client) *ServiceBase[T] {
-	return &ServiceBase[T]{
+// NewService creates a new Service with the provided HTTP client.
+func NewService[T serviceAdapter](client *http.Client) *Service[T] {
+	return &Service[T]{
 		c: *NewClient(client),
 	}
 }
 
 // HTTPClient returns the underlying HTTP client used by the service.
-func (p *ServiceBase[T]) HTTPClient() *Client {
+func (p *Service[T]) HTTPClient() *Client {
 	return &p.c
 }
 
-// to implement xai.Service
-func (p *ServiceBase[T]) Options() xai.OptionBuilder {
+// implement xai.Service
+func (p *Service[T]) Options() xai.OptionBuilder {
 	return new(HTTPOptions)
 }
 
-// to implement xai.Service
-func (p *ServiceBase[T]) Operation(model xai.Model, action xai.Action) (xai.Operation, error) {
+// implement xai.Service
+func (p *Service[T]) Operation(model xai.Model, action xai.Action) (xai.Operation, error) {
 	var adapter T
 	ai := adapter.ActionInfo(action)
 	req, err := p.c.NewRequest(http.MethodPost, ai.Path)
@@ -71,16 +78,18 @@ func (p *ServiceBase[T]) Operation(model xai.Model, action xai.Action) (xai.Oper
 	body := make(map[string]any, 16)
 	body[ai.ModelParamName] = model
 	return &Operation{
-		req:  req,
-		body: body,
+		req:         req,
+		body:        body,
+		newResponse: ai.NewResponse,
 	}, nil
 }
 
 // -----------------------------------------------------------------------------
 
 type Operation struct {
-	req  *Request
-	body map[string]any
+	req         *Request
+	body        map[string]any
+	newResponse ResponseCreator
 }
 
 func (p *Operation) InputSchema() xai.InputSchema {
@@ -116,7 +125,27 @@ func (p *Operation) Call(ctx context.Context, svc xai.Service, opts xai.OptionBu
 		return
 	}
 
-	_ = body
+	return p.newResponse(p.req.c, body)
+}
+
+// -----------------------------------------------------------------------------
+
+type OperationResponse struct {
+}
+
+func (p *OperationResponse) Done() bool {
+	panic("todo")
+}
+
+func (p *OperationResponse) Sleep() {
+	panic("todo")
+}
+
+func (p *OperationResponse) Retry(ctx context.Context, svc xai.Service) (xai.OperationResponse, error) {
+	panic("todo")
+}
+
+func (p *OperationResponse) Results() xai.Results {
 	panic("todo")
 }
 
