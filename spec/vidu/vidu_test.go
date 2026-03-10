@@ -28,6 +28,12 @@ func TestIsVideoModel(t *testing.T) {
 	if !IsVideoModel(ModelViduQ2) {
 		t.Fatal("expected vidu-q2 to be a video model")
 	}
+	if !IsVideoModel(ModelViduQ2Turbo) {
+		t.Fatal("expected viduq2-turbo to be a video model")
+	}
+	if !IsVideoModel(ModelViduQ2Pro) {
+		t.Fatal("expected viduq2-pro to be a video model")
+	}
 	if IsVideoModel("kling-v2-1") {
 		t.Fatal("expected kling-v2-1 not to be a vidu model")
 	}

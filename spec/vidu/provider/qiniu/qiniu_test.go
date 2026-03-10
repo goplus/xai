@@ -67,7 +67,35 @@ func TestBuildVideoRequestRouting(t *testing.T) {
 				StartImageURL: "https://example.com/start.png",
 				EndImageURL:   "https://example.com/end.png",
 			},
-			wantEndpoint: EndpointQ2StartEndToVideo,
+			wantEndpoint: EndpointQ2StartEndToVideoPro,
+		},
+		{
+			name: "viduq2-turbo image-to-video",
+			params: &vidu.VideoParams{
+				ModelName: vidu.ModelViduQ2Turbo,
+				Prompt:    "a woman walking",
+				ImageURL:  "https://example.com/1.png",
+			},
+			wantEndpoint: EndpointQ2ImageToVideoTurbo,
+		},
+		{
+			name: "viduq2-turbo start-end-to-video",
+			params: &vidu.VideoParams{
+				ModelName:     vidu.ModelViduQ2Turbo,
+				Prompt:        "dragon lands",
+				StartImageURL: "https://example.com/start.png",
+				EndImageURL:   "https://example.com/end.png",
+			},
+			wantEndpoint: EndpointQ2StartEndToVideoTurbo,
+		},
+		{
+			name: "viduq2-pro image-to-video",
+			params: &vidu.VideoParams{
+				ModelName: vidu.ModelViduQ2Pro,
+				Prompt:    "a woman walking",
+				ImageURL:  "https://example.com/1.png",
+			},
+			wantEndpoint: EndpointQ2ImageToVideoPro,
 		},
 	}
 

@@ -1,11 +1,13 @@
 # Vidu
 
-`spec/vidu` provides a Vidu video generation specification implementation in the same style as `spec/kling`, supporting `vidu-q1` and `vidu-q2` via `xai.GenVideo`.
+`spec/vidu` provides a Vidu video generation specification implementation in the same style as `spec/kling`, supporting `vidu-q1`, `vidu-q2`, `viduq2-turbo` and `viduq2-pro` via `xai.GenVideo`.
 
 ## Supported Models
 
 - `vidu-q1`
 - `vidu-q2`
+- `viduq2-turbo`
+- `viduq2-pro`
 
 ## Supported Routes (Auto-detected)
 

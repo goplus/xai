@@ -82,7 +82,7 @@ var (
 	// ErrPromptRequired is returned when prompt is not set or empty.
 	ErrPromptRequired = errors.New("vidu: prompt is required")
 
-	// ErrUnsupportedModel is returned when model is not vidu-q1 or vidu-q2.
+	// ErrUnsupportedModel is returned when model is not vidu-q1, vidu-q2, viduq2-turbo or viduq2-pro.
 	ErrUnsupportedModel = errors.New("vidu: unsupported video model")
 
 	// ErrRouteNotSupported is returned when selected mode is unsupported by model.
@@ -315,7 +315,7 @@ func Validate(p *VideoParams) error {
 		default:
 			return fmt.Errorf("%w: %s does not support %s", ErrRouteNotSupported, p.ModelName, p.Route())
 		}
-	case ModelViduQ2:
+	case ModelViduQ2, ModelViduQ2Turbo, ModelViduQ2Pro:
 		if p.Duration != nil {
 			switch p.Route() {
 			case RouteTextToVideo:
@@ -655,6 +655,10 @@ func normalizeModel(model string) string {
 		return ModelViduQ1
 	case ModelViduQ2:
 		return ModelViduQ2
+	case ModelViduQ2Turbo:
+		return ModelViduQ2Turbo
+	case ModelViduQ2Pro:
+		return ModelViduQ2Pro
 	default:
 		return strings.ToLower(strings.TrimSpace(model))
 	}

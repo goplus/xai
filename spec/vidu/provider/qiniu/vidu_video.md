@@ -18,15 +18,15 @@ This document is based on [Qiniu Qnagic API](https://apidocs.qnaigc.com) and des
 
 ## 2. Model Capability Comparison
 
-| Capability/Parameter | vidu-q1 | vidu-q2 |
-|----------------------|---------|---------|
-| Text-to-video | ✓ (`/q1/text-to-video`) | ✓ (`/q2/text-to-video`) |
-| Reference-to-video (`reference_image_urls`) | ✓ | ✓ |
-| Reference subjects (`subjects`) | ✓ | ✓ |
-| Image-to-video (`image_url`) | - | ✓ (`/q2/image-to-video/pro`) |
-| Start-end-to-video (`start_image_url` + `end_image_url`) | - | ✓ (`/q2/start-end-to-video/pro`) |
-| Common params: `prompt`/`seed`/`duration`/`resolution`/`movement_amplitude` | ✓ | ✓ |
-| `watermark` | ✓ | ✓ |
+| Capability/Parameter | vidu-q1 | vidu-q2 | viduq2-turbo | viduq2-pro |
+|----------------------|---------|---------|--------------|------------|
+| Text-to-video | ✓ (`/q1/text-to-video`) | ✓ (`/q2/text-to-video`) | ✓ | ✓ |
+| Reference-to-video (`reference_image_urls`) | ✓ | ✓ | ✓ | ✓ |
+| Reference subjects (`subjects`) | ✓ | ✓ | ✓ | ✓ |
+| Image-to-video (`image_url`) | - | ✓ (`/q2/image-to-video/pro`) | ✓ (`/q2/image-to-video/turbo`) | ✓ (`/q2/image-to-video/pro`) |
+| Start-end-to-video (`start_image_url` + `end_image_url`) | - | ✓ (`/q2/start-end-to-video/pro`) | ✓ (`/q2/start-end-to-video/turbo`) | ✓ (`/q2/start-end-to-video/pro`) |
+| Common params: `prompt`/`seed`/`duration`/`resolution`/`movement_amplitude` | ✓ | ✓ | ✓ | ✓ |
+| `watermark` | ✓ | ✓ | ✓ | ✓ |
 
 ---
 
@@ -270,9 +270,9 @@ curl --location --request POST 'https://api.qnaigc.com/queue/fal-ai/vidu/q2/imag
 --header 'Content-Type: application/json' \
 --data-raw '{
   "prompt": "A woman walking through a vibrant city street at night, neon lights reflecting off wet pavement.",
-  "image_url": "https://example.com/testIMG_9179.jpeg",
+  "image_url": "http://t9vdmzkpm.hb-bkt.clouddn.com/testIMG_9179.jpeg?e=1770100380&token=Dzm7Yw6NngN0lPssNlIqyQyLGHeeRdHWfAMrxiCW:vYjos8ylxZQCumL2cibtugUNCtI=",
   "seed": 2,
-  "duration": 5,
+  "duration": 4,
   "resolution": "720p",
   "movement_amplitude": "auto",
   "watermark": true
@@ -312,7 +312,7 @@ curl --location --request POST 'https://api.qnaigc.com/queue/fal-ai/vidu/q2/star
   "start_image_url": "https://v3.fal.media/files/zebra/sgsdKvPigPhJ1S7Hl5bWc_first_frame_q1.png",
   "end_image_url": "https://v3.fal.media/files/kangaroo/CASBu_OmOnZ8IafirarFL_last_frame_q1.png",
   "seed": 2,
-  "duration": 5,
+  "duration": 4,
   "resolution": "720p",
   "movement_amplitude": "auto",
   "watermark": true
@@ -321,7 +321,83 @@ curl --location --request POST 'https://api.qnaigc.com/queue/fal-ai/vidu/q2/star
 
 ---
 
-### 3.7 Query Task Status
+### 3.7 vidu-q2 Image-to-Video (Turbo)
+
+**Endpoint**: `POST /queue/fal-ai/vidu/q2/image-to-video/turbo`
+
+Turbo variant for faster generation; same parameters as Pro.
+
+#### Request Parameters
+
+| Parameter | Type | Required | Default | Limits |
+|-----------|------|----------|---------|--------|
+| prompt | string | | - | Max 2000 chars |
+| image_url | string | ✓ | - | 1 image; see [Image Constraints](#4-image-constraints) |
+| seed | int | | 0 | - |
+| duration | int | | 5 | 1–10 |
+| resolution | string | | 720p | 720p, 1080p |
+| movement_amplitude | string | | auto | auto, small, medium, large |
+| watermark | bool | | - | - |
+
+#### curl Example
+
+```bash
+curl --location --request POST 'https://api.qnaigc.com/queue/fal-ai/vidu/q2/image-to-video/turbo' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "prompt": "A woman walking through a vibrant city street at night, neon lights reflecting off wet pavement.",
+  "image_url": "https://aitoken-public.qnaigc.com/example/generate-video/running-man.jpg",
+  "seed": 2,
+  "duration": 4,
+  "resolution": "720p",
+  "movement_amplitude": "auto",
+  "watermark": true
+}'
+```
+
+---
+
+### 3.8 vidu-q2 Start-End-to-Video (Turbo)
+
+**Endpoint**: `POST /queue/fal-ai/vidu/q2/start-end-to-video/turbo`
+
+Turbo variant for faster generation; same parameters as Pro.
+
+#### Request Parameters
+
+| Parameter | Type | Required | Default | Limits |
+|-----------|------|----------|---------|--------|
+| prompt | string | | - | Max 2000 chars |
+| start_image_url | string | ✓ | - | 1 image |
+| end_image_url | string | ✓ | - | 1 image |
+| seed | int | | 0 | - |
+| duration | int | | 5 | 1–10 |
+| resolution | string | | 720p | 720p, 1080p |
+| movement_amplitude | string | | auto | auto, small, medium, large |
+| watermark | bool | | - | - |
+
+#### curl Example
+
+```bash
+curl --location --request POST 'https://api.qnaigc.com/queue/fal-ai/vidu/q2/start-end-to-video/turbo' \
+--header 'Authorization: Bearer <token>' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "prompt": "Dragon lands on a rock",
+  "start_image_url": "https://v3.fal.media/files/zebra/sgsdKvPigPhJ1S7Hl5bWc_first_frame_q1.png",
+  "end_image_url": "https://v3.fal.media/files/kangaroo/CASBu_OmOnZ8IafirarFL_last_frame_q1.png",
+  "seed": 2,
+  "duration": 4,
+  "resolution": "720p",
+  "movement_amplitude": "auto",
+  "watermark": true
+}'
+```
+
+---
+
+### 3.9 Query Task Status
 
 **Endpoint**: `GET /queue/fal-ai/vidu/requests/{request_id}/status`
 
@@ -425,8 +501,8 @@ Validation in `spec/vidu` (`params.go`):
 | prompt length > 2000 | `ErrPromptTooLong` |
 | duration <= 0 | `ErrInvalidDuration` |
 | vidu-q1 duration != 5 | `ErrInvalidQ1Duration` |
-| vidu-q2 text-to-video duration not in 1–10 | `ErrInvalidQ2Duration` |
-| vidu-q2 others duration != 5 | `ErrInvalidQ2Duration` |
+| vidu-q2 / viduq2-turbo / viduq2-pro text-to-video duration not in 1–10 | `ErrInvalidQ2Duration` |
+| vidu-q2 / viduq2-turbo / viduq2-pro others duration != 5 | `ErrInvalidQ2Duration` |
 | reference_image_urls and subjects both set | `ErrReferenceInputsConflict` |
 | image_url mixed with reference params | `ErrConflictingGenerationMode` |
 | start/end mixed with image/reference | `ErrConflictingGenerationMode` |
@@ -452,4 +528,6 @@ Validation in `spec/vidu` (`params.go`):
 - [q2 reference-to-video (subjects)](https://apidocs.qnaigc.com/417911901e0)
 - [q2 image-to-video/pro](https://apidocs.qnaigc.com/417912235e0)
 - [q2 start-end-to-video/pro](https://apidocs.qnaigc.com/417918627e0)
+- q2 image-to-video/turbo: `POST /queue/fal-ai/vidu/q2/image-to-video/turbo`
+- q2 start-end-to-video/turbo: `POST /queue/fal-ai/vidu/q2/start-end-to-video/turbo`
 - [q2 status](https://apidocs.qnaigc.com/417938129e0)

@@ -1,6 +1,6 @@
 # Qiniu Vidu Provider
 
-Qiniu Cloud Vidu API backend implementation, supporting `vidu-q1` and `vidu-q2` video generation.
+Qiniu Cloud Vidu API backend implementation, supporting `vidu-q1`, `vidu-q2`, `viduq2-turbo` and `viduq2-pro` video generation.
 
 ## Overview
 

@@ -27,16 +27,18 @@ const Scheme = "vidu"
 
 // Video model constants.
 const (
-	ModelViduQ1 = "vidu-q1"
-	ModelViduQ2 = "vidu-q2"
+	ModelViduQ1       = "vidu-q1"
+	ModelViduQ2       = "vidu-q2"
+	ModelViduQ2Turbo  = "viduq2-turbo"
+	ModelViduQ2Pro    = "viduq2-pro"
 )
 
-var videoModels = []string{ModelViduQ1, ModelViduQ2}
+var videoModels = []string{ModelViduQ1, ModelViduQ2, ModelViduQ2Turbo, ModelViduQ2Pro}
 
 // IsVideoModel returns true if the model supports video generation.
 func IsVideoModel(model string) bool {
 	switch normalizeModel(model) {
-	case ModelViduQ1, ModelViduQ2:
+	case ModelViduQ1, ModelViduQ2, ModelViduQ2Turbo, ModelViduQ2Pro:
 		return true
 	default:
 		return false
