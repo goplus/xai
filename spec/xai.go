@@ -36,7 +36,11 @@ var (
 // -----------------------------------------------------------------------------
 
 type OptionBuilder interface {
+	// BaseURL sets the base URL for the API endpoint.
 	BaseURL(base string) OptionBuilder
+
+	// Timeout sets a timeout for the API request. If the request takes longer than
+	// the specified duration, it will be aborted and an error will be returned.
 	Timeout(timeout time.Duration) OptionBuilder
 }
 
