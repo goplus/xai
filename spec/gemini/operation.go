@@ -72,8 +72,14 @@ func (p genVideoResp) Sleep() {
 	time.Sleep(15 * time.Second)
 }
 
-func (p genVideoResp) Retry(ctx context.Context, svc xai.Service) (xai.OperationResponse, error) {
-	op, err := svc.(*Service).ops.GetVideosOperation(ctx, p.op, nil)
+func (p genVideoResp) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (xai.OperationResponse, error) {
+	var conf *genai.GetOperationConfig
+	if v, ok := opts.(*options); ok {
+		conf = &genai.GetOperationConfig{
+			HTTPOptions: &v.opts,
+		}
+	}
+	op, err := svc.(*Service).ops.GetVideosOperation(ctx, p.op, conf)
 	if err != nil {
 		return nil, err
 	}

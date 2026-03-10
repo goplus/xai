@@ -114,7 +114,10 @@ func (p *Operation) Call(ctx context.Context, svc xai.Service, opts xai.OptionBu
 	if err != nil {
 		return
 	}
+	return call(ctx, req, p.newResponse, opts)
+}
 
+func call(ctx context.Context, req *Request, newResponse ResponseCreator, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
 	ret, err := req.Do(ctx, opts)
 	if err != nil {
 		return
@@ -127,8 +130,7 @@ func (p *Operation) Call(ctx context.Context, svc xai.Service, opts xai.OptionBu
 	if err != nil {
 		return
 	}
-
-	return p.newResponse(p.req.c, body)
+	return newResponse(req.c, body)
 }
 
 // -----------------------------------------------------------------------------
@@ -139,9 +141,10 @@ type results struct {
 }
 
 func newResults(result map[string]any, itemsName string) results {
+	items, _ := result[itemsName].([]any)
 	return results{
 		result: result,
-		items:  result[itemsName].([]any),
+		items:  items,
 	}
 }
 
@@ -218,10 +221,17 @@ func (p *VideoResults[T]) At(i int) xai.Generated {
 
 // -----------------------------------------------------------------------------
 
+type QueryOpInfo struct {
+	Path        string
+	QueryBody   map[string]any
+	NewResponse ResponseCreator
+}
+
 type responseAdapter interface {
 	Done(body map[string]any) bool
 	Sleep(body map[string]any)
 	Results(body map[string]any) xai.Results
+	QueryOpInfo(body map[string]any) QueryOpInfo
 }
 
 type OperationResponse[T responseAdapter] struct {
@@ -242,8 +252,17 @@ func (p *OperationResponse[T]) Sleep() {
 	p.adapter.Sleep(p.body)
 }
 
-func (p *OperationResponse[T]) Retry(ctx context.Context, svc xai.Service) (xai.OperationResponse, error) {
-	panic("todo")
+func (p *OperationResponse[T]) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
+	qoi := p.adapter.QueryOpInfo(p.body)
+	req, err := p.c.NewRequest(http.MethodGet, qoi.Path)
+	if err != nil {
+		return
+	}
+	err = req.Json(qoi.QueryBody)
+	if err != nil {
+		return
+	}
+	return call(ctx, req, qoi.NewResponse, opts)
 }
 
 func (p *OperationResponse[T]) Results() xai.Results {

@@ -250,7 +250,7 @@ func (p SimpleResp[T]) Sleep() {
 	panic("unreachable")
 }
 
-func (p SimpleResp[T]) Retry(ctx context.Context, svc xai.Service) (xai.OperationResponse, error) {
+func (p SimpleResp[T]) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (xai.OperationResponse, error) {
 	panic("unreachable")
 }
 
