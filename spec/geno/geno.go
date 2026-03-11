@@ -19,6 +19,7 @@ package geno
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	xai "github.com/goplus/xai/spec"
@@ -244,7 +245,7 @@ type responseAdapter interface {
 	Done(action xai.Action, body map[string]any) bool
 	Sleep(action xai.Action, body map[string]any)
 	Results(action xai.Action, body map[string]any) xai.Results
-	QueryOpInfo(action xai.Action, body map[string]any) QueryOpInfo
+	QueryOpInfo(action xai.Action, body map[string]any) (QueryOpInfo, error)
 }
 
 type OperationResponse[T responseAdapter] struct {
@@ -266,12 +267,21 @@ func (p *OperationResponse[T]) Sleep() {
 	p.adapter.Sleep(p.action, p.body)
 }
 
+var (
+	ErrMissingOperationID = errors.New("missing operation ID in response body")
+)
+
 func (p *OperationResponse[T]) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	qoi := p.adapter.QueryOpInfo(p.action, p.body)
+	qoi, err := p.adapter.QueryOpInfo(p.action, p.body)
+	if err != nil {
+		return
+	}
 	req, err := p.c.NewRequest(http.MethodGet, qoi.Path)
 	if err != nil {
 		return
 	}
+	// query operation has no body,
+	// so we can directly call it without setting body
 	return call(ctx, req, qoi.NewResponse, opts)
 }
 
