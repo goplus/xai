@@ -1,0 +1,1286 @@
+openapi: 3.1.0
+info:
+  title: Kling AI API
+  description: |
+    Official REST API for Kling AI (Kuaishou), providing video generation, image generation,
+    lip sync, virtual try-on, and more.
+
+    ## Authentication
+
+    Kling AI uses **JWT (JSON Web Token)** authentication — not a raw API key in the header.
+
+    1. Obtain your `AccessKey` and `SecretKey` from the Kling developer portal.
+    2. Generate a JWT signed with HMAC-SHA256:
+       - **Header:** `{"alg": "HS256", "typ": "JWT"}`
+       - **Payload:** `{"iss": "<AccessKey>", "exp": <unix_ts + 1800>, "nbf": <unix_ts - 5>}`
+       - **Signature:** `HMAC-SHA256(base64url(header) + "." + base64url(payload), SecretKey)`
+    3. Pass the token in every request: `Authorization: Bearer <JWT>`
+
+    Recommended token lifetime: **1800 seconds** (30 minutes). Refresh before expiry.
+
+    **Python example:**
+    ```python
+    import jwt, time
+
+    def generate_token(access_key: str, secret_key: str) -> str:
+        now = int(time.time())
+        payload = {"iss": access_key, "exp": now + 1800, "nbf": now - 5}
+        return jwt.encode(payload, secret_key, algorithm="HS256")
+    ```
+
+    ## Async Task Model
+
+    All generation endpoints are **asynchronous**:
+    1. Call the creation endpoint → receive a `task_id`.
+    2. Poll the corresponding query endpoint until `task_status` is `succeed` or `failed`.
+    3. On success, read the result URL(s) from `task_result`.
+
+    Typical polling interval: **5–10 seconds**.
+
+    ## Base URL
+    `https://api.klingai.com`
+  version: "1.0.0"
+  contact:
+    url: https://klingai.com/global/dev
+  license:
+    name: Commercial License
+    url: https://app.klingai.com/global/dev/document-api/protocols/paidServiceProtocol
+
+servers:
+  - url: https://api.klingai.com
+    description: Production
+
+security:
+  - BearerAuth: []
+
+# ==============================================================
+# Components
+# ==============================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token generated from AccessKey + SecretKey using HMAC-SHA256.
+
+  schemas:
+
+    # ----------------------------------------------------------
+    # Shared: task status
+    # ----------------------------------------------------------
+    TaskStatus:
+      type: string
+      enum: [submitted, processing, succeed, failed]
+      description: |
+        - `submitted`  – Task queued, waiting to be scheduled.
+        - `processing` – Generation is in progress.
+        - `succeed`    – Generation completed successfully.
+        - `failed`     – Generation failed; see `task_status_msg` for details.
+
+    # ----------------------------------------------------------
+    # Shared: error response
+    # ----------------------------------------------------------
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Business error code. `0` means success.
+          example: 1002
+        message:
+          type: string
+          description: Human-readable error description.
+          example: "Invalid parameter: prompt is required"
+        request_id:
+          type: string
+          description: Unique ID for tracing this request.
+          example: "abc123-def456"
+
+    # ----------------------------------------------------------
+    # Camera control
+    # ----------------------------------------------------------
+    CameraControlSimpleConfig:
+      type: object
+      description: |
+        Per-axis camera parameters for `type: simple`.
+        All values range from **-10** to **10**.
+      properties:
+        horizontal:
+          type: number
+          minimum: -10
+          maximum: 10
+          default: 0
+          description: Horizontal translation (truck left/right).
+        vertical:
+          type: number
+          minimum: -10
+          maximum: 10
+          default: 0
+          description: Vertical translation (pedestal up/down).
+        pan:
+          type: number
+          minimum: -10
+          maximum: 10
+          default: 0
+          description: Horizontal rotation (pan left/right).
+        tilt:
+          type: number
+          minimum: -10
+          maximum: 10
+          default: 0
+          description: Vertical rotation (tilt up/down).
+        roll:
+          type: number
+          minimum: -10
+          maximum: 10
+          default: 0
+          description: Rotation around the lens axis (dutch/roll).
+        zoom:
+          type: number
+          minimum: -10
+          maximum: 10
+          default: 0
+          description: Zoom in (positive) / zoom out (negative).
+
+    CameraControl:
+      type: object
+      description: |
+        Camera motion control. Supported on **kling-v1-6** and above.
+      properties:
+        type:
+          type: string
+          enum: [simple, down_back, forward_up, right_turn_forward, left_turn_forward]
+          description: |
+            - `simple`              – Custom per-axis parameters via `config`.
+            - `down_back`           – Camera moves down and pulls back.
+            - `forward_up`          – Camera pushes forward and rises.
+            - `right_turn_forward`  – Camera turns right while moving forward.
+            - `left_turn_forward`   – Camera turns left while moving forward.
+        config:
+          $ref: "#/components/schemas/CameraControlSimpleConfig"
+          description: Used only when `type` is `simple`.
+
+    # ----------------------------------------------------------
+    # Motion brush (dynamic / static masks)
+    # ----------------------------------------------------------
+    TrajectoryPoint:
+      type: object
+      description: A 2-D pixel coordinate on the motion trajectory.
+      required: [x, y]
+      properties:
+        x:
+          type: integer
+          description: X coordinate in pixels.
+        y:
+          type: integer
+          description: Y coordinate in pixels.
+
+    DynamicMask:
+      type: object
+      description: |
+        A dynamic mask that drives motion in a specific image region
+        along the given trajectory path.
+      required: [mask_url, trajectories]
+      properties:
+        mask_url:
+          type: string
+          description: |
+            Mask image as a URL or Base64 data URI
+            (`data:image/png;base64,...`).
+        trajectories:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrajectoryPoint"
+          minItems: 2
+          description: Ordered list of trajectory points (minimum 2).
+
+    # ----------------------------------------------------------
+    # Video generation result
+    # ----------------------------------------------------------
+    VideoResult:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique video ID (used for extend, lip-sync, etc.).
+        url:
+          type: string
+          format: uri
+          description: |
+            Download URL for the generated video.
+            URLs are valid for approximately **30 days**.
+        duration:
+          type: string
+          description: Duration of the video in seconds (e.g. `"5"`).
+          example: "5"
+
+    VideoTaskResult:
+      type: object
+      properties:
+        videos:
+          type: array
+          items:
+            $ref: "#/components/schemas/VideoResult"
+
+    VideoTaskData:
+      type: object
+      properties:
+        task_id:
+          type: string
+          description: Unique task identifier. Use this to poll the query endpoint.
+          example: "task_20241201_abc123"
+        task_status:
+          $ref: "#/components/schemas/TaskStatus"
+        task_status_msg:
+          type: string
+          description: Status description or error message when `task_status` is `failed`.
+        created_at:
+          type: integer
+          format: int64
+          description: Task creation time (Unix timestamp in milliseconds).
+        updated_at:
+          type: integer
+          format: int64
+          description: Last update time (Unix timestamp in milliseconds).
+        task_result:
+          $ref: "#/components/schemas/VideoTaskResult"
+          nullable: true
+          description: Populated only when `task_status` is `succeed`.
+
+    VideoTaskResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "Success"
+        request_id:
+          type: string
+        data:
+          $ref: "#/components/schemas/VideoTaskData"
+
+    # ----------------------------------------------------------
+    # Image generation result
+    # ----------------------------------------------------------
+    ImageResult:
+      type: object
+      properties:
+        index:
+          type: integer
+          description: Zero-based index of this image in the batch.
+        url:
+          type: string
+          format: uri
+          description: Download URL for the generated image.
+
+    ImageTaskResult:
+      type: object
+      properties:
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImageResult"
+
+    ImageTaskData:
+      type: object
+      properties:
+        task_id:
+          type: string
+        task_status:
+          $ref: "#/components/schemas/TaskStatus"
+        task_status_msg:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        updated_at:
+          type: integer
+          format: int64
+        task_result:
+          $ref: "#/components/schemas/ImageTaskResult"
+          nullable: true
+
+    ImageTaskResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "Success"
+        request_id:
+          type: string
+        data:
+          $ref: "#/components/schemas/ImageTaskData"
+
+# ==============================================================
+# Paths
+# ==============================================================
+paths:
+
+  # ============================================================
+  # 1. Text-to-Video
+  # ============================================================
+  /v1/videos/text2video:
+    post:
+      tags: [Video Generation]
+      summary: Create a text-to-video task
+      description: |
+        Generate a video from a text prompt. Supports aspect ratio, duration,
+        CFG scale, and camera motion control.
+
+        ### Supported models
+        | `model_name` | Notes |
+        |---|---|
+        | `kling-v1` | Base model |
+        | `kling-v1-5` | 1080p support |
+        | `kling-v1-6` | GAN motion engine, camera control |
+        | `kling-v2-master` | Improved prompt alignment |
+        | `kling-v2-1-master` | v2.1 flagship (pro mode only) |
+        | `kling-v2-5-turbo` | Fastest generation speed |
+        | `kling-v2-6` | Native audio generation (pro mode) |
+        | `kling-v3` | v3.0 — up to 15 s, AI director system |
+
+        ### Pricing (5 s clip, USD)
+        | Model | std | pro |
+        |---|---|---|
+        | v1.5 / v1.6 / v2.1 | $0.26 | $0.46 |
+        | v2.1-master | — | $0.96 |
+        | v2.5 / v2.6 | $0.20 | $0.33 |
+
+        Price for 10 s = 2 × price for 5 s.
+        Native audio on v2.6 (pro) = 2 × pro price.
+      operationId: createText2VideoTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [model_name, prompt]
+              properties:
+                model_name:
+                  type: string
+                  enum:
+                    - kling-v1
+                    - kling-v1-5
+                    - kling-v1-6
+                    - kling-v2-master
+                    - kling-v2-1-master
+                    - kling-v2-5-turbo
+                    - kling-v2-6
+                    - kling-v3
+                  description: Model version to use.
+                  example: kling-v1-6
+                prompt:
+                  type: string
+                  maxLength: 2500
+                  description: Text description of the video content. Max 2500 characters.
+                  example: "A panda peacefully eating bamboo in a sunlit forest"
+                negative_prompt:
+                  type: string
+                  maxLength: 2500
+                  description: Describes content to avoid in the generated video.
+                  example: "low quality, blurry, watermark"
+                cfg_scale:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  default: 0.5
+                  description: |
+                    CFG (Classifier-Free Guidance) scale.
+                    Higher values follow the prompt more closely;
+                    lower values allow more creative freedom.
+                mode:
+                  type: string
+                  enum: [std, pro]
+                  default: std
+                  description: |
+                    Generation mode:
+                    - `std` – Standard: faster and cheaper.
+                    - `pro` – Professional: higher quality, slower.
+                aspect_ratio:
+                  type: string
+                  enum: ["16:9", "9:16", "1:1"]
+                  default: "16:9"
+                  description: Output video aspect ratio.
+                duration:
+                  type: integer
+                  enum: [5, 10]
+                  default: 5
+                  description: |
+                    Video length in seconds.
+                    Not all model/mode combinations support 10 s —
+                    refer to the availability matrix on klingai.com.
+                camera_control:
+                  $ref: "#/components/schemas/CameraControl"
+                  description: Camera motion parameters. Requires kling-v1-6 or above.
+                enable_audio:
+                  type: boolean
+                  default: false
+                  description: |
+                    Enable native AI audio generation (ambient sound effects).
+                    - On **kling-v2-6 pro**: costs 2× the pro rate.
+                    - On v2.5 and below: currently free.
+            examples:
+              basic:
+                summary: Basic text-to-video
+                value:
+                  model_name: kling-v1-6
+                  prompt: "A serene Japanese garden with cherry blossoms drifting in the breeze"
+                  mode: std
+                  aspect_ratio: "16:9"
+                  duration: 5
+              with_camera_control:
+                summary: With camera motion
+                value:
+                  model_name: kling-v1-6
+                  prompt: "City skyline at night, glittering lights reflected on the river"
+                  negative_prompt: "low quality, blurry"
+                  cfg_scale: 0.7
+                  mode: pro
+                  aspect_ratio: "16:9"
+                  duration: 5
+                  camera_control:
+                    type: simple
+                    config:
+                      horizontal: 0
+                      vertical: 0
+                      pan: -5
+                      tilt: 0
+                      roll: 0
+                      zoom: 3
+      responses:
+        "200":
+          description: |
+            Task accepted. The video is **not yet ready** — poll the
+            `GET /v1/videos/text2video/{task_id}` endpoint until
+            `task_status` is `succeed`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+              example:
+                code: 0
+                message: "Success"
+                request_id: "req_xyz789"
+                data:
+                  task_id: "task_20241201_abc123"
+                  task_status: submitted
+                  task_status_msg: ""
+                  created_at: 1701388800000
+                  updated_at: 1701388800000
+                  task_result: null
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: JWT token missing, invalid, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/videos/text2video/{task_id}:
+    get:
+      tags: [Video Generation]
+      summary: Get a text-to-video task
+      description: Retrieve the status and result of a text-to-video task by its ID.
+      operationId: getText2VideoTask
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The `task_id` returned when the task was created.
+          example: "task_20241201_abc123"
+      responses:
+        "200":
+          description: Query successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+              examples:
+                processing:
+                  summary: Still processing
+                  value:
+                    code: 0
+                    message: "Success"
+                    request_id: "req_xyz789"
+                    data:
+                      task_id: "task_20241201_abc123"
+                      task_status: processing
+                      task_status_msg: ""
+                      created_at: 1701388800000
+                      updated_at: 1701388900000
+                      task_result: null
+                succeed:
+                  summary: Generation complete
+                  value:
+                    code: 0
+                    message: "Success"
+                    request_id: "req_xyz789"
+                    data:
+                      task_id: "task_20241201_abc123"
+                      task_status: succeed
+                      task_status_msg: ""
+                      created_at: 1701388800000
+                      updated_at: 1701389100000
+                      task_result:
+                        videos:
+                          - id: "video_001"
+                            url: "https://cdn.klingai.com/output/video_001.mp4"
+                            duration: "5"
+        "404":
+          description: Task not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ============================================================
+  # 2. Image-to-Video
+  # ============================================================
+  /v1/videos/image2video:
+    post:
+      tags: [Video Generation]
+      summary: Create an image-to-video task
+      description: |
+        Animate a still image into a video. The image becomes the first frame.
+        Supports motion brush (dynamic/static masks), tail-frame control, and camera motion.
+
+        **Image requirements:**
+        - Format: JPEG / PNG / WEBP
+        - Max file size: 10 MB
+        - Minimum edge length: 300 px
+
+        Pass the image as a public **URL** or a **Base64 data URI**
+        (`data:image/jpeg;base64,...`).
+      operationId: createImage2VideoTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [model_name, image]
+              properties:
+                model_name:
+                  type: string
+                  enum:
+                    - kling-v1
+                    - kling-v1-5
+                    - kling-v1-6
+                    - kling-v2-master
+                    - kling-v2-1-master
+                    - kling-v2-5-turbo
+                    - kling-v2-6
+                    - kling-v3
+                  description: Model version to use.
+                image:
+                  type: string
+                  description: Start frame — public image URL or Base64 data URI.
+                  example: "https://example.com/start_frame.jpg"
+                image_tail:
+                  type: string
+                  description: |
+                    End frame — public image URL or Base64 data URI.
+                    The model interpolates between `image` (start) and `image_tail` (end).
+                    Requires **pro** mode. Supported on kling-v1-6 and above.
+                prompt:
+                  type: string
+                  maxLength: 2500
+                  description: Optional text describing the desired motion or action.
+                negative_prompt:
+                  type: string
+                  maxLength: 2500
+                  description: Content to avoid in the generated video.
+                cfg_scale:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  default: 0.5
+                  description: CFG scale (prompt adherence vs. creative freedom).
+                mode:
+                  type: string
+                  enum: [std, pro]
+                  default: std
+                duration:
+                  type: integer
+                  enum: [5, 10]
+                  default: 5
+                  description: Video length in seconds.
+                camera_control:
+                  $ref: "#/components/schemas/CameraControl"
+                  description: Camera motion. Requires kling-v1-6 or above.
+                dynamic_masks:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/DynamicMask"
+                  description: |
+                    Motion brush — drives specific image regions along defined trajectories.
+                    Supports up to 6 masks simultaneously.
+                static_mask:
+                  type: string
+                  description: |
+                    Static mask image (URL or Base64). Masked regions remain still
+                    while the rest of the image is animated.
+                enable_audio:
+                  type: boolean
+                  default: false
+                  description: Enable native AI audio generation.
+            examples:
+              basic:
+                summary: Basic image-to-video
+                value:
+                  model_name: kling-v1-6
+                  image: "https://example.com/photo.jpg"
+                  prompt: "Gentle breeze rustling through the leaves"
+                  mode: std
+                  duration: 5
+              start_end_frame:
+                summary: Start and end frame interpolation
+                value:
+                  model_name: kling-v1-6
+                  image: "https://example.com/daytime.jpg"
+                  image_tail: "https://example.com/nighttime.jpg"
+                  prompt: "Transition from day to night"
+                  mode: pro
+                  duration: 5
+              motion_brush:
+                summary: Dynamic mask (motion brush)
+                value:
+                  model_name: kling-v1-6
+                  image: "https://example.com/portrait.jpg"
+                  prompt: "Hair flowing in the wind"
+                  mode: std
+                  duration: 5
+                  dynamic_masks:
+                    - mask_url: "https://example.com/hair_mask.png"
+                      trajectories:
+                        - x: 320
+                          y: 100
+                        - x: 340
+                          y: 80
+                        - x: 360
+                          y: 60
+      responses:
+        "200":
+          description: Task accepted. Poll `GET /v1/videos/image2video/{task_id}` for results.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+        "400":
+          description: Invalid parameters (e.g. unsupported image format, image too small).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/videos/image2video/{task_id}:
+    get:
+      tags: [Video Generation]
+      summary: Get an image-to-video task
+      description: Retrieve the status and result of an image-to-video task.
+      operationId: getImage2VideoTask
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Query successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+        "404":
+          description: Task not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ============================================================
+  # 3. Multi-Image-to-Video
+  # ============================================================
+  /v1/videos/multi-image2video:
+    post:
+      tags: [Video Generation]
+      summary: Create a multi-image-to-video task
+      description: |
+        Compose up to 4 input images into a single video.
+        Reference individual images in the prompt using `@Element1`, `@Element2`,
+        `@Element3`, and `@Element4`.
+
+        **Currently supported model:** `kling-v1-6`
+      operationId: createMultiImage2VideoTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [model_name, prompt]
+              properties:
+                model_name:
+                  type: string
+                  enum: [kling-v1-6]
+                  default: kling-v1-6
+                prompt:
+                  type: string
+                  maxLength: 2500
+                  description: |
+                    Video description. Reference input images with
+                    `@Element1` … `@Element4`.
+                  example: "@Element1 and @Element2 playing together in a park"
+                negative_prompt:
+                  type: string
+                  maxLength: 2500
+                image_0:
+                  type: string
+                  description: First image (URL or Base64). At least one image is required.
+                image_1:
+                  type: string
+                  description: Second image (URL or Base64).
+                image_2:
+                  type: string
+                  description: Third image (URL or Base64).
+                image_3:
+                  type: string
+                  description: Fourth image (URL or Base64).
+                mode:
+                  type: string
+                  enum: [std, pro]
+                  default: std
+                duration:
+                  type: integer
+                  enum: [5, 10]
+                  default: 5
+                enable_audio:
+                  type: boolean
+                  default: false
+            example:
+              model_name: kling-v1-6
+              prompt: "@Element1 and @Element2 having coffee at a café"
+              image_0: "https://example.com/person_a.jpg"
+              image_1: "https://example.com/person_b.jpg"
+              mode: std
+              duration: 5
+      responses:
+        "200":
+          description: Task accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+        "400":
+          description: Invalid parameters (e.g. no image provided).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/videos/multi-image2video/{task_id}:
+    get:
+      tags: [Video Generation]
+      summary: Get a multi-image-to-video task
+      operationId: getMultiImage2VideoTask
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Query successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+
+  # ============================================================
+  # 4. Video Extend
+  # ============================================================
+  /v1/videos/{video_id}/extend:
+    post:
+      tags: [Video Generation]
+      summary: Create a video extend task
+      description: |
+        Extend an existing generated video by an additional **5 seconds**.
+        The model maintains visual and motion continuity with the original clip.
+
+        - Maximum total video length after extension: **3 minutes**.
+        - `video_id` is the `id` field from the `VideoResult` object returned
+          by any video generation task.
+      operationId: createVideoExtendTask
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the source video to extend.
+          example: "video_001"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  maxLength: 2500
+                  description: |
+                    Optional prompt guiding the extended segment.
+                    If omitted, the model infers continuation from the existing clip.
+                negative_prompt:
+                  type: string
+                  maxLength: 2500
+                cfg_scale:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  default: 0.5
+            example:
+              prompt: "The character continues walking into the forest"
+              cfg_scale: 0.6
+      responses:
+        "200":
+          description: Extend task accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+        "400":
+          description: Invalid parameters or video not eligible for extension.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/videos/{video_id}/extend/{task_id}:
+    get:
+      tags: [Video Generation]
+      summary: Get a video extend task
+      operationId: getVideoExtendTask
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Query successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+
+  # ============================================================
+  # 5. Lip Sync
+  # ============================================================
+  /v1/videos/lip-sync:
+    post:
+      tags: [Lip Sync]
+      summary: Create a lip-sync task
+      description: |
+        Drive lip movements on a human subject in a video using either an
+        audio file or a text prompt (TTS).
+
+        ### Video requirements
+        - Format: `.mp4` or `.mov`
+        - Max file size: 100 MB
+        - Duration: 2–60 seconds
+        - Resolution: 720p or 1080p (each edge between 720 px and 1920 px)
+
+        ### Audio requirements (mode `audio2video`)
+        - Format: MP3 / WAV
+        - Duration: 2–60 seconds
+        - Max file size: 5 MB
+
+        ### Text requirements (mode `text2video`)
+        - Max 120 characters
+      operationId: createLipSyncTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [video_id]
+              properties:
+                video_id:
+                  type: string
+                  description: |
+                    ID of the source video (the `id` field from `VideoResult`).
+                mode:
+                  type: string
+                  enum: [audio2video, text2video]
+                  default: audio2video
+                  description: |
+                    - `audio2video` – Audio-driven lip sync: provide `audio_url`.
+                    - `text2video`  – Text-driven: Kling synthesizes speech from `text`,
+                      then synchronizes lip movements.
+                audio_url:
+                  type: string
+                  format: uri
+                  description: URL of the driving audio file. Required when `mode` is `audio2video`.
+                text:
+                  type: string
+                  maxLength: 120
+                  description: |
+                    Speech text for TTS synthesis. Required when `mode` is `text2video`.
+                voice_id:
+                  type: string
+                  description: |
+                    TTS voice ID. Optional; used to select a specific voice
+                    when `mode` is `text2video`.
+                face_time_start:
+                  type: integer
+                  description: |
+                    Start time for lip-sync effect in milliseconds.
+                    Defaults to 0 (beginning of the video).
+                face_time_end:
+                  type: integer
+                  description: |
+                    End time for lip-sync effect in milliseconds.
+                    Defaults to the full video duration.
+                    Note: there may be a small sub-frame rounding offset.
+            examples:
+              audio_driven:
+                summary: Audio-driven lip sync
+                value:
+                  video_id: "video_001"
+                  mode: audio2video
+                  audio_url: "https://example.com/speech.mp3"
+              text_driven:
+                summary: Text-driven lip sync (TTS)
+                value:
+                  video_id: "video_001"
+                  mode: text2video
+                  text: "Welcome to Kling AI — explore the infinite possibilities of AI creation!"
+      responses:
+        "200":
+          description: Lip-sync task accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+        "400":
+          description: Invalid parameters or video does not meet requirements.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/videos/lip-sync/{task_id}:
+    get:
+      tags: [Lip Sync]
+      summary: Get a lip-sync task
+      operationId: getLipSyncTask
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Query successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoTaskResponse"
+
+  # ============================================================
+  # 6. Image Generation (Text-to-Image / Image-to-Image)
+  # ============================================================
+  /v1/images/generations:
+    post:
+      tags: [Image Generation]
+      summary: Create an image generation task
+      description: |
+        Generate one or more images from a text prompt (text-to-image),
+        or with a reference image (image-to-image).
+
+        **Reference modes** (requires `image` field):
+        - `subject` – Preserve the visual features/style of the reference subject.
+        - `face`    – Preserve the facial likeness of the person in the reference image.
+
+        ### Supported models
+        | `model_name` | Notes |
+        |---|---|
+        | `kling-v1` | Base image model |
+        | `kling-v1-5` | Enhanced quality |
+        | `kling-v2` | High-fidelity output |
+      operationId: createImageGenerationTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [model_name, prompt]
+              properties:
+                model_name:
+                  type: string
+                  enum: [kling-v1, kling-v1-5, kling-v2]
+                  description: Image generation model version.
+                  example: kling-v1-5
+                prompt:
+                  type: string
+                  maxLength: 2500
+                  description: Text description of the image to generate.
+                  example: "A cyberpunk street in Tokyo at night, neon lights reflecting on wet pavement"
+                negative_prompt:
+                  type: string
+                  maxLength: 2500
+                  description: Content to avoid. Effective only in text-to-image mode.
+                image:
+                  type: string
+                  description: |
+                    Reference image (URL or Base64 data URI).
+                    Providing this field activates image-to-image mode.
+                image_reference:
+                  type: string
+                  enum: [subject, face]
+                  description: |
+                    How the reference image is used (required when `image` is set):
+                    - `subject` – Match the general appearance of the subject/object.
+                    - `face`    – Match the facial identity of the person.
+                image_fidelity:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  description: |
+                    How closely the output resembles the reference image.
+                    `0` = minimal influence; `1` = maximum influence.
+                  example: 0.6
+                human_fidelity:
+                  type: number
+                  minimum: 0
+                  maximum: 1
+                  description: |
+                    Facial similarity strength. Only applicable when
+                    `image_reference` is `face`.
+                  example: 0.8
+                n:
+                  type: integer
+                  minimum: 1
+                  maximum: 9
+                  default: 1
+                  description: Number of images to generate in one request.
+                aspect_ratio:
+                  type: string
+                  enum: ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3", "21:9"]
+                  default: "1:1"
+                  description: Output image aspect ratio.
+                seed:
+                  type: integer
+                  minimum: 0
+                  description: |
+                    Random seed for reproducible results.
+                    Using the same seed and prompt produces visually similar outputs.
+            examples:
+              text_to_image:
+                summary: Text-to-image
+                value:
+                  model_name: kling-v1-5
+                  prompt: "An astronaut cat floating in deep space, Earth visible in the background, cinematic render"
+                  negative_prompt: "low quality, blurry, watermark"
+                  n: 2
+                  aspect_ratio: "16:9"
+              face_reference:
+                summary: Image-to-image with face reference
+                value:
+                  model_name: kling-v1-5
+                  prompt: "A medieval knight standing before a castle, epic cinematic lighting"
+                  image: "https://example.com/face.jpg"
+                  image_reference: face
+                  image_fidelity: 0.6
+                  human_fidelity: 0.8
+                  aspect_ratio: "16:9"
+              subject_reference:
+                summary: Image-to-image with subject reference
+                value:
+                  model_name: kling-v1-5
+                  prompt: "The same object placed on a wooden table in a cozy café"
+                  image: "https://example.com/object.jpg"
+                  image_reference: subject
+                  image_fidelity: 0.5
+                  aspect_ratio: "1:1"
+      responses:
+        "200":
+          description: Task accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageTaskResponse"
+        "400":
+          description: Invalid parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/images/generations/{task_id}:
+    get:
+      tags: [Image Generation]
+      summary: Get an image generation task
+      description: Retrieve the status and result of an image generation task.
+      operationId: getImageGenerationTask
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Query successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageTaskResponse"
+              example:
+                code: 0
+                message: "Success"
+                request_id: "req_xyz789"
+                data:
+                  task_id: "task_img_abc123"
+                  task_status: succeed
+                  created_at: 1701388800000
+                  updated_at: 1701388900000
+                  task_result:
+                    images:
+                      - index: 0
+                        url: "https://cdn.klingai.com/output/img_001.jpg"
+                      - index: 1
+                        url: "https://cdn.klingai.com/output/img_002.jpg"
+
+  # ============================================================
+  # 7. Virtual Try-On
+  # ============================================================
+  /v1/images/kolors-virtual-try-on:
+    post:
+      tags: [Virtual Try-On]
+      summary: Create a virtual try-on task
+      description: |
+        Digitally dress a human model image with a specified garment image.
+        The Kolors model precisely preserves garment details (texture, pattern, color).
+
+        Supports tops, bottoms, full outfits, and combination dressing.
+
+        ### Model versions
+        | `model_name` | Notes |
+        |---|---|
+        | `kolors-virtual-try-on-v1` | Base version |
+        | `kolors-virtual-try-on-v1-5` | Enhanced garment fidelity |
+      operationId: createVirtualTryOnTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [model_name, human_image, cloth_image]
+              properties:
+                model_name:
+                  type: string
+                  enum:
+                    - kolors-virtual-try-on-v1
+                    - kolors-virtual-try-on-v1-5
+                  description: Virtual try-on model version.
+                  example: kolors-virtual-try-on-v1-5
+                human_image:
+                  type: string
+                  description: |
+                    Model/person image (URL or Base64).
+                    The person should be clearly visible, ideally full-body or half-body shot.
+                cloth_image:
+                  type: string
+                  description: |
+                    Garment image (URL or Base64).
+                    Use a clean, flat-lay or on-hanger photo for best results.
+            example:
+              model_name: kolors-virtual-try-on-v1-5
+              human_image: "https://example.com/model.jpg"
+              cloth_image: "https://example.com/dress.jpg"
+      responses:
+        "200":
+          description: Virtual try-on task accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageTaskResponse"
+        "400":
+          description: Invalid parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/images/kolors-virtual-try-on/{task_id}:
+    get:
+      tags: [Virtual Try-On]
+      summary: Get a virtual try-on task
+      operationId: getVirtualTryOnTask
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Query successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageTaskResponse"
+
+# ==============================================================
+# Tags
+# ==============================================================
+tags:
+  - name: Video Generation
+    description: Text-to-video, image-to-video, multi-image-to-video, and video extend.
+  - name: Lip Sync
+    description: Add synchronized lip movements to a human subject in a video.
+  - name: Image Generation
+    description: Text-to-image and image-to-image (face / subject reference).
+  - name: Virtual Try-On
+    description: Kolors-powered virtual garment try-on.
