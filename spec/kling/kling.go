@@ -94,7 +94,12 @@ func (adapter) Sleep(action xai.Action, body map[string]any) {
 
 func (adapter) Done(action xai.Action, body map[string]any) bool {
 	data, _ := body["data"].(map[string]any)
-	return data["task_status"] == "succeed" // submitted, processing, succeed, failed
+	switch data["task_status"] {
+	case "succeed", "failed":
+		return true
+	default: // submitted, processing
+		return false
+	}
 }
 
 func (adapter) OutputImage(item any) *xai.OutputImage {
