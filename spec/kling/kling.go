@@ -116,7 +116,37 @@ func (adapter) Done(action xai.Action, body map[string]any) bool {
 }
 
 func (adapter) OutputImage(item any) *xai.OutputImage {
-	panic("todo")
+	m, _ := item.(map[string]any)
+	img := &geno.Image{
+		URI: m["url"].(string),
+	}
+	var watermarked xai.Image
+	if uri, ok := m["watermark_url"].(string); ok {
+		watermarked = &geno.Image{
+			URI: uri,
+		}
+	}
+	return &xai.OutputImage{
+		Image:       img,
+		Watermarked: watermarked,
+	}
+}
+
+func (adapter) OutputVideo(item any) *xai.OutputVideo {
+	m, _ := item.(map[string]any)
+	img := &geno.Video{
+		URI: m["url"].(string),
+	}
+	var watermarked xai.Video
+	if uri, ok := m["watermark_url"].(string); ok {
+		watermarked = &geno.Video{
+			URI: uri,
+		}
+	}
+	return &xai.OutputVideo{
+		Video:       img,
+		Watermarked: watermarked,
+	}
 }
 
 // -----------------------------------------------------------------------------

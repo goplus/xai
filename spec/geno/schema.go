@@ -18,52 +18,123 @@ package geno
 
 import (
 	"io"
+	"os"
 
 	xai "github.com/goplus/xai/spec"
 )
 
 // -----------------------------------------------------------------------------
 
+type Image struct {
+	URI  string
+	Data xai.BlobData
+	MIME xai.ImageType
+}
+
+func (p *Image) Type() xai.ImageType {
+	return p.MIME
+}
+
+func (p *Image) Blob() xai.BlobData {
+	return p.Data
+}
+
+func (p *Image) StgUri() string {
+	return p.URI
+}
+
 func (p *ServiceBase) ImageFrom(mime xai.ImageType, src io.Reader) (xai.Image, error) {
-	panic("todo")
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return nil, err
+	}
+	return p.ImageFromBytes(mime, data), nil
 }
 
 func (p *ServiceBase) ImageFromLocal(mime xai.ImageType, fileName string) (xai.Image, error) {
-	panic("todo")
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+	return p.ImageFromBytes(mime, data), nil
 }
 
 func (p *ServiceBase) ImageFromBase64(mime xai.ImageType, base64 string) (xai.Image, error) {
-	panic("todo")
+	return &Image{
+		Data: xai.BlobFromBase64(base64),
+		MIME: mime,
+	}, nil
 }
 
 func (p *ServiceBase) ImageFromBytes(mime xai.ImageType, data []byte) xai.Image {
-	panic("todo")
+	return &Image{
+		Data: xai.BlobFromRaw(data),
+		MIME: mime,
+	}
 }
 
 func (p *ServiceBase) ImageFromStgUri(mime xai.ImageType, stgUri string) xai.Image {
-	panic("todo")
+	return &Image{
+		URI:  stgUri,
+		MIME: mime,
+	}
 }
 
 // -----------------------------------------------------------------------------
 
+type Video struct {
+	URI  string
+	Data xai.BlobData
+	MIME xai.VideoType
+}
+
+func (p *Video) Type() xai.VideoType {
+	return p.MIME
+}
+
+func (p *Video) Blob() xai.BlobData {
+	return p.Data
+}
+
+func (p *Video) StgUri() string {
+	return p.URI
+}
+
 func (p *ServiceBase) VideoFrom(mime xai.VideoType, src io.Reader) (xai.Video, error) {
-	panic("todo")
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return nil, err
+	}
+	return p.VideoFromBytes(mime, data), nil
 }
 
 func (p *ServiceBase) VideoFromLocal(mime xai.VideoType, fileName string) (xai.Video, error) {
-	panic("todo")
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+	return p.VideoFromBytes(mime, data), nil
 }
 
 func (p *ServiceBase) VideoFromBase64(mime xai.VideoType, base64 string) (xai.Video, error) {
-	panic("todo")
+	return &Video{
+		Data: xai.BlobFromBase64(base64),
+		MIME: mime,
+	}, nil
 }
 
 func (p *ServiceBase) VideoFromBytes(mime xai.VideoType, data []byte) xai.Video {
-	panic("todo")
+	return &Video{
+		Data: xai.BlobFromRaw(data),
+		MIME: mime,
+	}
 }
 
 func (p *ServiceBase) VideoFromStgUri(mime xai.VideoType, stgUri string) xai.Video {
-	panic("todo")
+	return &Video{
+		URI:  stgUri,
+		MIME: mime,
+	}
 }
 
 // -----------------------------------------------------------------------------

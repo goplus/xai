@@ -244,6 +244,9 @@ type OutputImage struct {
 	// The output image data.
 	Image
 
+	// Optional. Watermarked image, anti-hotlinking format.
+	Watermarked Image
+
 	// Optional. Responsible AI filter reason if the image is filtered out of the
 	// response.
 	RAIFilteredReason string
@@ -288,6 +291,9 @@ func (*OutputImageMask) generated() {}
 type OutputVideo struct {
 	// The output video data.
 	Video
+
+	// Optional. Watermarked video, anti-hotlinking format.
+	Watermarked Video
 }
 
 func (*OutputVideo) generated() {}
