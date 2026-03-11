@@ -36,7 +36,61 @@ func (adapter) Actions(model xai.Model) []xai.Action {
 }
 
 func (adapter) ActionInfo(action xai.Action) geno.ActionInfo {
+	switch action {
+	case xai.GenImage:
+		return geno.ActionInfo{
+			Path:           "/v1/images/generations",
+			ModelParamName: "model_name",
+			InputSchema:    nil, // TODO(xsw)
+			NewResponse:    newGenImageResponse,
+		}
+	default:
+		panic("unexpected action: " + action)
+	}
+}
+
+func (adapter) QueryOpInfo(action xai.Action, body map[string]any) geno.QueryOpInfo {
+	switch action {
+	case xai.GenImage:
+		data, _ := body["data"].(map[string]any)
+		id, _ := data["task_id"].(string)
+		return geno.QueryOpInfo{
+			Path:        "/v1/images/generations/" + id,
+			NewResponse: newGenImageResponse,
+		}
+	default:
+		panic("unexpected action: " + action)
+	}
+}
+
+func (adapter) Results(action xai.Action, body map[string]any) xai.Results {
+	data, _ := body["task_result"].(map[string]any)
+	switch action {
+	case xai.GenImage:
+		return geno.NewImageResults[adapter](data, "images")
+	default:
+		panic("unexpected action: " + action)
+	}
+}
+
+func (adapter) Done(action xai.Action, body map[string]any) bool {
+	data, _ := body["data"].(map[string]any)
+	return data["task_status"] == "succeed" // submitted, processing, succeed, failed
+}
+
+func (adapter) Sleep(action xai.Action, body map[string]any) {
+	if action == xai.GenVideo {
+		time.Sleep(10 * time.Second) // sleep 10s for video operations
+	}
+	time.Sleep(time.Second / 2) // sleep 0.5s for image operations
+}
+
+func (adapter) OutputImage(item any) *xai.OutputImage {
 	panic("todo")
+}
+
+func newGenImageResponse(c *geno.Client, body map[string]any) (xai.OperationResponse, error) {
+	return geno.NewOperationResponse[adapter](c, xai.GenImage, body), nil
 }
 
 // -----------------------------------------------------------------------------

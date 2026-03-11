@@ -237,42 +237,38 @@ func (p *VideoResults[T]) At(i int) xai.Generated {
 
 type QueryOpInfo struct {
 	Path        string
-	QueryBody   map[string]any
 	NewResponse ResponseCreator
 }
 
 type responseAdapter interface {
-	Done(body map[string]any) bool
-	Sleep(body map[string]any)
-	Results(body map[string]any) xai.Results
-	QueryOpInfo(body map[string]any) QueryOpInfo
+	Done(action xai.Action, body map[string]any) bool
+	Sleep(action xai.Action, body map[string]any)
+	Results(action xai.Action, body map[string]any) xai.Results
+	QueryOpInfo(action xai.Action, body map[string]any) QueryOpInfo
 }
 
 type OperationResponse[T responseAdapter] struct {
 	body    map[string]any
 	c       *Client
+	action  xai.Action
 	adapter T
 }
 
-func NewOperationResponse[T responseAdapter](c *Client, body map[string]any) *OperationResponse[T] {
-	return &OperationResponse[T]{c: c, body: body}
+func NewOperationResponse[T responseAdapter](c *Client, action xai.Action, body map[string]any) *OperationResponse[T] {
+	return &OperationResponse[T]{c: c, body: body, action: action}
 }
 
 func (p *OperationResponse[T]) Done() bool {
-	return p.adapter.Done(p.body)
+	return p.adapter.Done(p.action, p.body)
 }
 
 func (p *OperationResponse[T]) Sleep() {
-	p.adapter.Sleep(p.body)
+	p.adapter.Sleep(p.action, p.body)
 }
 
 func (p *OperationResponse[T]) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	qoi := p.adapter.QueryOpInfo(p.body)
+	qoi := p.adapter.QueryOpInfo(p.action, p.body)
 	req, err := p.c.NewRequest(http.MethodGet, qoi.Path)
-	if err != nil {
-		return
-	}
-	err = req.Json(qoi.QueryBody)
 	if err != nil {
 		return
 	}
@@ -280,7 +276,7 @@ func (p *OperationResponse[T]) Retry(ctx context.Context, svc xai.Service, opts 
 }
 
 func (p *OperationResponse[T]) Results() xai.Results {
-	return p.adapter.Results(p.body)
+	return p.adapter.Results(p.action, p.body)
 }
 
 // -----------------------------------------------------------------------------

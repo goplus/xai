@@ -49,15 +49,19 @@ func (p *ServiceBase) ImageFromStgUri(mime xai.ImageType, stgUri string) xai.Ima
 func (p *ServiceBase) VideoFrom(mime xai.VideoType, src io.Reader) (xai.Video, error) {
 	panic("todo")
 }
+
 func (p *ServiceBase) VideoFromLocal(mime xai.VideoType, fileName string) (xai.Video, error) {
 	panic("todo")
 }
+
 func (p *ServiceBase) VideoFromBase64(mime xai.VideoType, base64 string) (xai.Video, error) {
 	panic("todo")
 }
+
 func (p *ServiceBase) VideoFromBytes(mime xai.VideoType, data []byte) xai.Video {
 	panic("todo")
 }
+
 func (p *ServiceBase) VideoFromStgUri(mime xai.VideoType, stgUri string) xai.Video {
 	panic("todo")
 }
