@@ -21,9 +21,35 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"unsafe"
 
 	xai "github.com/goplus/xai/spec"
 )
+
+// -----------------------------------------------------------------------------
+
+// NameToCStyle converts a CamelCase name to snake_case, e.g. "ImageSize" to "image_size".
+func NameToCStyle(name string) string {
+	nx := len(name)
+	for i, n := 1, nx; i < n; i++ {
+		if c := name[i]; c >= 'A' && c <= 'Z' {
+			nx++
+		}
+	}
+	b := make([]byte, 0, nx)
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		if c >= 'A' && c <= 'Z' {
+			if i > 0 {
+				b = append(b, '_')
+			}
+			b = append(b, c+('a'-'A'))
+		} else {
+			b = append(b, c)
+		}
+	}
+	return unsafe.String(unsafe.SliceData(b), len(b))
+}
 
 // -----------------------------------------------------------------------------
 
@@ -51,25 +77,29 @@ type ResponseCreator func(c *Client, body map[string]any) (xai.OperationResponse
 // the action, the name of the parameter for the model, and a function to create a
 // response from the HTTP response body.
 type ActionInfo struct {
-	Path           string          // path to call for the action, e.g. "/v1/images/generations"
-	ModelParamName string          // name of the parameter for the model, e.g. "model_name"
-	InputSchema    xai.InputSchema // input schema for the action
-	NewResponse    ResponseCreator
+	Path        string // path to call for the action, e.g. "/v1/images/generations"
+	NewResponse ResponseCreator
 }
 
 type serviceAdapter interface {
 	// Actions returns the list of actions supported by the given model.
 	Actions(model xai.Model) []xai.Action
 
-	// ActionInfo returns the ActionInfo for the given action. The implementation of
-	// this method should determine the path, model parameter name, and response creator
-	// function based on the action.
-	ActionInfo(action xai.Action) ActionInfo
+	// InputSchema returns the input schema for the given action.
+	InputSchema(action xai.Action) xai.InputSchema
+
+	// SetParam sets the parameter with the given name and value in the request body.
+	// name should convert from XAI style to the API native style, e.g. "ImageSize"
+	// to "image_size".
+	SetParam(body map[string]any, name string, val any)
+
+	// BuildAction builds the request body and returns ActionInfo for the given action.
+	// model should be added to body if needed.
+	BuildAction(action xai.Action, body map[string]any, model xai.Model) ActionInfo
 }
 
 type Service[T serviceAdapter] struct {
 	ServiceBase
-	adapter T
 }
 
 // NewService creates a new Service with the provided HTTP client.
@@ -81,55 +111,54 @@ func NewService[T serviceAdapter](client *http.Client) *Service[T] {
 
 // implement xai.Service
 func (p *Service[T]) Actions(model xai.Model) []xai.Action {
-	return p.adapter.Actions(model)
+	var adapter T
+	return adapter.Actions(model)
 }
 
 // implement xai.Service
 func (p *Service[T]) Operation(model xai.Model, action xai.Action) (xai.Operation, error) {
-	ai := p.adapter.ActionInfo(action)
-	req, err := p.c.NewRequest(http.MethodPost, ai.Path)
-	if err != nil {
-		return nil, err
-	}
-	body := make(map[string]any, 16)
-	body[ai.ModelParamName] = model
-	return &Operation{
-		req:         req,
-		body:        body,
-		inputSchema: ai.InputSchema,
-		newResponse: ai.NewResponse,
+	return &Operation[T]{
+		c:      &p.c,
+		body:   make(map[string]any, 16),
+		model:  model,
+		action: action,
 	}, nil
 }
 
 // -----------------------------------------------------------------------------
 
-type Operation struct {
-	req         *Request
-	body        map[string]any
-	inputSchema xai.InputSchema
-	newResponse ResponseCreator
+type Operation[T serviceAdapter] struct {
+	body    map[string]any
+	action  xai.Action
+	model   xai.Model
+	c       *Client
+	adapter T
 }
 
-func (p *Operation) InputSchema() xai.InputSchema {
-	return p.inputSchema
+func (p *Operation[T]) InputSchema() xai.InputSchema {
+	return p.adapter.InputSchema(p.action)
 }
 
-func (p *Operation) Params() xai.Params {
+func (p *Operation[T]) Params() xai.Params {
 	return p
 }
 
-func (p *Operation) Set(name string, val any) xai.Params {
-	p.body[name] = val
+func (p *Operation[T]) Set(name string, val any) xai.Params {
+	p.adapter.SetParam(p.body, name, val)
 	return p
 }
 
-func (p *Operation) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	req := p.req
+func (p *Operation[T]) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
+	a := p.adapter.BuildAction(p.action, p.body, p.model)
+	req, err := p.c.NewRequest(http.MethodPost, a.Path)
+	if err != nil {
+		return
+	}
 	err = req.Json(p.body)
 	if err != nil {
 		return
 	}
-	return call(ctx, req, p.newResponse, opts)
+	return call(ctx, req, a.NewResponse, opts)
 }
 
 func call(ctx context.Context, req *Request, newResponse ResponseCreator, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
@@ -150,40 +179,49 @@ func call(ctx context.Context, req *Request, newResponse ResponseCreator, opts x
 
 // -----------------------------------------------------------------------------
 
-type results struct {
+type resultAdapter interface {
+	// GetAttr retrieves the attribute with the given name from the result body.
+	// name should convert from XAI style to the API native style, e.g. "ImageURL"
+	// to "image_url".
+	GetAttr(result map[string]any, name string) any
+}
+
+type results[T resultAdapter] struct {
 	result map[string]any
 	items  []any
 }
 
-func newResults(result map[string]any, itemsName string) results {
+func newResults[T resultAdapter](result map[string]any, itemsName string) results[T] {
 	items, _ := result[itemsName].([]any)
-	return results{
+	return results[T]{
 		result: result,
 		items:  items,
 	}
 }
 
-func (p *results) XGo_Attr(name string) any {
-	return p.result[name]
+func (p *results[T]) XGo_Attr(name string) any {
+	var adapter T
+	return adapter.GetAttr(p.result, name)
 }
 
-func (p *results) Len() int {
+func (p *results[T]) Len() int {
 	return len(p.items)
 }
 
 // -----------------------------------------------------------------------------
 
 type imageResultAdapter interface {
+	resultAdapter
 	OutputImage(item any) *xai.OutputImage
 }
 
 type ImageResults[T imageResultAdapter] struct {
-	results
+	results[T]
 }
 
 func NewImageResults[T imageResultAdapter](result map[string]any, itemsName string) xai.Results {
 	return &ImageResults[T]{
-		results: newResults(result, itemsName),
+		results: newResults[T](result, itemsName),
 	}
 }
 
@@ -195,16 +233,17 @@ func (p *ImageResults[T]) At(i int) xai.Generated {
 // -----------------------------------------------------------------------------
 
 type imageMaskResultAdapter interface {
+	resultAdapter
 	OutputImageMask(item any) *xai.OutputImageMask
 }
 
 type ImageMaskResults[T imageMaskResultAdapter] struct {
-	results
+	results[T]
 }
 
 func NewImageMaskResults[T imageMaskResultAdapter](result map[string]any, itemsName string) xai.Results {
 	return &ImageMaskResults[T]{
-		results: newResults(result, itemsName),
+		results: newResults[T](result, itemsName),
 	}
 }
 
@@ -216,16 +255,17 @@ func (p *ImageMaskResults[T]) At(i int) xai.Generated {
 // -----------------------------------------------------------------------------
 
 type videoResultAdapter interface {
+	resultAdapter
 	OutputVideo(item any) *xai.OutputVideo
 }
 
 type VideoResults[T videoResultAdapter] struct {
-	results
+	results[T]
 }
 
 func NewVideoResults[T videoResultAdapter](result map[string]any, itemsName string) xai.Results {
 	return &VideoResults[T]{
-		results: newResults(result, itemsName),
+		results: newResults[T](result, itemsName),
 	}
 }
 
@@ -236,7 +276,7 @@ func (p *VideoResults[T]) At(i int) xai.Generated {
 
 // -----------------------------------------------------------------------------
 
-type QueryOpInfo struct {
+type QueryInfo struct {
 	Path        string
 	NewResponse ResponseCreator
 }
@@ -245,7 +285,7 @@ type responseAdapter interface {
 	Done(action xai.Action, body map[string]any) bool
 	Sleep(action xai.Action, body map[string]any)
 	Results(action xai.Action, body map[string]any) xai.Results
-	QueryOpInfo(action xai.Action, body map[string]any) (QueryOpInfo, error)
+	BuildQuery(action xai.Action, body map[string]any) (QueryInfo, error)
 }
 
 type OperationResponse[T responseAdapter] struct {
@@ -272,7 +312,7 @@ var (
 )
 
 func (p *OperationResponse[T]) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	qoi, err := p.adapter.QueryOpInfo(p.action, p.body)
+	qoi, err := p.adapter.BuildQuery(p.action, p.body)
 	if err != nil {
 		return
 	}

@@ -41,21 +41,34 @@ func (adapter) Actions(model xai.Model) []xai.Action {
 	panic("todo")
 }
 
-func (adapter) ActionInfo(action xai.Action) geno.ActionInfo {
+func (adapter) InputSchema(action xai.Action) xai.InputSchema {
+	panic("todo")
+}
+
+func (adapter) SetParam(body map[string]any, name string, val any) {
+	name = geno.NameToCStyle(name)
+	body[name] = val
+}
+
+func (adapter) GetAttr(result map[string]any, name string) any {
+	name = geno.NameToCStyle(name)
+	return result[name]
+}
+
+func (adapter) BuildAction(action xai.Action, body map[string]any, model xai.Model) geno.ActionInfo {
+	body["model_name"] = string(model)
 	switch action {
 	case xai.GenImage:
 		return geno.ActionInfo{
-			Path:           "/v1/images/generations",
-			ModelParamName: "model_name",
-			InputSchema:    nil, // TODO(xsw)
-			NewResponse:    newGenImageResponse,
+			Path:        "/v1/images/generations",
+			NewResponse: newGenImageResponse,
 		}
 	default:
 		panic("unexpected action: " + action)
 	}
 }
 
-func (adapter) QueryOpInfo(action xai.Action, body map[string]any) (ret geno.QueryOpInfo, err error) {
+func (adapter) BuildQuery(action xai.Action, body map[string]any) (ret geno.QueryInfo, err error) {
 	switch action {
 	case xai.GenImage:
 		data, _ := body["data"].(map[string]any)
