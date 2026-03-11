@@ -40,6 +40,141 @@ const (
 	Synthesize Action = "synthesize" // TTS: text -> audio
 )
 
+// VideoGenMode represents the video generation mode for GenVideo action.
+// Different models support different modes based on input types.
+//
+// Mode hierarchy (higher modes imply lower modes):
+//   - text_to_video: base capability, all video models support this
+//   - image_to_video: single image input, implies text_to_video
+//   - multi_ref_to_video: multiple reference images, implies image_to_video
+//   - start_end_to_video: first + last frame, implies image_to_video
+type VideoGenMode string
+
+const (
+	VideoGenModeText     VideoGenMode = "text_to_video"      // Text prompt only (base)
+	VideoGenModeImage    VideoGenMode = "image_to_video"     // Single image + prompt
+	VideoGenModeMultiRef VideoGenMode = "multi_ref_to_video" // Multiple reference images + prompt
+	VideoGenModeStartEnd VideoGenMode = "start_end_to_video" // First frame + last frame + prompt
+)
+
+// AllVideoGenModes returns all defined video generation modes.
+func AllVideoGenModes() []VideoGenMode {
+	return []VideoGenMode{
+		VideoGenModeText,
+		VideoGenModeImage,
+		VideoGenModeMultiRef,
+		VideoGenModeStartEnd,
+	}
+}
+
+// VideoGenModeImplies returns the modes that are implied by the given mode.
+// For example, multi_ref_to_video implies image_to_video and text_to_video.
+func VideoGenModeImplies(mode VideoGenMode) []VideoGenMode {
+	switch mode {
+	case VideoGenModeText:
+		return nil
+	case VideoGenModeImage:
+		return []VideoGenMode{VideoGenModeText}
+	case VideoGenModeMultiRef:
+		return []VideoGenMode{VideoGenModeImage, VideoGenModeText}
+	case VideoGenModeStartEnd:
+		return []VideoGenMode{VideoGenModeImage, VideoGenModeText}
+	default:
+		return nil
+	}
+}
+
+// ExpandVideoGenModes expands a list of modes to include all implied modes.
+// For example, [multi_ref_to_video] expands to [multi_ref_to_video, image_to_video, text_to_video].
+func ExpandVideoGenModes(modes []VideoGenMode) []VideoGenMode {
+	seen := make(map[VideoGenMode]bool)
+	var result []VideoGenMode
+
+	var add func(m VideoGenMode)
+	add = func(m VideoGenMode) {
+		if seen[m] {
+			return
+		}
+		seen[m] = true
+		result = append(result, m)
+		for _, implied := range VideoGenModeImplies(m) {
+			add(implied)
+		}
+	}
+
+	for _, m := range modes {
+		add(m)
+	}
+	return result
+}
+
+// NormalizeVideoGenModes returns the minimal set of modes that represent the same capabilities.
+// For example, [multi_ref_to_video, image_to_video, text_to_video] normalizes to [multi_ref_to_video].
+func NormalizeVideoGenModes(modes []VideoGenMode) []VideoGenMode {
+	if len(modes) == 0 {
+		return nil
+	}
+
+	modeSet := make(map[VideoGenMode]bool)
+	for _, m := range modes {
+		modeSet[m] = true
+	}
+
+	var result []VideoGenMode
+	for _, m := range modes {
+		isImplied := false
+		for other := range modeSet {
+			if other == m {
+				continue
+			}
+			for _, implied := range VideoGenModeImplies(other) {
+				if implied == m {
+					isImplied = true
+					break
+				}
+			}
+			if isImplied {
+				break
+			}
+		}
+		if !isImplied {
+			result = append(result, m)
+		}
+	}
+	return result
+}
+
+// -----------------------------------------------------------------------------
+
+// VideoSchema describes the schema for video generation operations.
+// Each provider (vidu, kling, gemini, etc.) implements this interface to describe
+// the supported modes, fields, and their restrictions for a specific model.
+type VideoSchema interface {
+	// SupportedModes returns the video generation modes supported by this model.
+	SupportedModes() []VideoGenMode
+
+	// Fields returns all input fields for this model.
+	Fields() []Field
+
+	// Restrict returns the restriction for a field.
+	// Returns nil if there is no restriction for the field.
+	Restrict(name string) *Restriction
+
+	// FieldModes returns the modes that a field is applicable to.
+	// Returns nil if the field is applicable to all modes (common fields like prompt).
+	FieldModes(name string) []VideoGenMode
+}
+
+// VideoSchemaProvider is implemented by services that support video generation.
+// Use this interface to get the VideoSchema for a specific model.
+type VideoSchemaProvider interface {
+	// VideoSchema returns the VideoSchema for the given model.
+	// Returns nil if the model does not support video generation.
+	VideoSchema(model Model) VideoSchema
+}
+
+// -----------------------------------------------------------------------------
+
 // Results represents the results of an `Operation`.
 type Results interface {
 	// XGo_Attr ($name) retrieves a property value from the results by name.

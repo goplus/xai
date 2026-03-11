@@ -30,40 +30,12 @@ import (
 	"time"
 
 	xai "github.com/goplus/xai/spec"
-	"github.com/goplus/xai/types"
 )
 
 const (
 	videoEndpoint     = "videos"
 	videoPollInterval = 5 * time.Second
 	maxPromptLen      = 2500
-)
-
-var (
-	enumVideoSeconds = &xai.StringEnum{
-		Values: []string{"4", "8", "12"},
-	}
-	enumVideoSizeSora2 = &xai.StringEnum{
-		Values: []string{"720x1280", "1280x720"},
-	}
-	enumVideoSizeSora2Pro = &xai.StringEnum{
-		Values: []string{"1280x720", "1024x1792", "1792x1024"},
-	}
-	enumVideoSize = &xai.StringEnum{
-		Values: []string{"720x1280", "1280x720", "1024x1792", "1792x1024"},
-	}
-	videoRestrictions = map[string]*xai.Restriction{
-		"Prompt":  {Required: true},
-		"Seconds": {Limit: enumVideoSeconds},
-		"Size":    {Limit: enumVideoSize},
-	}
-	videoFields = []xai.Field{
-		{Name: "Prompt", Kind: types.String},
-		{Name: "InputReference", Kind: types.String},
-		{Name: "Seconds", Kind: types.String},
-		{Name: "Size", Kind: types.String},
-		{Name: "RemixFromVideoID", Kind: types.String},
-	}
 )
 
 type genVideo struct {
@@ -148,15 +120,15 @@ type videoParams struct {
 
 func (p *videoParams) Set(name string, val any) xai.Params {
 	switch name {
-	case "Prompt":
+	case ParamPrompt:
 		p.Prompt = valueToString(val)
-	case "InputReference":
+	case ParamInputReference:
 		p.InputReference = valueToInputReference(val)
-	case "Seconds":
+	case ParamSeconds:
 		p.Seconds = valueToString(val)
-	case "Size":
+	case ParamSize:
 		p.Size = valueToString(val)
-	case "RemixFromVideoID":
+	case ParamRemixFromVideoID:
 		p.RemixFromVideoID = valueToString(val)
 	}
 	return p
@@ -170,13 +142,13 @@ func (p *videoParams) validate(model string) error {
 		return fmt.Errorf("openai: Prompt must not exceed %d characters", maxPromptLen)
 	}
 	if p.Seconds != "" {
-		if err := videoRestrictions["Seconds"].ValidateString("Seconds", p.Seconds); err != nil {
+		if err := videoRestrictions[ParamSeconds].ValidateString(ParamSeconds, p.Seconds); err != nil {
 			return err
 		}
 	}
 	if p.Size != "" {
 		enum := sizeEnumForModel(model)
-		if err := (&xai.Restriction{Limit: enum}).ValidateString("Size", p.Size); err != nil {
+		if err := (&xai.Restriction{Limit: enum}).ValidateString(ParamSize, p.Size); err != nil {
 			return err
 		}
 	}

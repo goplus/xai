@@ -94,3 +94,25 @@ func buildGenParams(in xai.ParamBuilder) (string, []*genai.Content, *genai.Gener
 }
 
 // -----------------------------------------------------------------------------
+// Veo video param name constants.
+// -----------------------------------------------------------------------------
+
+const (
+	ParamPrompt             = "Prompt"
+	ParamImage              = "Image"
+	ParamVideo              = "Video"
+	ParamLastFrame          = "LastFrame"
+	ParamReferenceImages    = "ReferenceImages"
+	ParamAspectRatio        = "AspectRatio"
+	ParamResolution         = "Resolution"
+	ParamNegativePrompt     = "NegativePrompt"
+	ParamNumberOfVideos     = "NumberOfVideos"
+	ParamPersonGeneration   = "PersonGeneration"
+	ParamDurationSeconds    = "DurationSeconds"
+	ParamSeed               = "Seed"
+	ParamGenerateAudio      = "GenerateAudio"
+	ParamEnhancePrompt      = "EnhancePrompt"
+	ParamCompressionQuality = "CompressionQuality"
+)
+
+// -----------------------------------------------------------------------------

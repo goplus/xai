@@ -109,3 +109,21 @@ func buildParams(in xai.ParamBuilder) *genRequest {
 }
 
 // -----------------------------------------------------------------------------
+// Sora video model and param name constants.
+// -----------------------------------------------------------------------------
+
+const (
+	ModelSora2     = "sora-2"
+	ModelSora2Pro  = "sora-2-pro"
+	ModelSora2Turbo = "sora-2-turbo"
+)
+
+const (
+	ParamPrompt           = "Prompt"
+	ParamInputReference   = "InputReference"
+	ParamSeconds          = "Seconds"
+	ParamSize             = "Size"
+	ParamRemixFromVideoID = "RemixFromVideoID"
+)
+
+// -----------------------------------------------------------------------------

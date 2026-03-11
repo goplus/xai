@@ -346,7 +346,7 @@ func SchemaForVideo(model string) []xai.Field {
 		{Name: ParamResolution, Kind: types.String},
 		{Name: ParamMovementAmplitude, Kind: types.String},
 		{Name: ParamWatermark, Kind: types.Bool},
-		{Name: ParamReferenceImageURLs, Kind: types.List},
+		{Name: ParamReferenceImageURLs, Kind: types.String | types.List},
 		{Name: ParamSubjects, Kind: types.List},
 		{Name: ParamImageURL, Kind: types.String},
 		{Name: ParamStartImageURL, Kind: types.String},
@@ -361,6 +361,8 @@ func Restrict(model, name string) *xai.Restriction {
 	}
 	m := normalizeModel(model)
 	switch name {
+	case ParamPrompt:
+		return &xai.Restriction{Required: true}
 	case ParamResolution:
 		return &xai.Restriction{Limit: limitResolution}
 	case ParamMovementAmplitude:
