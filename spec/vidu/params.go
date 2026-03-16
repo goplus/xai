@@ -161,6 +161,13 @@ type VideoParams struct {
 	MovementAmplitude string
 	Watermark         *bool
 
+	AspectRatio string
+	BGM         *bool
+	Style       string
+	Audio       *bool
+	IsRec       *bool
+	VoiceID     string
+
 	ReferenceImageURLs []string
 	Subjects           []Subject
 	ImageURL           string
@@ -231,6 +238,13 @@ func BuildVideoParams(model string, p *Params) (*VideoParams, error) {
 		Resolution:        p.GetString(ParamResolution),
 		MovementAmplitude: p.GetString(ParamMovementAmplitude),
 		Watermark:         p.GetBool(ParamWatermark),
+
+		AspectRatio: p.GetString(ParamAspectRatio),
+		BGM:         p.GetBool(ParamBGM),
+		Style:       p.GetString(ParamStyle),
+		Audio:       p.GetBool(ParamAudio),
+		IsRec:       p.GetBool(ParamIsRec),
+		VoiceID:     p.GetString(ParamVoiceID),
 
 		ReferenceImageURLs: parsedReferenceImageURLs,
 		Subjects:           parsedSubjects,
@@ -345,7 +359,13 @@ func SchemaForVideo(model string) []xai.Field {
 		{Name: ParamDuration, Kind: types.Int},
 		{Name: ParamResolution, Kind: types.String},
 		{Name: ParamMovementAmplitude, Kind: types.String},
+		{Name: ParamAspectRatio, Kind: types.String},
+		{Name: ParamStyle, Kind: types.String},
+		{Name: ParamBGM, Kind: types.Bool},
 		{Name: ParamWatermark, Kind: types.Bool},
+		{Name: ParamAudio, Kind: types.Bool},
+		{Name: ParamIsRec, Kind: types.Bool},
+		{Name: ParamVoiceID, Kind: types.String},
 		{Name: ParamReferenceImageURLs, Kind: types.String | types.List},
 		{Name: ParamSubjects, Kind: types.List},
 		{Name: ParamImageURL, Kind: types.String},

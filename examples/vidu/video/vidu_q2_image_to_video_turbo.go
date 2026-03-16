@@ -23,26 +23,24 @@ import (
 	"github.com/goplus/xai/spec/vidu"
 )
 
-func runViduQ1TextToVideo(ctx context.Context, svc xai.Service, model xai.Model) error {
+func runViduQ2ImageToVideoTurbo(ctx context.Context, svc xai.Service, model xai.Model) error {
 	op, err := svc.Operation(model, xai.GenVideo)
 	if err != nil {
 		return err
 	}
 	op.Params().
-		Set(vidu.ParamPrompt, "A cute orange cat chasing butterflies in sunlight, cinematic, warm lighting.").
-		Set(vidu.ParamSeed, 1).
+		Set(vidu.ParamPrompt, "Fast-paced handheld motion as the camera circles a runner entering a futuristic subway station.").
+		Set(vidu.ParamSeed, 24).
 		Set(vidu.ParamDuration, 5).
-		Set(vidu.ParamResolution, vidu.Resolution1080p).
-		Set(vidu.ParamMovementAmplitude, "auto").
-		Set(vidu.ParamAspectRatio, vidu.AspectRatio9_16).
-		Set(vidu.ParamStyle, vidu.StyleAnime).
-		Set(vidu.ParamBGM, true).
-		Set(vidu.ParamWatermark, true)
+		Set(vidu.ParamResolution, vidu.Resolution720p).
+		Set(vidu.ParamMovementAmplitude, vidu.MovementMedium).
+		Set(vidu.ParamWatermark, false).
+		Set(vidu.ParamImageURL, DemoVideoURLs.ImageInput)
 
-	results, err := xai.Call(ctx, svc, op, newViduOptions(svc, "demo-user-q1-text"), progressPrinter("q1-text"))
+	results, err := xai.Call(ctx, svc, op, newViduOptions(svc, "demo-user-q2-image-turbo"), progressPrinter("q2-image-turbo"))
 	if err != nil {
 		return err
 	}
-	printVideoResults(string(model), "text-to-video", results)
+	printVideoResults(string(model), "image-to-video-turbo", results)
 	return nil
 }

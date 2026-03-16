@@ -34,8 +34,10 @@ op, _ := svc.Operation(xai.Model(vidu.ModelViduQ2), xai.GenVideo)
 op.Params().
     Set(vidu.ParamPrompt, "A woman walking through a vibrant city street at night.").
     Set(vidu.ParamImageURL, "https://example.com/ref.jpg").
-    Set(vidu.ParamDuration, 4).
-    Set(vidu.ParamResolution, vidu.Resolution720p)
+    Set(vidu.ParamDuration, 5).
+    Set(vidu.ParamResolution, vidu.Resolution720p).
+    Set(vidu.ParamAudio, true).
+    Set(vidu.ParamVoiceID, "voice-city-guide")
 
 results, err := xai.Call(ctx, svc, op, svc.Options(), nil)
 if err != nil {

@@ -34,6 +34,8 @@ func runViduQ2TextToVideo(ctx context.Context, svc xai.Service, model xai.Model)
 		Set(vidu.ParamDuration, 5).
 		Set(vidu.ParamResolution, vidu.Resolution1080p).
 		Set(vidu.ParamMovementAmplitude, "auto").
+		Set(vidu.ParamAspectRatio, vidu.AspectRatio16_9).
+		Set(vidu.ParamBGM, true).
 		Set(vidu.ParamWatermark, true)
 
 	results, err := xai.Call(ctx, svc, op, newViduOptions(svc, "demo-user-q2-text"), progressPrinter("q2-text"))

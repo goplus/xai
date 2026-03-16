@@ -168,6 +168,85 @@ func TestBuildVideoRequestReferenceSubjectsBody(t *testing.T) {
 	}
 }
 
+func TestBuildVideoRequestIncludesCommonOptionalFields(t *testing.T) {
+	params := &vidu.VideoParams{
+		ModelName:   vidu.ModelViduQ1,
+		Prompt:      "anime cat under lanterns",
+		AspectRatio: vidu.AspectRatio9_16,
+		Style:       vidu.StyleAnime,
+		BGM:         boolPtr(true),
+		Watermark:   boolPtr(false),
+	}
+
+	req, err := BuildVideoRequest("", params)
+	if err != nil {
+		t.Fatalf("BuildVideoRequest error: %v", err)
+	}
+
+	if req.Body["aspect_ratio"] != vidu.AspectRatio9_16 {
+		t.Fatalf("aspect_ratio = %v, want %s", req.Body["aspect_ratio"], vidu.AspectRatio9_16)
+	}
+	if req.Body["style"] != vidu.StyleAnime {
+		t.Fatalf("style = %v, want %s", req.Body["style"], vidu.StyleAnime)
+	}
+	if req.Body["bgm"] != true {
+		t.Fatalf("bgm = %v, want true", req.Body["bgm"])
+	}
+	if req.Body["watermark"] != false {
+		t.Fatalf("watermark = %v, want false", req.Body["watermark"])
+	}
+}
+
+func TestBuildVideoRequestReferenceSubjectsAudioBody(t *testing.T) {
+	params := &vidu.VideoParams{
+		ModelName: vidu.ModelViduQ1,
+		Prompt:    "the @narrator walks by the @lantern",
+		Audio:     boolPtr(true),
+		Subjects: []vidu.Subject{
+			{ID: "narrator", Images: []string{"https://example.com/narrator.png"}, VoiceID: "voice-narrator"},
+			{ID: "lantern", Images: []string{"https://example.com/lantern.png"}},
+		},
+	}
+
+	req, err := BuildVideoRequest("", params)
+	if err != nil {
+		t.Fatalf("BuildVideoRequest error: %v", err)
+	}
+
+	if req.Body["audio"] != true {
+		t.Fatalf("audio = %v, want true", req.Body["audio"])
+	}
+}
+
+func TestBuildVideoRequestImageAudioBody(t *testing.T) {
+	params := &vidu.VideoParams{
+		ModelName: vidu.ModelViduQ2Pro,
+		Prompt:    "woman walking through a neon alley",
+		ImageURL:  "https://example.com/ref.png",
+		Audio:     boolPtr(true),
+		VoiceID:   "voice-city",
+		IsRec:     boolPtr(true),
+	}
+
+	req, err := BuildVideoRequest("", params)
+	if err != nil {
+		t.Fatalf("BuildVideoRequest error: %v", err)
+	}
+
+	if req.Endpoint != EndpointQ2ImageToVideoPro {
+		t.Fatalf("endpoint = %s, want %s", req.Endpoint, EndpointQ2ImageToVideoPro)
+	}
+	if req.Body["audio"] != true {
+		t.Fatalf("audio = %v, want true", req.Body["audio"])
+	}
+	if req.Body["voice_id"] != "voice-city" {
+		t.Fatalf("voice_id = %v, want voice-city", req.Body["voice_id"])
+	}
+	if req.Body["is_rec"] != true {
+		t.Fatalf("is_rec = %v, want true", req.Body["is_rec"])
+	}
+}
+
 func TestSelectEndpointNormalizeModel(t *testing.T) {
 	endpoint, err := SelectEndpoint("  VIDU-Q2  ", vidu.RouteImageToVideo)
 	if err != nil {
@@ -304,3 +383,5 @@ func TestVideoExecutorSubmitAndPoll(t *testing.T) {
 		t.Fatalf("expected one output video, got %#v", resp.Results())
 	}
 }
+
+func boolPtr(v bool) *bool { return &v }

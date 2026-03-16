@@ -23,6 +23,10 @@ go run ./examples/veo all
 go run ./examples/sora
 go run ./examples/sora all
 
+# Run Vidu examples
+go run ./examples/vidu/video
+go run ./examples/vidu/video all
+
 # Run by model (Kling)
 go run ./examples/kling kling-v2-1
 go run ./examples/kling/images kling-v2-1
@@ -51,6 +55,28 @@ examples/
 │   ├── asr.go
 │   ├── tts.go
 │   └── list_voices.go
+├── vidu/
+│   ├── README.md
+│   ├── output/
+│   │   └── output.go
+│   ├── shared/
+│   │   └── service.go
+│   └── video/
+│       ├── main.go
+│       ├── urls.go
+│       ├── helpers.go
+│       ├── call_sync_example.go
+│       ├── vidu_q1_text_to_video.go
+│       ├── vidu_q1_reference_urls.go
+│       ├── vidu_q1_reference_subjects.go
+│       ├── vidu_q1_reference_subjects_audio.go
+│       ├── vidu_q2_text_to_video.go
+│       ├── vidu_q2_reference_urls.go
+│       ├── vidu_q2_reference_subjects.go
+│       ├── vidu_q2_image_to_video_pro.go
+│       ├── vidu_q2_image_to_video_pro_audio.go
+│       ├── vidu_q2_image_to_video_turbo.go
+│       └── vidu_q2_start_end_to_video_pro.go
 ├── sora/
 │   ├── README.md
 │   ├── main.go
@@ -101,6 +127,8 @@ examples/
 **Veo models**: veo-2.0-generate-001, veo-2.0-generate-exp, veo-2.0-generate-preview, veo-3.0-generate-preview, veo-3.0-fast-generate-preview, veo-3.1-generate-preview, veo-3.1-fast-generate-preview
 
 **Sora models**: sora-2, sora-2-pro
+
+**Vidu models**: vidu-q1, vidu-q2, viduq2-pro, viduq2-turbo
 
 **Audio models**: asr (ASR), tts-v1 (TTS)
 

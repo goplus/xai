@@ -38,11 +38,11 @@ const (
 	EndpointQ1TextToVideo      = "/queue/fal-ai/vidu/q1/text-to-video"
 	EndpointQ1ReferenceToVideo = "/queue/fal-ai/vidu/q1/reference-to-video"
 
-	EndpointQ2TextToVideo        = "/queue/fal-ai/vidu/q2/text-to-video"
-	EndpointQ2ReferenceToVideo   = "/queue/fal-ai/vidu/q2/reference-to-video"
-	EndpointQ2ImageToVideoPro    = "/queue/fal-ai/vidu/q2/image-to-video/pro"
-	EndpointQ2StartEndToVideoPro = "/queue/fal-ai/vidu/q2/start-end-to-video/pro"
-	EndpointQ2ImageToVideoTurbo  = "/queue/fal-ai/vidu/q2/image-to-video/turbo"
+	EndpointQ2TextToVideo          = "/queue/fal-ai/vidu/q2/text-to-video"
+	EndpointQ2ReferenceToVideo     = "/queue/fal-ai/vidu/q2/reference-to-video"
+	EndpointQ2ImageToVideoPro      = "/queue/fal-ai/vidu/q2/image-to-video/pro"
+	EndpointQ2StartEndToVideoPro   = "/queue/fal-ai/vidu/q2/start-end-to-video/pro"
+	EndpointQ2ImageToVideoTurbo    = "/queue/fal-ai/vidu/q2/image-to-video/turbo"
 	EndpointQ2StartEndToVideoTurbo = "/queue/fal-ai/vidu/q2/start-end-to-video/turbo"
 
 	EndpointTaskStatus = "/queue/fal-ai/vidu/requests/"
@@ -163,20 +163,20 @@ type endpointKey struct {
 }
 
 var endpointByRoute = map[endpointKey]string{
-	{model: vidu.ModelViduQ1, route: vidu.RouteTextToVideo}:      EndpointQ1TextToVideo,
-	{model: vidu.ModelViduQ1, route: vidu.RouteReferenceToVideo}: EndpointQ1ReferenceToVideo,
-	{model: vidu.ModelViduQ2, route: vidu.RouteTextToVideo}:      EndpointQ2TextToVideo,
-	{model: vidu.ModelViduQ2, route: vidu.RouteReferenceToVideo}: EndpointQ2ReferenceToVideo,
-	{model: vidu.ModelViduQ2, route: vidu.RouteImageToVideo}:     EndpointQ2ImageToVideoPro,
-	{model: vidu.ModelViduQ2, route: vidu.RouteStartEndToVideo}:  EndpointQ2StartEndToVideoPro,
+	{model: vidu.ModelViduQ1, route: vidu.RouteTextToVideo}:           EndpointQ1TextToVideo,
+	{model: vidu.ModelViduQ1, route: vidu.RouteReferenceToVideo}:      EndpointQ1ReferenceToVideo,
+	{model: vidu.ModelViduQ2, route: vidu.RouteTextToVideo}:           EndpointQ2TextToVideo,
+	{model: vidu.ModelViduQ2, route: vidu.RouteReferenceToVideo}:      EndpointQ2ReferenceToVideo,
+	{model: vidu.ModelViduQ2, route: vidu.RouteImageToVideo}:          EndpointQ2ImageToVideoPro,
+	{model: vidu.ModelViduQ2, route: vidu.RouteStartEndToVideo}:       EndpointQ2StartEndToVideoPro,
 	{model: vidu.ModelViduQ2Turbo, route: vidu.RouteTextToVideo}:      EndpointQ2TextToVideo,
 	{model: vidu.ModelViduQ2Turbo, route: vidu.RouteReferenceToVideo}: EndpointQ2ReferenceToVideo,
 	{model: vidu.ModelViduQ2Turbo, route: vidu.RouteImageToVideo}:     EndpointQ2ImageToVideoTurbo,
 	{model: vidu.ModelViduQ2Turbo, route: vidu.RouteStartEndToVideo}:  EndpointQ2StartEndToVideoTurbo,
-	{model: vidu.ModelViduQ2Pro, route: vidu.RouteTextToVideo}:      EndpointQ2TextToVideo,
-	{model: vidu.ModelViduQ2Pro, route: vidu.RouteReferenceToVideo}: EndpointQ2ReferenceToVideo,
-	{model: vidu.ModelViduQ2Pro, route: vidu.RouteImageToVideo}:     EndpointQ2ImageToVideoPro,
-	{model: vidu.ModelViduQ2Pro, route: vidu.RouteStartEndToVideo}:  EndpointQ2StartEndToVideoPro,
+	{model: vidu.ModelViduQ2Pro, route: vidu.RouteTextToVideo}:        EndpointQ2TextToVideo,
+	{model: vidu.ModelViduQ2Pro, route: vidu.RouteReferenceToVideo}:   EndpointQ2ReferenceToVideo,
+	{model: vidu.ModelViduQ2Pro, route: vidu.RouteImageToVideo}:       EndpointQ2ImageToVideoPro,
+	{model: vidu.ModelViduQ2Pro, route: vidu.RouteStartEndToVideo}:    EndpointQ2StartEndToVideoPro,
 }
 
 type routeBodyPatcher func(dst map[string]any, params *vidu.VideoParams)
@@ -223,6 +223,9 @@ func buildCommonVideoBody(params *vidu.VideoParams) map[string]any {
 	setOptionalInt(body, "duration", params.Duration)
 	setOptionalString(body, "resolution", params.Resolution)
 	setOptionalString(body, "movement_amplitude", params.MovementAmplitude)
+	setOptionalString(body, "aspect_ratio", params.AspectRatio)
+	setOptionalString(body, "style", params.Style)
+	setOptionalBool(body, "bgm", params.BGM)
 	setOptionalBool(body, "watermark", params.Watermark)
 	return body
 }
@@ -234,16 +237,21 @@ func patchReferenceRouteBody(dst map[string]any, params *vidu.VideoParams) {
 	subjects := buildSubjectsPayload(params.Subjects)
 	if len(subjects) > 0 {
 		dst["subjects"] = subjects
+		setOptionalBool(dst, "audio", params.Audio)
 	}
 }
 
 func patchImageRouteBody(dst map[string]any, params *vidu.VideoParams) {
 	dst["image_url"] = params.ImageURL
+	setOptionalBool(dst, "audio", params.Audio)
+	setOptionalString(dst, "voice_id", params.VoiceID)
+	setOptionalBool(dst, "is_rec", params.IsRec)
 }
 
 func patchStartEndRouteBody(dst map[string]any, params *vidu.VideoParams) {
 	dst["start_image_url"] = params.StartImageURL
 	dst["end_image_url"] = params.EndImageURL
+	setOptionalBool(dst, "is_rec", params.IsRec)
 }
 
 func buildSubjectsPayload(subjects []vidu.Subject) []map[string]any {
@@ -321,8 +329,8 @@ func normalizeStatus(status string) string {
 
 var (
 	completedStatuses = newStatusSet(StatusCompleted)
-	failedStatuses   = newStatusSet(StatusFailed, StatusCancelled, StatusCanceled, StatusError)
-	processingStatus = newStatusSet(StatusInQueue, StatusInProgress, StatusProcessing, StatusRunning, StatusQueued)
+	failedStatuses    = newStatusSet(StatusFailed, StatusCancelled, StatusCanceled, StatusError)
+	processingStatus  = newStatusSet(StatusInQueue, StatusInProgress, StatusProcessing, StatusRunning, StatusQueued)
 )
 
 // VideoCreateResponse is the response from creating a video task.

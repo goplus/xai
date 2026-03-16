@@ -23,26 +23,30 @@ import (
 	"github.com/goplus/xai/spec/vidu"
 )
 
-func runViduQ1TextToVideo(ctx context.Context, svc xai.Service, model xai.Model) error {
+func runViduQ1ReferenceToVideoSubjectsAudio(ctx context.Context, svc xai.Service, model xai.Model) error {
 	op, err := svc.Operation(model, xai.GenVideo)
 	if err != nil {
 		return err
 	}
 	op.Params().
-		Set(vidu.ParamPrompt, "A cute orange cat chasing butterflies in sunlight, cinematic, warm lighting.").
-		Set(vidu.ParamSeed, 1).
+		Set(vidu.ParamPrompt, "The @narrator walks past the @lantern on the @street and softly introduces the scene.").
+		Set(vidu.ParamSeed, 5).
 		Set(vidu.ParamDuration, 5).
 		Set(vidu.ParamResolution, vidu.Resolution1080p).
-		Set(vidu.ParamMovementAmplitude, "auto").
+		Set(vidu.ParamMovementAmplitude, vidu.MovementAuto).
 		Set(vidu.ParamAspectRatio, vidu.AspectRatio9_16).
-		Set(vidu.ParamStyle, vidu.StyleAnime).
-		Set(vidu.ParamBGM, true).
-		Set(vidu.ParamWatermark, true)
+		Set(vidu.ParamAudio, true).
+		Set(vidu.ParamWatermark, false).
+		Set(vidu.ParamSubjects, []vidu.Subject{
+			{ID: "narrator", Images: []string{DemoVideoURLs.Reference1}, VoiceID: "voice-narrator"},
+			{ID: "lantern", Images: []string{DemoVideoURLs.Reference3}},
+			{ID: "street", Images: []string{DemoVideoURLs.Reference2}},
+		})
 
-	results, err := xai.Call(ctx, svc, op, newViduOptions(svc, "demo-user-q1-text"), progressPrinter("q1-text"))
+	results, err := xai.Call(ctx, svc, op, newViduOptions(svc, "demo-user-q1-ref-subjects-audio"), progressPrinter("q1-ref-subjects-audio"))
 	if err != nil {
 		return err
 	}
-	printVideoResults(string(model), "text-to-video", results)
+	printVideoResults(string(model), "reference-to-video-subjects-audio", results)
 	return nil
 }

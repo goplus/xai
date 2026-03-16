@@ -13,7 +13,9 @@ Supported routes:
 - `q2/text-to-video`
 - `q2/reference-to-video` (`reference_image_urls` or `subjects`)
 - `q2/image-to-video/pro`
+- `q2/image-to-video/turbo`
 - `q2/start-end-to-video/pro`
+- `q2/start-end-to-video/turbo`
 
 ## Quick Start
 
@@ -37,8 +39,10 @@ func run(ctx context.Context, apiKey string) error {
     op.Params().
         Set(vidu.ParamPrompt, "A woman walking through a vibrant city street at night.").
         Set(vidu.ParamImageURL, "https://example.com/ref.jpg").
-        Set(vidu.ParamDuration, 4).
-        Set(vidu.ParamResolution, vidu.Resolution720p)
+        Set(vidu.ParamDuration, 5).
+        Set(vidu.ParamResolution, vidu.Resolution720p).
+        Set(vidu.ParamAudio, true).
+        Set(vidu.ParamVoiceID, "voice-city-guide")
 
     _, err = xai.Call(ctx, svc, op, svc.Options(), nil)
     return err
@@ -54,10 +58,13 @@ go run ./examples/vidu/video              # list demos
 go run ./examples/vidu/video q1-text       # Q1 text-to-video
 go run ./examples/vidu/video q1-ref-urls  # Q1 reference-to-video (URLs)
 go run ./examples/vidu/video q1-ref-subjects
+go run ./examples/vidu/video q1-ref-subjects-audio
 go run ./examples/vidu/video q2-text       # Q2 text-to-video
 go run ./examples/vidu/video q2-ref-urls
 go run ./examples/vidu/video q2-ref-subjects
 go run ./examples/vidu/video q2-image-pro  # Q2 image-to-video-pro
+go run ./examples/vidu/video q2-image-pro-audio
+go run ./examples/vidu/video q2-image-turbo
 go run ./examples/vidu/video q2-start-end-pro
 go run ./examples/vidu/video call-sync     # CallSync + GetTask resume
 ```

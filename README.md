@@ -45,7 +45,7 @@ go run ./examples/sora text-to-video image-to-video
 go run ./examples/veo veo-3.0-generate-preview
 
 # Vidu video
-go run ./examples/vidu/video q2-text
+go run ./examples/vidu/video q2-image-pro-audio
 ```
 
 ## Examples Overview
@@ -57,7 +57,7 @@ go run ./examples/vidu/video q2-text
 | [examples/kling](examples/kling) | Kling image & video: text2image, image2image, text2video, img2video, keyframe |
 | [examples/sora](examples/sora) | Sora text-to-video, image-to-video, remix |
 | [examples/veo](examples/veo) | Veo text-to-video, image-to-video, first+last frame, reference images |
-| [examples/vidu](examples/vidu) | Vidu Q1/Q2 text-to-video, reference-to-video, image-to-video |
+| [examples/vidu](examples/vidu) | Vidu Q1/Q2/Q2 Pro/Turbo text-to-video, reference-to-video, image-to-video, audio-video |
 
 ## Backend Mode
 
@@ -72,6 +72,7 @@ go run ./examples/vidu/video q2-text
 | Video | kling-v2-1, kling-v2-5-turbo, kling-v2-6, kling-video-o1, kling-v3, kling-v3-omni |
 | Veo | veo-2.0-generate-001, veo-2.0-generate-exp, veo-3.0-generate-preview, veo-3.1-generate-preview, ... |
 | Sora | sora-2, sora-2-pro |
+| Vidu | vidu-q1, vidu-q2, viduq2-pro, viduq2-turbo |
 | Chat | gemini-3.0-pro-preview, deepseek-v3.2, etc. |
 
 ## API Usage
