@@ -42,13 +42,15 @@
               "Type": "boolean",
               "Required": "Optional",
               "Defval": "Default to false",
-              "Description": "Whether to generate multi-shot video."
+              "Description": "Whether to generate multi-shot video.",
+              "Notes": "When true: the prompt parameter is invalid, and it does not support setting the start \u0026 end frames to generate videos\n\n\nWhen false: the shot_type and multi_prompt parameters are invalid.\n\n\n"
             },
             {
               "Name": "shot_type",
               "Type": "string",
               "Required": "Optional",
               "Description": "Storyboard method.",
+              "Notes": "When multi_shot is true, this parameter is required.\n\n\n",
               "Enumvals": [
                 "customize",
                 "intelligence"
@@ -58,31 +60,36 @@
               "Name": "prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Text prompt words, which can include positive and negative descriptions."
+              "Description": "Text prompt words, which can include positive and negative descriptions.",
+              "Notes": "The prompt words can be templated to meet different video generation needs\n\n\nMust not exceed 2,500 characters\n\n\nWhen the \"multi_shot\" parameter is set to false or when the \"multi_shot\" parameter is set to true and the \"shot-type\" parameter is set to intelligence, the current parameter must not be empty.\n\n\n💡\nThe Omni model can achieve various capabilities through Prompt with elements, images, videos, and other content:\nSpecify elements/images/videos using \u003c\u003c\u003c\u003e\u003e\u003e format, e.g.: \u003c\u003c\u003celement_1\u003e\u003e\u003e, \u003c\u003c\u003cimage_1\u003e\u003e\u003e, \u003c\u003c\u003cvideo_1\u003e\u003e\u003e\nFor detailed capabilities, see: KLING Omni Model User Guide, Kling VIDEO 3.0 Omni Model User Guide\n\n\n\n\nThe support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n"
             },
             {
               "Name": "multi_prompt",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Information about each storyboard, such as prompts and duration."
+              "Description": "Information about each storyboard, such as prompts and duration.",
+              "Notes": "Define shot sequence number, corresponding prompt and duration via index, prompt, and duration parameters.\n\n\nSupports up to 6 storyboards, minimum 1.\nMax length per storyboard content: 512.\nEach storyboard duration must not exceed total task duration and must be ≥ 1.\nSum of all storyboard durations must equal total task duration.\n\n\nWhen multi_shot is true and shot_type is customize, this parameter is required. Format:\n\n\"multi_prompt\":[\n  { \"index\": int, \"prompt\": \"string\", \"duration\": \"5\" },\n  { \"index\": int, \"prompt\": \"string\", \"duration\": \"5\" }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
             },
             {
               "Name": "image_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Reference Image List, including element, scene, style reference images."
+              "Description": "Reference Image List, including element, scene, style reference images.",
+              "Notes": "Including reference images of the element, scene, style, etc., it can also be used as the start or end frame to generate videos; When generating a video as the start or end frame: Define whether the image is in the first and last frames using the type parameter: first_frame is the start frame, end_frame is the end frame. Currently does not support only the end frame, which means that when there is a end frame image, there must be a first frame image.\nIf the image is not the start \u0026 end frame, do not configure the type parameter.\n\nWhen generating a video using the first frame or the first and last frames, video editing functions cannot be used.\n\n\n\nLoad with key:value, details as follows:\n\n\"image_list\":[\n  { \"image_url\": \"image_url\"},\n  { \"image_url\": \"image_url\" }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nImage Requirements:\nSupports Base64 encoding or image URL (ensure accessibility)\nFormats: .jpg / .jpeg / .png\nFile size: ≤10MB\nDimensions: min 300px, aspect ratio 1:2.5 ~ 2.5:1\n\n\nQuantity Limits:\nWhen there are reference video, the sum of the amount of reference image and the amount of reference element shall not exceed 4.\nWhen there is no reference video, the sum of the amount of reference image and the amount of reference element shall not exceed 7.\nWhen using the O1 model, setting the start \u0026 end frame is not supported when there are more than two images in the array.\n\n\nimage_url parameter value must not be empty\n\n\n"
             },
             {
               "Name": "element_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Reference Element List, based on element ID from element library."
+              "Description": "Reference Element List, based on element ID from element library.",
+              "Notes": "When generating a video using the first frame, a maximum of 3 elements are supported.\nWhen generating videos using the start \u0026 end frames, the kling-v3-omni model supports up to 3 elements, while the kling-video-o1 model does not support 1 element.\nWhen there is a reference video, the sum of the number of reference images and the number of reference subjects must not exceed 4, and the use of video subjects is not supported.\nWhen there is no reference video, the sum of the number of reference images and the number of reference subjects must not exceed 7.\n\n\nElements are categorized into video character elements and Multi-Image Elements, with different scopes. See Kling Element Library User Guide.\n\n\nLoad with key:value format as follows:\n\n\"element_list\":[\n  { \"element_id\": long },\n  { \"element_id\": long }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n"
             },
             {
               "Name": "video_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Reference Video, obtained via URL."
+              "Description": "Reference Video, obtained via URL.",
+              "Notes": "Video Types:\nCan be used as feature reference video OR base video for editing (default: base)\nUse refer_type parameter: feature for feature reference, base for video to be edited\nWhen reference video is base type, first/end frames cannot be defined\nUse keep_original_sound to keep original sound: yes to keep, no to discard (also applies to feature type)\n\n\nWhen there is a reference video, the value of the sound parameter can only be off.\n\n\nLoad with key:value format as follows:\n\n\"video_list\":[\n  { \"video_url\": \"video_url\", \"refer_type\": \"base\", \"keep_original_sound\": \"yes\" }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nVideo Requirements:\nFormat: MP4/MOV only\nDuration: ≥3 seconds, upper limit depends on model version (see Capability Map)\nResolution: 720px-2160px (width and height)\nFrame rate: 24-60fps (output will be 24fps)\nMax 1 video, size ≤200MB\n\n\nvideo_url parameter value must not be empty\n\n\nThe support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n"
             },
             {
               "Name": "sound",
@@ -90,6 +97,7 @@
               "Required": "Optional",
               "Defval": "Default to off",
               "Description": "Whether to generate sound simultaneously when generating videos.",
+              "Notes": "The support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "on",
                 "off"
@@ -101,6 +109,7 @@
               "Required": "Optional",
               "Defval": "Default to pro",
               "Description": "Video generation mode",
+              "Notes": "std: Standard mode, cost-effective\npro: Professional mode (high quality), better video quality output\n\n\nThe support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "std",
                 "pro"
@@ -111,6 +120,7 @@
               "Type": "string",
               "Required": "Optional",
               "Description": "Aspect ratio of generated video frame (width:height)",
+              "Notes": "This parameter is required when NOT using first-frame reference or video editing function.\n\n\n",
               "Enumvals": [
                 "16:9",
                 "9:16",
@@ -123,6 +133,7 @@
               "Required": "Optional",
               "Defval": "Default to 5",
               "Description": "Video duration in seconds",
+              "Notes": "When using the video editing function (\"refer_type\": \"base\"), the output result is the same as the duration of the incoming video, and the current parameter is invalid. Calculate billing by rounding the input video duration to the nearest integer.\n\n\nThe support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "3",
                 "4",
@@ -143,19 +154,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Callback notification URL for task result. If configured, server will actively notify when task status changes."
+              "Description": "Callback notification URL for task result. If configured, server will actively notify when task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Custom task ID defined by user."
+              "Description": "Custom task ID defined by user.",
+              "Notes": "Will not overwrite system-generated task ID, but supports querying task by this ID.\n\n\nMust be unique within a single user account.\n\n\n"
             }
           ]
         },
@@ -200,13 +214,15 @@
               "Name": "task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Task ID for video generation task."
+              "Description": "Task ID for video generation task.",
+              "Notes": "Request path parameter, fill the value directly in the request path. Choose either task_id OR external_task_id for querying.\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Custom Task ID for video generation task."
+              "Description": "Custom Task ID for video generation task.",
+              "Notes": "The external_task_id provided when creating the task. Choose either task_id OR external_task_id for querying.\n\n\n"
             }
           ],
           "Headers": [
@@ -288,14 +304,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -416,13 +434,15 @@
               "Type": "boolean",
               "Required": "Optional",
               "Defval": "Default to false",
-              "Description": "Whether to generate multi-shot video"
+              "Description": "Whether to generate multi-shot video",
+              "Notes": "When true: the prompt parameter is invalid, and the first/end frame generation is not supported.\n\n\nWhen false: the shot_type and multi_prompt parameters are invalid\n\n\n"
             },
             {
               "Name": "shot_type",
               "Type": "string",
               "Required": "Optional",
               "Description": "Storyboard method",
+              "Notes": "When multi_shot is true, this parameter is required\n\n\n",
               "Enumvals": [
                 "customize",
                 "intelligence"
@@ -432,19 +452,22 @@
               "Name": "prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Positive text prompt"
+              "Description": "Positive text prompt",
+              "Notes": "💡\nThe Omni model can achieve various capabilities through Prompt with elements, images, videos, and other content:\nSpecify elements/images/videos using \u003c\u003c\u003c\u003e\u003e\u003e format, e.g.: \u003c\u003c\u003celement_1\u003e\u003e\u003e, \u003c\u003c\u003cimage_1\u003e\u003e\u003e, \u003c\u003c\u003cvideo_1\u003e\u003e\u003e\nFor detailed capabilities, see: KLING Omni Model User Guide, Kling VIDEO 3.0 Omni Model User Guide\n\n\n\n\nCannot exceed 2500 characters\n\n\nUse \u003c\u003c\u003cvoice_1\u003e\u003e\u003e to specify voice, same sequence as voice_list. Up to 2 voices; when specifying voice, sound must be on. Simpler grammar is better. For example: The man \u003c\u003c\u003cvoice_1\u003e\u003e\u003e said, \"Hello.\".\nWhen voice_list is not empty and prompt references voice ID, task is billed as \"with voice generation\".\n\n\nWhen multi_shot is false or shot_type is intelligence, this parameter must not be empty.\n\n\nThe support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n"
             },
             {
               "Name": "multi_prompt",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Each storyboard cue can include both positive and negative descriptions"
+              "Description": "Each storyboard cue can include both positive and negative descriptions",
+              "Notes": "Define the shot sequence number, corresponding prompt word, and duration through the index, prompt, and duration parameters, where:\nSupports up to 6 storyboards, with a minimum of 1 storyboard.\nThe maximum length of the prompt for each storyboard 512 characters.\nThe duration of each storyboard should not exceed the total duration, but should not be less than 1.\nThe sum of the durations of all storyboards equals the total duration of the current task.\n\n\nLoad with key:value format as follows:\n\n\"multi_prompt\":[\n{\"index\":int,\"prompt\":\"string\",\"duration\":\"5\"},\n{\"index\":int,\"prompt\":\"string\",\"duration\":\"5\"}\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nWhen multi_shot is true and shot_type is customize, this parameter is required.\n\n\n"
             },
             {
               "Name": "negative_prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Negative text prompt"
+              "Description": "Negative text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\nIt is recommended to supplement negative prompt via negative sentences within positive prompts\n\n\n"
             },
             {
               "Name": "sound",
@@ -452,6 +475,7 @@
               "Required": "Optional",
               "Defval": "Default to off",
               "Description": "Is sound generated simultaneously when generating videos",
+              "Notes": "The support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "on",
                 "off"
@@ -462,7 +486,8 @@
               "Type": "float",
               "Required": "Optional",
               "Defval": "Default to 0.5",
-              "Description": "The degree of freedom for generating video; the larger the value, the smaller the degree of freedom of the model"
+              "Description": "The degree of freedom for generating video; the larger the value, the smaller the degree of freedom of the model",
+              "Notes": "Value range: [0, 1]\n\n\nkling-v2.x models do not support this parameter\n\n\n\n"
             },
             {
               "Name": "mode",
@@ -470,6 +495,7 @@
               "Required": "Optional",
               "Defval": "Default to std",
               "Description": "Video generation mode",
+              "Notes": "std: Standard mode, basic mode, cost-effective\n\n\npro: Expert mode (high quality), high performance mode, better video quality\n\n\nThe support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "std",
                 "pro"
@@ -479,7 +505,8 @@
               "Name": "camera_control",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Terms of controlling camera movement (if not specified, the model will intelligently match based on the input text/images)"
+              "Description": "Terms of controlling camera movement (if not specified, the model will intelligently match based on the input text/images)",
+              "Notes": "The support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n"
             },
             {
               "Name": "aspect_ratio",
@@ -499,6 +526,7 @@
               "Required": "Optional",
               "Defval": "Default to 5",
               "Description": "Video Length, unit: s (seconds)",
+              "Notes": "The support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "3",
                 "4",
@@ -519,19 +547,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Callback notification URL for this task result. If configured, the server will actively notify when the task status changes"
+              "Description": "Callback notification URL for this task result. If configured, the server will actively notify when the task status changes",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Users can provide a customized task ID, which will not overwrite the system-generated task ID but can be used for task queries\n\n\nMust be unique within a single user account\n\n\n"
             }
           ]
         },
@@ -664,14 +695,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -793,26 +826,30 @@
               "Name": "image",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Reference Image"
+              "Description": "Reference Image",
+              "Notes": "Supports image Base64 encoding or image URL (ensure accessibility)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nFile size: ≤10MB, dimensions: min 300px, aspect ratio: 1:2.5 ~ 2.5:1\n\n\nAt least one of image or image_tail must be provided; both cannot be empty\n\n\nSupport varies by model version and video mode. See Capability Map for details.\n\n\n\n"
             },
             {
               "Name": "image_tail",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Reference Image - End frame control"
+              "Description": "Reference Image - End frame control",
+              "Notes": "Supports image Base64 encoding or image URL (ensure accessibility)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nFile size: ≤10MB, dimensions: min 300px\n\n\nAt least one of image or image_tail must be provided; both cannot be empty\n\n\nimage_tail, dynamic_masks/static_mask, and camera_control are mutually exclusive - only one can be used at a time\n\n\nSupport varies by model version and video mode. See Capability Map for details.\n\n\n\n"
             },
             {
               "Name": "multi_shot",
               "Type": "boolean",
               "Required": "Optional",
               "Defval": "Default to false",
-              "Description": "Whether to generate multi-shot video"
+              "Description": "Whether to generate multi-shot video",
+              "Notes": "When true: the prompt parameter is invalid, and the first/end frame generation is not supported.\n\n\nWhen false: the shot_type and multi_prompt parameters are invalid\n\n\n"
             },
             {
               "Name": "shot_type",
               "Type": "string",
               "Required": "Optional",
               "Description": "Storyboard method",
+              "Notes": "When multi_shot is true, this parameter is required\n\n\n",
               "Enumvals": [
                 "customize",
                 "intelligence"
@@ -822,31 +859,36 @@
               "Name": "prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Positive text prompt"
+              "Description": "Positive text prompt",
+              "Notes": "💡\nThe Omni model can achieve various capabilities through Prompt with elements, images, videos, and other content:\nSpecify elements/images/videos using \u003c\u003c\u003c\u003e\u003e\u003e format, e.g.: \u003c\u003c\u003celement_1\u003e\u003e\u003e, \u003c\u003c\u003cimage_1\u003e\u003e\u003e, \u003c\u003c\u003cvideo_1\u003e\u003e\u003e\nFor detailed capabilities, see: KLING Omni Model User Guide, Kling VIDEO 3.0 Omni Model User Guide\n\n\n\n\nCannot exceed 2500 characters\n\n\nWhen multi_shot is false or shot_type is intelligence, this parameter must not be empty.\n\n\nUse \u003c\u003c\u003cvoice_1\u003e\u003e\u003e to specify voice, with the sequence matching the voice_list parameter order\n\n\nA video generation task can reference up to 2 voices; when specifying a voice, the sound parameter must be \"on\"\n\n\nThe simpler the syntax structure, the better. Example: The man\u003c\u003c\u003cvoice_1\u003e\u003e\u003e said: \"Hello\"\n\n\nWhen voice_list is not empty and prompt references voice ID, the task will be billed as \"with specified voice\"\n\n\nSupport varies by model version and video mode. See Capability Map for details.\n\n\n\n"
             },
             {
               "Name": "multi_prompt",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Information about each storyboard, such as prompts and duration"
+              "Description": "Information about each storyboard, such as prompts and duration",
+              "Notes": "Define the shot sequence number, corresponding prompt word, and duration through the index, prompt, and duration parameters, where:\nSupports up to 6 storyboards, with a minimum of 1 storyboard.\nThe maximum length of the prompt for each storyboard 512 characters.\nThe duration of each storyboard should not exceed the total duration, but should not be less than 1.\nThe sum of the durations of all storyboards equals the total duration of the current task.\n\n\nLoad with key:value format as follows:\n\n\"multi_prompt\":[\n{\"index\":int,\"prompt\":\"string\",\"duration\":\"5\"},\n{\"index\":int,\"prompt\":\"string\",\"duration\":\"5\"}\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nWhen multi_shot is true and shot_type is customize, this parameter is required.\n\n\n"
             },
             {
               "Name": "negative_prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Negative text prompt"
+              "Description": "Negative text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\nIt is recommended to supplement negative prompt via negative sentences within positive prompts\n\n\n"
             },
             {
               "Name": "element_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Reference Element List, based on element ID from element library"
+              "Description": "Reference Element List, based on element ID from element library",
+              "Notes": "Supports up to 3 reference elements\n\n\nThe elements are categorized into video customization element (named as Video Character Elements) and image customization elements (named as Multi-Image Elements), each with distinct scopes of application. Please exercise caution in distinguishing between them. See Kling Element Library User Guide.\n\n\nLoad with key:value format as follows:\n\n\"element_list\":[\n  { \"element_id\": long },\n  { \"element_id\": long }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupport varies by model version and video mode. See Capability Map for details.\n\n\n\n"
             },
             {
               "Name": "voice_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "List of voices referenced when generating videos"
+              "Description": "List of voices referenced when generating videos",
+              "Notes": "A video generation task can reference up to 2 voices\n\n\nWhen voice_list is not empty and prompt references voice ID, the task will be billed as \"with specified voice\"\n\n\nvoice_id is returned through the voice customization API, or use system preset voices. See Custom Voices API; NOT the voice_id of Lip-Sync API\n\n\nelement_list and voice_list are mutually exclusive and cannot coexist\n\n\nExample:\n\n\"voice_list\":[\n  {\"voice_id\":\"voice_id_1\"},\n  {\"voice_id\":\"voice_id_2\"}\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n"
             },
             {
               "Name": "sound",
@@ -854,6 +896,7 @@
               "Required": "Optional",
               "Defval": "Default to off",
               "Description": "Whether to generate sound when generating video",
+              "Notes": "The support range for different model versions and video modes varies. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "on",
                 "off"
@@ -864,7 +907,8 @@
               "Type": "float",
               "Required": "Optional",
               "Defval": "Default to 0.5",
-              "Description": "Flexibility in video generation; higher value means lower model flexibility and stronger relevance to user prompt"
+              "Description": "Flexibility in video generation; higher value means lower model flexibility and stronger relevance to user prompt",
+              "Notes": "Value range: [0, 1]\n\n\nkling-v2.x models do not support this parameter\n\n\n\n"
             },
             {
               "Name": "mode",
@@ -872,6 +916,7 @@
               "Required": "Optional",
               "Defval": "Default to std",
               "Description": "Video generation mode",
+              "Notes": "std: Standard Mode - basic mode, cost-effective\n\n\npro: Professional Mode (High Quality) - high performance mode, better video quality\n\n\nSupport varies by model version and video mode. See Capability Map for details.\n\n\n\n",
               "Enumvals": [
                 "std",
                 "pro"
@@ -881,19 +926,22 @@
               "Name": "static_mask",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Static brush mask area (mask image created by user using motion brush)"
+              "Description": "Static brush mask area (mask image created by user using motion brush)",
+              "Notes": "The \"Motion Brush\" feature includes Dynamic Brush (dynamic_masks) and Static Brush (static_mask)\n\n\n\nSupports image Base64 encoding or image URL (same format requirements as image field)\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nAspect ratio must match the input image (image field), otherwise task will fail\n\n\nResolution of static_mask and dynamic_masks.mask must be identical, otherwise task will fail\n\n\nSupport varies by model version and video mode. See Capability Map for details.\n\n\n\n"
             },
             {
               "Name": "dynamic_masks",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Dynamic brush configuration list"
+              "Description": "Dynamic brush configuration list",
+              "Notes": "Can configure multiple groups (up to 6), each containing \"mask area\" and \"motion trajectory\" sequence\n\n\nSupport varies by model version and video mode. See Capability Map for details.\n\n\n\n"
             },
             {
               "Name": "camera_control",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Camera movement control protocol (if not specified, model will intelligently match based on input text/images)"
+              "Description": "Camera movement control protocol (if not specified, model will intelligently match based on input text/images)",
+              "Notes": "Support varies by model version and video mode. See Capability Map for details.\n\n\n\n"
             },
             {
               "Name": "duration",
@@ -901,6 +949,7 @@
               "Required": "Optional",
               "Defval": "Default to 5",
               "Description": "Video duration in seconds",
+              "Notes": "Support varies by model version and video mode. See Capability Map for details.\n\n\n\n",
               "Enumvals": [
                 "3",
                 "4",
@@ -921,19 +970,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Callback notification URL for task result. If configured, server will notify when task status changes."
+              "Description": "Callback notification URL for task result. If configured, server will notify when task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Will not overwrite system-generated task ID, but supports querying task by this ID\n\n\nMust be unique within a single user account\n\n\n"
             }
           ]
         },
@@ -978,13 +1030,15 @@
               "Name": "task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Task ID for image to video"
+              "Description": "Task ID for image to video",
+              "Notes": "Request path parameter, fill value directly in request path\n\n\nChoose one between task_id and external_task_id for querying\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for image to video"
+              "Description": "Customized Task ID for image to video",
+              "Notes": "The external_task_id provided when creating the task\n\n\nChoose one between task_id and external_task_id for querying\n\n\n"
             }
           ],
           "Headers": [
@@ -1066,14 +1120,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -1187,19 +1243,22 @@
               "Name": "image_list",
               "Type": "array",
               "Required": "Required",
-              "Description": "Reference Image List"
+              "Description": "Reference Image List",
+              "Notes": "Support up to 4 images, load with key:value format as follows:\n\n\"image_list\":[\n  { \"image\":\"image_url\" },\n  { \"image\":\"image_url\" },\n  { \"image\":\"image_url\" },\n  { \"image\":\"image_url\" }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlease directly upload the image with selected subject since there is no cropping logic on the API side\n\n\nSupports image input as either Base64-encoded string or URL (ensure the URL is publicly accessible)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size must not exceed 10MB. Image dimensions must be at least 300px. Aspect ratio must be between 1:2.5 and 2.5:1\n\n\n"
             },
             {
               "Name": "prompt",
               "Type": "string",
               "Required": "Required",
-              "Description": "Positive text prompt"
+              "Description": "Positive text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "negative_prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Negative text prompt"
+              "Description": "Negative text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "mode",
@@ -1207,6 +1266,7 @@
               "Required": "Optional",
               "Defval": "Default to std",
               "Description": "Video generation mode",
+              "Notes": "std: Standard Mode, which is cost-effective\n\n\npro: Professional Mode, generates higher quality video output\n\n\nDifferent model versions and video modes have different support ranges. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "std",
                 "pro"
@@ -1239,19 +1299,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes"
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes",
+              "Notes": "The specific message schema of the notification can be found in Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "User-defined task ID. It will not override the system-generated task ID, but supports querying tasks by this ID\n\n\nPlease note that it must be unique for each user\n\n\n"
             }
           ]
         },
@@ -1291,13 +1354,15 @@
               "Name": "task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Task ID for Multi-Image to Video"
+              "Description": "Task ID for Multi-Image to Video",
+              "Notes": "Request path parameter, fill the value directly in the request path\n\n\nYou can choose to query by external_task_id or task_id\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for Multi-Image to Video"
+              "Description": "Customized Task ID for Multi-Image to Video",
+              "Notes": "Request path parameter, fill the value directly in the request path\n\n\nThe external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\n\n\n"
             }
           ],
           "Headers": [
@@ -1379,14 +1444,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -1501,25 +1568,29 @@
               "Name": "prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Text prompt, can include positive and negative descriptions"
+              "Description": "Text prompt, can include positive and negative descriptions",
+              "Notes": "Can add elements to the scene, achieve camera movement effects, etc. See Kling \"Motion Control\" User Guide\n\n\nCannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "image_url",
               "Type": "string",
               "Required": "Required",
-              "Description": "Reference image. Characters, background and other elements in generated video will follow this reference."
+              "Description": "Reference image. Characters, background and other elements in generated video will follow this reference.",
+              "Notes": "Video content requirements: Character proportions should match the reference motion as much as possible; avoid driving half-body characters with full-body motions\nCharacter should show clear upper body or full body including limbs and head, avoid occlusion\nAvoid extreme orientations (upside down, lying flat, etc.). Character should occupy sufficient screen area\nSupports realistic/stylized characters (including humans/humanoid animals/some pure animals/some humanoid body proportion characters)\n\n\n\nSupports image Base64 encoding or image URL (ensure accessibility)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nFile size: ≤10MB, dimensions: 300px ~ 65536px, aspect ratio: 1:2.5 ~ 2.5:1\n\n\n"
             },
             {
               "Name": "video_url",
               "Type": "string",
               "Required": "Required",
-              "Description": "URL of reference video. Character actions in generated video will follow this reference."
+              "Description": "URL of reference video. Character actions in generated video will follow this reference.",
+              "Notes": "Video content requirements: Character should show clear upper body or full body including all limbs and head, avoid occlusion\nRecommend uploading single-person action video; for 2+ people, actions will be taken from the character with largest screen proportion\nRecommend using real person actions; some stylized characters/humanoid body proportions may work\nVideo should be single continuous shot with character always visible, avoid cuts or camera movements (will be truncated otherwise)\nAvoid overly fast actions; relatively stable actions produce better results\n\n\n\nSupported formats: .mp4 / .mov, file size: ≤100MB, dimensions: 340px ~ 3850px. Validation failures will return error codes.\n\n\nDuration limits: minimum 3 seconds, maximum depends on character_orientation: When character_orientation is \"video\": maximum 30 seconds\nWhen character_orientation is \"image\": maximum 10 seconds\n\n\n\nThe duration range of the uploaded motion reference is from 3 to 30 seconds, in which the generated video length will align with the duration of the uploaded video. If motions are complex or fast-paced, there is a chance that the output may be shorter than the uploaded video duration, as the model can only extract the valid action duration for generation. The minimum extractable continuous action duration is 3 seconds. Please note that in such cases, the consumed credits cannot be refunded. It is recommended to adjust the complexity and speed of the actions accordingly.\n\n\nSystem will validate video content and return error codes if issues are found\n\n\n"
             },
             {
               "Name": "element_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Reference Element List based on element ID configuration"
+              "Description": "Reference Element List based on element ID configuration",
+              "Notes": "Load with key:value format as follows:\n\n\"element_list\":[\n  { \"element_id\": 829836802793406551 }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nWhen referencing the element, the generated video can only temporarily refer to the orientation of the person in the video.\n\n\nCurrently, only one element can be introduced.\n\n\n"
             },
             {
               "Name": "keep_original_sound",
@@ -1537,6 +1608,7 @@
               "Type": "string",
               "Required": "Required",
               "Description": "Character orientation in generated video, can match image or video",
+              "Notes": "image: Match character orientation in the image; reference video duration must not exceed 10 seconds\n\n\nvideo: Match character orientation in the video; reference video duration must not exceed 30 seconds\n\n\nWhen referencing the element, the generated video can only temporarily refer to the orientation of the person in the video.\n\n\n",
               "Enumvals": [
                 "image",
                 "video"
@@ -1547,6 +1619,7 @@
               "Type": "string",
               "Required": "Required",
               "Description": "Video generation mode",
+              "Notes": "std: Standard Mode - basic mode, cost-effective\n\n\npro: Professional Mode (High Quality) - high performance mode, better video quality\n\n\nSupport varies by model version and video mode. See Capability Map for details.\n\n\n\n",
               "Enumvals": [
                 "std",
                 "pro"
@@ -1556,19 +1629,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Callback notification URL for task result. If configured, server will notify when task status changes."
+              "Description": "Callback notification URL for task result. If configured, server will notify when task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Will not overwrite system-generated task ID, but supports querying task by this ID\n\n\nMust be unique within a single user account\n\n\n"
             }
           ]
         },
@@ -1701,14 +1777,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -1812,13 +1890,15 @@
               "Name": "video_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The ID of the video generated by the Kling AI"
+              "Description": "The ID of the video generated by the Kling AI",
+              "Notes": "Only videos generated within the last 30 days are supported\n\n\nOnly supports videos with a duration of ≥2 seconds and ≤5 seconds, or ≥7 seconds and ≤10 seconds\n\n\nRelated to the video_url parameter: both video_id and video_url cannot be empty at the same time, and cannot both have values at the same time\n\n\n"
             },
             {
               "Name": "video_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Get link for uploaded video"
+              "Description": "Get link for uploaded video",
+              "Notes": "Only .mp4/.mov formats are supported\n\n\nOnly supports videos with a duration of ≥2 seconds and ≤5 seconds, or ≥7 seconds and ≤10 seconds\n\n\nVideo resolution must be between 720px and 2160px (inclusive) in both width and height\n\n\nOnly supports videos with frame rates of 24, 30, or 60 fps\n\n\nRelated to the video_id parameter: both video_id and video_url cannot be empty at the same time, and cannot both have values at the same time\n\n\n"
             }
           ]
         },
@@ -1889,13 +1969,15 @@
               "Name": "frame_index",
               "Type": "int",
               "Required": "Required",
-              "Description": "Frame Number"
+              "Description": "Frame Number",
+              "Notes": "A maximum of 10 frames can be marked. That is, up to 10 frames can be used to define selection areas in the video\n\n\nOnly supports marking 1 frame at a time\n\n\n"
             },
             {
               "Name": "points",
               "Type": "array",
               "Required": "Required",
-              "Description": "Click Coordinates, represented by x and y"
+              "Description": "Click Coordinates, represented by x and y",
+              "Notes": "Value range: [0, 1], expressed as percentages; [0, 1] represents the top-left corner of the frame\n\n\nMultiple points can be marked at once; up to 10 points can be marked on a single frame\n\n\n"
             }
           ]
         },
@@ -1982,7 +2064,8 @@
               "Name": "points",
               "Type": "array",
               "Required": "Required",
-              "Description": "Click Coordinates to delete, represented by x and y"
+              "Description": "Click Coordinates to delete, represented by x and y",
+              "Notes": "Value range: [0, 1], expressed as percentages; [0, 1] represents the top-left corner of the frame\n\n\nMultiple points can be provided at once\n\n\nCoordinates must exactly match those used when adding the video selection area\n\n\n"
             }
           ]
         },
@@ -2188,6 +2271,7 @@
               "Type": "string",
               "Required": "Required",
               "Description": "Operation Type",
+              "Notes": "addition: Add an element\n\n\nswap: Replace an element\n\n\nremoval: Remove an element\n\n\n",
               "Enumvals": [
                 "addition",
                 "swap",
@@ -2198,19 +2282,22 @@
               "Name": "image_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Cropped Reference Images"
+              "Description": "Cropped Reference Images",
+              "Notes": "For adding video elements: This parameter is required; upload 1–2 images\n\n\nFor editing (swapping) video elements: This parameter is required; upload 1 image only\n\n\nFor deleting video elements: This parameter is not required\n\n\nUse key:value format as follows:\n\n\"image_list\":[\n  { \"image\":\"image_url\" },\n  { \"image\":\"image_url\" }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe API does not perform cropping, please upload images with subjects already cropped\n\n\nSupports image input as either Base64-encoded string or URL (ensure the URL is publicly accessible)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size must not exceed 10MB. Image dimensions must be at least 300px. Aspect ratio must be between 1:2.5 and 2.5:1\n\n\n"
             },
             {
               "Name": "prompt",
               "Type": "string",
               "Required": "Required",
-              "Description": "Positive Prompt"
+              "Description": "Positive Prompt",
+              "Notes": "Use the format \u003c\u003c\u003cxxx\u003e\u003e\u003e to explicitly refer to a specific video or image, such as \u003c\u003c\u003cvideo_1\u003e\u003e\u003e or \u003c\u003c\u003cimage_1\u003e\u003e\u003e\n\n\nTo ensure optimal results, the prompt must include references to the video and image(s) required for the editing\n\n\nMust not exceed 2,500 characters\n\n\n💡\nRecommended Prompt Templates:\nAdding Elements:\nEN: Using the context of \u003c\u003c\u003cvideo_1\u003e\u003e\u003e, seamlessly add [x] from \u003c\u003c\u003cimage_1\u003e\u003e\u003e\nZH: 基于\u003c\u003c\u003cvideo_1\u003e\u003e\u003e中的原始内容，以自然生动的方式，将\u003c\u003c\u003cimage_1\u003e\u003e\u003e中的【】，融入\u003c\u003c\u003cvideo_1\u003e\u003e\u003e的【】\nReplacing Elements:\nEN: swap [x] from \u003c\u003c\u003cimage_1\u003e\u003e\u003e for [x] from \u003c\u003c\u003cvideo_1\u003e\u003e\u003e\nZH: 使用\u003c\u003c\u003cimage_1\u003e\u003e\u003e中的【】，替换\u003c\u003c\u003cvideo_1\u003e\u003e\u003e中的【】\nRemoving Elements:\nEN: Delete [x] from \u003c\u003c\u003cvideo_1\u003e\u003e\u003e\nZH: 删除\u003c\u003c\u003cvideo_1\u003e\u003e\u003e中的【】\nNote: [x] or 【】 are placeholders where you should fill in specific content.\n\n\n\n\n"
             },
             {
               "Name": "negative_prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Negative Prompt"
+              "Description": "Negative Prompt",
+              "Notes": "Must not exceed 2,500 characters\n\n\n"
             },
             {
               "Name": "mode",
@@ -2218,6 +2305,7 @@
               "Required": "Optional",
               "Defval": "Default to std",
               "Description": "Video Generation Mode",
+              "Notes": "std: Standard mode, basic rendering, cost-effective\n\n\npro: Professional mode, high-quality, enhanced rendering, better video output quality\n\n\n",
               "Enumvals": [
                 "std",
                 "pro"
@@ -2229,6 +2317,7 @@
               "Required": "Optional",
               "Defval": "Default to 5",
               "Description": "Video Duration (in seconds)",
+              "Notes": "Only 5-second and 10-second videos are supported\n\n\nTo generate a 5-second video, the input video must be ≥2 seconds and ≤5 seconds\n\n\nTo generate a 10-second video, the input video must be ≥7 seconds and ≤10 seconds\n\n\n",
               "Enumvals": [
                 "5",
                 "10"
@@ -2238,19 +2327,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Callback URL for Task Result Notification. If configured, the server will actively send notifications when the task status changes"
+              "Description": "Callback URL for Task Result Notification. If configured, the server will actively send notifications when the task status changes",
+              "Notes": "For the message schema, refer to the Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Custom Task ID"
+              "Description": "Custom Task ID",
+              "Notes": "A user-defined task ID; it will not overwrite the system-generated task ID, but can be used to query the task\n\n\nPlease ensure uniqueness of the task ID within a single user account\n\n\n"
             }
           ]
         },
@@ -2294,13 +2386,15 @@
               "Name": "task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Task ID for Multi-Elements video editing"
+              "Description": "Task ID for Multi-Elements video editing",
+              "Notes": "Request path parameter, fill the value directly in the request path\n\n\nYou can choose to query by external_task_id or task_id\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Custom Task ID for Multi-Elements video editing"
+              "Description": "Custom Task ID for Multi-Elements video editing",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\n\n\n"
             }
           ],
           "Headers": [
@@ -2384,14 +2478,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -2497,44 +2593,51 @@
               "Name": "video_id",
               "Type": "string",
               "Required": "Required",
-              "Description": "Video ID"
+              "Description": "Video ID",
+              "Notes": "Supports video IDs generated by the text-to-video, the image-to-video and the video extension interface (it cannot exceed 3 minutes).\n\n\nOnly videos generated by V1.0, V1.5, and V1.6 models are supported.\n\n\nPlease note that based on the current cleanup policy, videos will be cleared 30 days after generation, and extension will not be possible.\n\n\n\n"
             },
             {
               "Name": "prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Text Prompt"
+              "Description": "Text Prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "negative_prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Negative text prompt"
+              "Description": "Negative text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "cfg_scale",
               "Type": "float",
               "Required": "Optional",
               "Defval": "Default to 0.5",
-              "Description": "Prompt reference strength. The higher the value, the stronger the reference to the prompt."
+              "Description": "Prompt reference strength. The higher the value, the stronger the reference to the prompt.",
+              "Notes": "Value range: [0, 1]\n\n\n"
             },
             {
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the task results. If configured, the server will actively notify when the task status changes."
+              "Description": "The callback notification address for the task results. If configured, the server will actively notify when the task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "User-defined task ID. It will not override the system-generated task ID, but supports querying tasks by this ID\n\n\nPlease note that it must be unique for each user\n\n\n"
             }
           ]
         },
@@ -2675,14 +2778,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -2794,13 +2899,15 @@
               "Name": "video_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The ID of the video generated by Kling AI"
+              "Description": "The ID of the video generated by Kling AI",
+              "Notes": "Used to specify the video and determine whether it can be used for lip-sync services.\n\n\nThis parameter and 'video_url' are mutually exclusive—only one can be filled, and neither can be left empty.\n\n\nOnly supports videos generated within the last 30 days with a duration of no more than 60 seconds.\n\n\n"
             },
             {
               "Name": "video_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The URL of the video"
+              "Description": "The URL of the video",
+              "Notes": "Used to specify the video and determine whether it can be used for lip-sync services.\n\n\nThis parameter and 'video_id' are mutually exclusive—only one can be filled, and neither can be left empty.\n\n\nSupported video formats: .mp4/.mov, file size ≤100MB, duration 2s–60s, resolution 720p or 1080p, with both width and height between 512px–2160px. If validation fails, an error code will be returned.\n\n\nThe system checks video content—if issues are detected, an error code will be returned.\n\n\n"
             }
           ]
         },
@@ -2870,25 +2977,29 @@
               "Name": "face_choose",
               "Type": "array",
               "Required": "Required",
-              "Description": "Specified Face for Lip-Sync"
+              "Description": "Specified Face for Lip-Sync",
+              "Notes": "Includes Face ID, lip movement reference data, etc.\n\n\nCurrently only supports one person lip-sync.\n\n\n"
             },
             {
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Custom Task ID"
+              "Description": "Custom Task ID",
+              "Notes": "User-defined task ID. It will not override the system-generated task ID, but supports querying tasks by this ID.\n\n\nPlease note that uniqueness must be ensured for each user.\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes."
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             }
           ]
         },
@@ -3025,14 +3136,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -3146,25 +3259,29 @@
               "Name": "image",
               "Type": "string",
               "Required": "Required",
-              "Description": "Avatar Reference Image"
+              "Description": "Avatar Reference Image",
+              "Notes": "Support inputting image Base64 encoding or image URL (ensure accessibility).\n\n\nBase64 Encoding Note:\nPlease note, if you use the Base64 method, make sure all image data parameters you pass are in Base64 encoding format. When using Base64, do NOT add any prefix like data:image/png;base64,. Only provide the Base64-encoded string.\nCorrect:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect:\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size ≤ 10MB, dimensions ≥ 300px, aspect ratio between 1:2.5 ~ 2.5:1\n\n\n"
             },
             {
               "Name": "audio_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Audio ID Generated via TTS API"
+              "Description": "Audio ID Generated via TTS API",
+              "Notes": "Only supports audio generated within the last 30 days, duration between 2-300 seconds\n\n\nEither audio_id or sound_file must be provided (mutually exclusive)\n\n\n"
             },
             {
               "Name": "sound_file",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Sound File"
+              "Description": "Sound File",
+              "Notes": "Supports Base64-encoded audio or accessible audio URL\n\n\nAccepted formats: .mp3/.wav/.m4a/.aac, max 5MB, format mismatch or file too large will return error codes and other information\n\n\nDuration must be between 2-300 seconds\n\n\nEither audio_id or sound_file must be provided (mutually exclusive)\n\n\nSystem will verify audio content and return error codes if there are problems\n\n\n"
             },
             {
               "Name": "prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Positive text prompt"
+              "Description": "Positive text prompt",
+              "Notes": "Can be used to define avatar actions, emotions, and camera movements\n\n\nCannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "mode",
@@ -3172,6 +3289,7 @@
               "Required": "Optional",
               "Defval": "Default to std",
               "Description": "Video generation mode",
+              "Notes": "std: Standard Mode, cost-effective\n\n\npro: Professional Mode, higher quality video output\n\n\nDifferent model versions and video modes have different support ranges. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "std",
                 "pro"
@@ -3181,19 +3299,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes"
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes",
+              "Notes": "For the specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Will not overwrite system-generated task ID, but can be used for task queries\n\n\nMust be unique within a single user account\n\n\n"
             }
           ]
         },
@@ -3326,14 +3447,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -3437,25 +3560,29 @@
               "Name": "prompt",
               "Type": "string",
               "Required": "Required",
-              "Description": "Text prompt"
+              "Description": "Text prompt",
+              "Notes": "Cannot exceed 200 characters\n\n\n"
             },
             {
               "Name": "duration",
               "Type": "float",
               "Required": "Required",
-              "Description": "Generated audio duration"
+              "Description": "Generated audio duration",
+              "Notes": "Value range: 3.0s - 10.0s, supports one decimal place precision\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Users can provide a customized task ID, which will not overwrite the system-generated task ID but can be used for task queries.\n\n\nPlease note that the customized task ID must be unique within a single user account.\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes"
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes",
+              "Notes": "The specific message schema of the notification can be found in Callback Protocol\n\n\n"
             }
           ]
         },
@@ -3500,13 +3627,15 @@
               "Name": "task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The task ID for audio generation"
+              "Description": "The task ID for audio generation",
+              "Notes": "Request path parameter, fill the value directly in the request path\n\n\nYou can choose to query by external_task_id or task_id\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\n\n\n"
             }
           ],
           "Headers": [
@@ -3587,14 +3716,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -3697,44 +3828,51 @@
               "Name": "video_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The ID of the video generated by the Kling AI"
+              "Description": "The ID of the video generated by the Kling AI",
+              "Notes": "Either the video_id parameter or the video_url parameter, cannot be empty or have a value at the same time.\n\n\nOnly supports videos generated within 30 days and with a duration between 3.0s and 20.0s.\n\n\n"
             },
             {
               "Name": "video_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Link for uploaded video"
+              "Description": "Link for uploaded video",
+              "Notes": "Either the video_id parameter or the video_url parameter, cannot be empty or have a value at the same time.\n\n\nOnly .mp4/.mov formats are supported. File size does not exceed 100MB. Video duration between 3.0s and 20.0s.\n\n\n"
             },
             {
               "Name": "sound_effect_prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Sound effect prompt"
+              "Description": "Sound effect prompt",
+              "Notes": "Cannot exceed 200 characters\n\n\n"
             },
             {
               "Name": "bgm_prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "BGM prompt"
+              "Description": "BGM prompt",
+              "Notes": "Cannot exceed 200 characters\n\n\n"
             },
             {
               "Name": "asmr_mode",
               "Type": "boolean",
               "Required": "Optional",
               "Defval": "Default to false",
-              "Description": "Enable ASMR mode; This mode enhances detailed sound effects and is suitable for highly immersive content scenarios"
+              "Description": "Enable ASMR mode; This mode enhances detailed sound effects and is suitable for highly immersive content scenarios",
+              "Notes": "true means enabled, false means disabled (default)\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Users can provide a customized task ID, which will not overwrite the system-generated task ID but can be used for task queries.\n\n\nPlease note that the customized task ID must be unique within a single user account.\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes"
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes",
+              "Notes": "The specific message schema of the notification can be found in Callback Protocol\n\n\n"
             }
           ]
         },
@@ -3779,13 +3917,15 @@
               "Name": "task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The task ID for audio generation"
+              "Description": "The task ID for audio generation",
+              "Notes": "Request path parameter, fill the value directly in the request path\n\n\nYou can choose to query by external_task_id or task_id\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\n\n\n"
             }
           ],
           "Headers": [
@@ -3885,14 +4025,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -4014,13 +4156,15 @@
               "Name": "text",
               "Type": "string",
               "Required": "Required",
-              "Description": "Text Content for Audio Synthesis"
+              "Description": "Text Content for Audio Synthesis",
+              "Notes": "The maximum length of the text content is 1000 characters; content that is too long will return an error code and other information.\n\n\nThe system will validate the text content; if there are issues, it will return an error code and other information.\n\n\n"
             },
             {
               "Name": "voice_id",
               "Type": "string",
               "Required": "Required",
-              "Description": "Voice ID"
+              "Description": "Voice ID",
+              "Notes": "The system offers a variety of voice options to choose from. For specific voice effects, voice IDs, and corresponding voice languages, see Voice Guide. Voice previews do not support custom scripts.\n\n\nVoice preview file naming convention: Voice Name#Voice ID#Voice Language\n\n\n"
             },
             {
               "Name": "voice_language",
@@ -4028,6 +4172,7 @@
               "Required": "Required",
               "Defval": "Default to zh",
               "Description": "Voice Language",
+              "Notes": "The voice language corresponds to the Voice ID, as detailed above.\n\n\n",
               "Enumvals": [
                 "zh",
                 "en"
@@ -4038,7 +4183,8 @@
               "Type": "float",
               "Required": "Optional",
               "Defval": "Default to 1.0",
-              "Description": "Speech Rate"
+              "Description": "Speech Rate",
+              "Notes": "Valid range: [0.8, 2.0], accurate to one decimal place; values outside this range will be automatically rounded.\n\n\n"
             }
           ]
         },
@@ -4115,31 +4261,36 @@
               "Name": "voice_name",
               "Type": "string",
               "Required": "Required",
-              "Description": "Voice Name"
+              "Description": "Voice Name",
+              "Notes": "The maximum length of text content is 20 characters\n\n\nThe voices that are no longer used after creation can be deleted through the API\n\n\n"
             },
             {
               "Name": "voice_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The URL of voice data file"
+              "Description": "The URL of voice data file",
+              "Notes": "Supports .mp3 / .wav audio file and .mp4 / .mov video file\n\n\nThe voice needs to be clean and free of noise, with only one type of human voice present, with a duration of no less than 5 seconds and no longer than 30 seconds\n\n\n"
             },
             {
               "Name": "video_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Generated video ID, which can provide audio materials by referencing historical works"
+              "Description": "Generated video ID, which can provide audio materials by referencing historical works",
+              "Notes": "Only videos that meet the following conditions can be used to customize voice: The video is generated on V2.6 model and the value of sound parameter is on\nThe video is generated through Avatar API\nThe video is generated through Lip-Sync API\n\n\n\nThe voice needs to be clean and free of noise, with only one type of human voice present, with a duration of no less than 5 seconds and no longer than 30 seconds\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes."
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Will not overwrite system-generated task ID, but supports querying task by this ID\n\n\nPlease note that the customized task ID must be unique within a single user account.\n\n\n"
             }
           ]
         },
@@ -4190,7 +4341,8 @@
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\nWhen creating a task, you can choose to query by external_task_id or task_id.\n\n\n"
             }
           ],
           "Headers": [
@@ -4269,14 +4421,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             }
           ],
           "Headers": [
@@ -4357,14 +4511,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             }
           ],
           "Headers": [
@@ -4509,7 +4665,8 @@
               "Name": "image",
               "Type": "string",
               "Required": "Required",
-              "Description": "Image to be recognized"
+              "Description": "Image to be recognized",
+              "Notes": "Support inputting image Base64 encoding or image URL (ensure accessibility).\n\n\nPlease note, if you use the Base64 method, make sure all image data parameters you pass are in Base64 encoding format. When submitting data, do not add any prefixes to the Base64-encoded string, such as data:image/png;base64,. The correct parameter format should be the Base64-encoded string itself. Please provide only the Base64-encoded string portion so that the system can correctly process and parse your data.\n\n\nSupported image formats: .jpg / .jpeg / .png. The image file size cannot exceed 10MB, and the width and height dimensions of the image shall not be less than 300px, and the aspect ratio of the image should be between 1:2.5 ~ 2.5:1.\n\n\n"
             }
           ]
         },
@@ -4591,19 +4748,22 @@
               "Name": "element_name",
               "Type": "string",
               "Required": "Required",
-              "Description": "Element Name"
+              "Description": "Element Name",
+              "Notes": "Must not exceed 20 characters.\n\n\n"
             },
             {
               "Name": "element_description",
               "Type": "string",
               "Required": "Required",
-              "Description": "Element Description"
+              "Description": "Element Description",
+              "Notes": "Must not exceed 100 characters.\n\n\n"
             },
             {
               "Name": "reference_type",
               "Type": "string",
               "Required": "Required",
               "Description": "Reference Method",
+              "Notes": "video_refer: Video Character Elements, at this time, the subject's appearance will be defined with reference to element_video_list.\n\n\nimage_refer: Multi-Image Elements, whose appearance will be defined with reference to the element_image_list.\n\n\nThe scope of availability differs between entities customized through videos and those customized through images. Please refer to the capability map and parameter specifications for details.\n\n\n",
               "Enumvals": [
                 "video_refer",
                 "image_refer"
@@ -4614,34 +4774,39 @@
               "Type": "object",
               "Required": "Optional",
               "Defval": "Default to None",
-              "Description": "The main reference image allows for the setting of the element and its details through multiple images."
+              "Description": "The main reference image allows for the setting of the element and its details through multiple images.",
+              "Notes": "Include front reference images and reference images from other angles or close-ups: at least one frontal reference image (frontal_image), and 1 to 3 additional reference images (image_url) that differ from the front.\n\n\nLoad with key:value format as follows:\n\n\n\"element_image_list\": {\n\"frontal_image\": \"image_url_0\", \n\"refer_images\": [{ \"image_url\": \"image_url_1\" }, ...] \n}\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupports inputting image Base64 encoding or image URL (ensure accessibility).\n\n\nSupported image formats: .jpg / .jpeg / .png. Image file size cannot exceed 10MB, dimensions not less than 300px, aspect ratio between 1:2.5 ~ 2.5:1.\n\n\nWhen reference_type is image_refer, this parameter is required.\n\n\n"
             },
             {
               "Name": "element_video_list",
               "Type": "object",
               "Required": "Optional",
               "Defval": "Default to None",
-              "Description": "The element is referenced by the video, and its details can be set through the video."
+              "Description": "The element is referenced by the video, and its details can be set through the video.",
+              "Notes": "Audio videos can be uploaded. If the audio video contains human voice, it will trigger voice customization (customization + inclusion in voice library + binding with the element).\n\n\nCurrently, only realistic-style humanoid figures can be customized through video.\n\n\nRequired when referencing videos; invalid when referencing images.\n\n\nStructure: element_video_list: { refer_videos: [{ video_url: \"video_url_1\" }] }. Only .mp4/.mov formats. Duration 3s–8s, 1080P, aspect ratio 16:9 or 9:16. At most 1 video, size not exceeding 200MB. video_url must not be empty.\n\n\n\"element_video_list\": {\n\"refer_videos\": [{ \"video_url\": \"video_url_1\" }, ...] \n}\n\n\n\n\n\n\n\n\n\n\n\n\n\nVideo-customized elements are only supported for kling-video-o3 and later models.\n\n\n"
             },
             {
               "Name": "element_voice_id",
               "Type": "string",
               "Required": "Optional",
               "Defval": "Default to None",
-              "Description": "The tone of element can be bound to existing tone colors in the tone library"
+              "Description": "The tone of element can be bound to existing tone colors in the tone library",
+              "Notes": "When empty, the current entity is not bound to a tone color.\n\n\nID can be obtained through the voice-related API. See Voice Guide\n\n\nOnly the elements customized for video support binding with voice.\n\n\n"
             },
             {
               "Name": "tag_list",
               "Type": "array",
               "Required": "Optional",
               "Defval": "Default to None",
-              "Description": "Configure tags for the subject, one subject can configure multiple tags."
+              "Description": "Configure tags for the subject, one subject can configure multiple tags.",
+              "Notes": "Structure: tag_list: [{ tag_id: \"o_101\" }, { tag_id: \"o_102\" }, ...]. Tag ID and name: o_101 Hottest, o_102 Character, o_103 Animal, o_104 Item, o_105 Costume, o_106 Scene, o_107 Effect, o_108 Others.\n\n\n\"tag_list\": [ { \"tag_id\": \"o_101\" }, { \"tag_id\": \"o_102\" } ]\n\n\n\n\n\n\n\n\n\n\n\n\n\nTag and tag_id correspondence:\ntag_id tag_name o_101 Hottest o_102 Character o_103 Animal o_104 Item o_105 Costume o_106 Scene o_107 Effect o_108 Others\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes."
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.",
+              "Notes": "For the specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
@@ -4698,7 +4863,8 @@
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\nWhen creating a task, you can choose to query by external_task_id or task_id.\n\n\n"
             }
           ],
           "Headers": [
@@ -4790,14 +4956,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -4881,14 +5049,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -5043,25 +5213,29 @@
               "Name": "effect_scene",
               "Type": "string",
               "Required": "Required",
-              "Description": "Scene Name"
+              "Description": "Scene Name",
+              "Notes": "Enum values: raid_check, fortune_in_motion, chinese_trend, sedan_chair_dance, yangge_dance, good_luck_dance, laicai_dance, snow_night_kiss, eternal_kiss, color_mixing, palm_sized_figure, lantern_festival_cuju, unique_firework, unique_spring_couplets, horse_mask, fortune_knocks_cartoon, tangyuan_to_animal, hot_feet_dance, swag_dance, pigeon_dance, bloodline_dance, chanel_dance, cute_dance, love_theme_song, pumpitup_dance, city_to_village, fortune_god_transform, new_year_feast, ring_in_new, horse_year_firework, pet_vlogger, crystal_horse, lateral_shift_transition, drunk_dance, drunk_dance_pet, daoma_dance, bouncy_dance, smooth_sailing_dance, new_year_greeting, lion_dance, prosperity, great_success, golden_horse_fortune, red_packet_box, lucky_horse_year, lucky_red_packet, lucky_money_come, lion_dance_pet, dumpling_making_pet, fish_making_pet, pet_red_packet, lantern_glow, expression_challenge, overdrive, heart_gesture_dance, poping, martial_arts, running, nezha, motorcycle_dance, subject_3_dance, ghost_step_dance, phantom_jewel, zoom_out, cheers_2026, kiss_pro, fight_pro, hug_pro, heart_gesture_pro, dollar_rain_pro, pet_bee_pro, countdown_teleport, santa_random_surprise, magic_match_tree, bullet_time_360, happy_birthday, birthday_star, thumbs_up_pro, tiger_hug_pro, pet_lion_pro, surprise_bouquet, bouquet_drop, 3d_cartoon_1_pro, firework_2026, glamour_photo_shoot, box_of_joy, first_toast_of_the_year, my_santa_pic, santa_gift, steampunk_christmas, snowglobe, christmas_photo_shoot, ornament_crash, santa_express, instant_christmas, particle_santa_surround, coronation_of_frost, building_sweater, spark_in_the_snow, scarlet_and_snow, cozy_toon_wrap, bullet_time_lite, magic_cloak, balloon_parade, jumping_ginger_joy, bullet_time, c4d_cartoon_pro, pure_white_wings, black_wings, golden_wing, pink_pink_wings, venomous_spider, throne_of_king, luminous_elf, woodland_elf, japanese_anime_1, american_comics, guardian_spirit, swish_swish, snowboarding, witch_transform, vampire_transform, pumpkin_head_transform, demon_transform, mummy_transform, zombie_transform, cute_pumpkin_transform, cute_ghost_transform, knock_knock_halloween, halloween_escape, baseball, inner_voice, a_list_look, memory_alive, trampoline, trampoline_night, pucker_up, guess_what, feed_mooncake, rampage_ape, flyer, dishwasher, pet_chinese_opera, magic_fireball, gallery_ring, pet_moto_rider, muscle_pet, squeeze_scream, pet_delivery, running_man, disappear, mythic_style, steampunk, 3d_cartoon_2, eagle_snatch, hug_from_past, firework, media_interview, pet_chef, santa_gifts, santa_hug, girlfriend, boyfriend, heart_gesture_1, pet_wizard, smoke_smoke, instant_kid, dollar_rain, cry_cry, building_collapse, gun_shot, mushroom, double_gun, pet_warrior, lightning_power, jesus_hug, shark_alert, long_hair, lie_flat, polar_bear_hug, brown_bear_hug, jazz_jazz, office_escape_plow, fly_fly, watermelon_bomb, pet_dance, boss_coming, wool_curly, pet_bee, marry_me, swing_swing, day_to_night, piggy_morph, wig_out, car_explosion, ski_ski, siblings, construction_worker, let's_ride, snatched, magic_broom, felt_felt, jumpdrop, splashsplash, surfsurf, fairy_wing, angel_wing, dark_wing, skateskate, plushcut, jelly_press, jelly_slice, jelly_squish, jelly_jiggle, pixelpixel, yearbook, instant_film, anime_figure, rocketrocket, bloombloom, dizzydizzy, fuzzyfuzzy, squish, expansion\n\n\nFor more parameters, please refer to Video Effects Center\n\n\n"
             },
             {
               "Name": "input",
               "Type": "object",
               "Required": "Required",
-              "Description": "Task input structure. Fields vary depending on the scene."
+              "Description": "Task input structure. Fields vary depending on the scene.",
+              "Notes": "Single-image effects (216 types) Scenes include: fortune_in_motion, chinese_trend, sedan_chair_dance, skyfall, good_luck_dance, laicai_dance, yangge_dance, horse_year_dance, color_mixing, palm_sized_figure, lantern_festival_cuju, unique_firework, unique_spring_couplets, horse_mask, fortune_knocks_cartoon, tangyuan_to_animal, hot_feet_dance, swag_dance, pigeon_dance, bloodline_dance, chanel_dance, cute_dance, love_theme_song, pumpitup_dance, city_to_village, fortune_god_transform, new_year_feast, ring_in_new, horse_year_firework, pet_vlogger, crystal_horse, lateral_shift_transition, drunk_dance, drunk_dance_pet, daoma_dance, bouncy_dance, smooth_sailing_dance, new_year_greeting, lion_dance, prosperity, great_success, golden_horse_fortune, red_packet_box, lucky_horse_year, lucky_red_packet, lucky_money_come, lion_dance_pet, dumpling_making_pet, fish_making_pet, pet_red_packet, lantern_glow, expression_challenge, overdrive, heart_gesture_dance, poping, martial_arts, running, nezha, motorcycle_dance, subject_3_dance, ghost_step_dance, phantom_jewel, zoom_out, dollar_rain_pro, pet_bee_pro, countdown_teleport, santa_random_surprise, magic_match_tree, bullet_time_360, happy_birthday, birthday_star, thumbs_up_pro, tiger_hug_pro, pet_lion_pro, surprise_bouquet, bouquet_drop, 3d_cartoon_1_pro, firework_2026, glamour_photo_shoot, box_of_joy, first_toast_of_the_year, my_santa_pic, santa_gift, steampunk_christmas, snowglobe, christmas_photo_shoot, ornament_crash, santa_express, instant_christmas, particle_santa_surround, coronation_of_frost, building_sweater, spark_in_the_snow, scarlet_and_snow, cozy_toon_wrap, bullet_time_lite, magic_cloak, balloon_parade, jumping_ginger_joy, bullet_time, c4d_cartoon_pro, pure_white_wings, black_wings, golden_wing, pink_pink_wings, venomous_spider, throne_of_king, luminous_elf, woodland_elf, japanese_anime_1, american_comics, guardian_spirit, swish_swish, snowboarding, witch_transform, vampire_transform, pumpkin_head_transform, demon_transform, mummy_transform, zombie_transform, cute_pumpkin_transform, cute_ghost_transform, knock_knock_halloween, halloween_escape, baseball, inner_voice, a_list_look, memory_alive, trampoline, trampoline_night, pucker_up, guess_what, feed_mooncake, rampage_ape, flyer, dishwasher, pet_chinese_opera, magic_fireball, gallery_ring, pet_moto_rider, muscle_pet, squeeze_scream, pet_delivery, running_man, disappear, mythic_style, steampunk, 3d_cartoon_2, eagle_snatch, hug_from_past, firework, media_interview, pet_chef, santa_gifts, santa_hug, girlfriend, boyfriend, heart_gesture_1, pet_wizard, smoke_smoke, instant_kid, dollar_rain, cry_cry, building_collapse, gun_shot, mushroom, double_gun, pet_warrior, lightning_power, jesus_hug, shark_alert, long_hair, lie_flat, polar_bear_hug, brown_bear_hug, jazz_jazz, office_escape_plow, fly_fly, watermelon_bomb, pet_dance, boss_coming, wool_curly, pet_bee, marry_me, swing_swing, day_to_night, piggy_morph, wig_out, car_explosion, ski_ski, siblings, construction_worker, let's_ride, snatched, magic_broom, felt_felt, jumpdrop, splashsplash, surfsurf, fairy_wing, angel_wing, dark_wing, skateskate, plushcut, jelly_press, jelly_slice, jelly_squish, jelly_jiggle, pixelpixel, yearbook, instant_film, anime_figure, rocketrocket, bloombloom, dizzydizzy, fuzzyfuzzy, squish, expansion\n\n\nDual-character effects (6 types) Scenes include: snow_night_kiss, eternal_kiss, cheers_2026, fight_pro, hug_pro, heart_gesture_pro\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes."
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "User-defined task ID. It will not override the system-generated task ID, but supports querying tasks by this ID\n\n\nPlease note that it must be unique for each user\n\n\n"
             }
           ]
         },
@@ -5106,13 +5280,15 @@
               "Name": "task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Task ID for Video Effects"
+              "Description": "Task ID for Video Effects",
+              "Notes": "Request path parameter, fill value directly in request path\n\n\nTwo query methods available: task_id or external_task_id (choose one)\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for Video Effects"
+              "Description": "Customized Task ID for Video Effects",
+              "Notes": "The external_task_id filled when creating the task\n\n\nTwo query methods available: task_id or external_task_id (choose one)\n\n\n"
             }
           ],
           "Headers": [
@@ -5192,14 +5368,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -5309,19 +5487,22 @@
               "Name": "prompt",
               "Type": "string",
               "Required": "Required",
-              "Description": "Text prompt words, which can include positive and negative descriptions"
+              "Description": "Text prompt words, which can include positive and negative descriptions",
+              "Notes": "The prompt words can be templated to meet different image generation needs\n\n\nMust not exceed 2,500 characters\n\n\nSpecify an image in the format of \u003c\u003c\u003c\u003e\u003e\u003e, such as \u003c\u003c\u003cimage_1\u003e\u003e\u003e\n\n\nThe scope of abilities can be found in the user manual: KLING Omni Model User Guide\n\n\n"
             },
             {
               "Name": "image_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Reference Image List"
+              "Description": "Reference Image List",
+              "Notes": "Load with key:value format as follows:\n\n\"image_list\":[\n  { \"image\":\"image_url\" }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupports inputting image Base64 encoding or image URL (ensure accessibility)\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size must not exceed 10MB. Image dimensions must be at least 300px. Aspect ratio must be between 1:2.5 and 2.5:1\n\n\nThe sum of reference elements and reference images must not exceed 10\n\n\nThe value of image_url parameter must not be empty\n\n\n"
             },
             {
               "Name": "element_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Reference Element List based on element ID configuration"
+              "Description": "Reference Element List based on element ID configuration",
+              "Notes": "Load with key:value format as follows:\n\n\"element_list\":[\n  { \"element_id\": 829836802793406551 }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe sum of reference elements and reference images must not exceed 10\n\n\n"
             },
             {
               "Name": "resolution",
@@ -5329,6 +5510,7 @@
               "Required": "Optional",
               "Defval": "Default to 1k",
               "Description": "Image generation resolution",
+              "Notes": "1k: 1K standard definition\n\n\n2k: 2K high-res\n\n\n4k: 4K high-res\n\n\nThe support range for different model versionsvaries. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "1k",
                 "2k",
@@ -5341,6 +5523,7 @@
               "Required": "Optional",
               "Defval": "Default to single",
               "Description": "Control whether to generate a single image or a series of images",
+              "Notes": "The support range for different model versionsvaries. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "single",
                 "series"
@@ -5351,14 +5534,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Number of generated images"
+              "Description": "Number of generated images",
+              "Notes": "Value range: [1, 9]\n\n\nWhen result_type is series, this parameter is invalid\n\n\n"
             },
             {
               "Name": "series_amount",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 4",
-              "Description": "Number of images in a series"
+              "Description": "Number of images in a series",
+              "Notes": "Value range: [2, 9]\n\n\nWhen result_type is single, this parameter is invalid\n\n\nThe support range for different model versionsvaries. For details, see Capability Map\n\n\n\n"
             },
             {
               "Name": "aspect_ratio",
@@ -5366,6 +5551,7 @@
               "Required": "Optional",
               "Defval": "Default to auto",
               "Description": "Aspect ratio of the generated images (width:height)",
+              "Notes": "auto: Intelligently generate images based on input content\n\n\nWhen generating a new image based on the aspect ratio of the original image, this parameter is invalid\n\n\nThe support range for different model versionsvaries. For details, see Capability Map\n\n\n\n",
               "Enumvals": [
                 "16:9",
                 "9:16",
@@ -5382,19 +5568,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes"
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes",
+              "Notes": "For the specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "User-defined task ID. It will not override the system-generated task ID, but supports querying tasks by this ID\n\n\nPlease note that it must be unique for each user\n\n\n"
             }
           ]
         },
@@ -5445,7 +5634,8 @@
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\nWhen creating a task, you can choose to query by external_task_id or task_id.\n\n\n"
             }
           ],
           "Headers": [
@@ -5536,14 +5726,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -5671,25 +5863,29 @@
               "Name": "prompt",
               "Type": "string",
               "Required": "Required",
-              "Description": "Positive text prompt"
+              "Description": "Positive text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "negative_prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Negative text prompt"
+              "Description": "Negative text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\nNote: In the Image-to-Image scenario (when the \"image\" field is not empty), negative prompts are not supported.\n\n\n"
             },
             {
               "Name": "image",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Reference Image"
+              "Description": "Reference Image",
+              "Notes": "Support inputting image Base64 encoding or image URL (ensure accessibility)\n\n\nBase64 Encoding Note:\nPlease note, if you use the Base64 method, make sure all image data parameters you pass are in Base64 encoding format. When using Base64, do NOT add any prefix like data:image/png;base64,. Only provide the Base64-encoded string.\nCorrect:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect:\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nFile size: ≤10MB, dimensions: min 300px, aspect ratio: 1:2.5 ~ 2.5:1\n\n\nRequired when image_reference parameter is not empty\n\n\n"
             },
             {
               "Name": "image_reference",
               "Type": "string",
               "Required": "Optional",
               "Description": "Image reference type",
+              "Notes": "subject: character feature reference, face: character appearance reference\n\n\nWhen using face, the uploaded image must contain only one face\n\n\nRequired when using kling-v1-5 and image parameter is not empty\n\n\n\n",
               "Enumvals": [
                 "subject",
                 "face"
@@ -5700,20 +5896,23 @@
               "Type": "float",
               "Required": "Optional",
               "Defval": "Default to 0.5",
-              "Description": "Face reference intensity for user-uploaded images during generation"
+              "Description": "Face reference intensity for user-uploaded images during generation",
+              "Notes": "Value range: [0, 1], The larger the value, the stronger the reference intensity\n\n\nOnly kling-v1, kling-v1-5 support this parameter\n\n\n\n"
             },
             {
               "Name": "human_fidelity",
               "Type": "float",
               "Required": "Optional",
               "Defval": "Default to 0.45",
-              "Description": "Facial reference intensity, refers to the similarity of the facial features of the person in the reference image"
+              "Description": "Facial reference intensity, refers to the similarity of the facial features of the person in the reference image",
+              "Notes": "Only image_reference parameter is subject is available\n\n\nValue range: [0, 1], The larger the value, the stronger the reference intensity\n\n\nOnly kling-v1-5 supports this parameter\n\n\n"
             },
             {
               "Name": "element_list",
               "Type": "array",
               "Required": "Optional",
-              "Description": "Reference element list based on element library ID"
+              "Description": "Reference element list based on element library ID",
+              "Notes": "Load with key:value format as follows:\n\n\"element_list\":[\n  { \"element_id\": long },\n  { \"element_id\": long }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe amount of reference element is related to the amount of reference image, the sum of the amount of reference element and the amount of reference image shall not exceed 10.\n\n\n"
             },
             {
               "Name": "resolution",
@@ -5721,6 +5920,7 @@
               "Required": "Optional",
               "Defval": "Default to 1k",
               "Description": "Image generation resolution",
+              "Notes": "1k: 1K standard, 2k: 2K high-res\n\n\nDifferent model versions support varying ranges. For details, refer to the Capability Map\n\n\n\n",
               "Enumvals": [
                 "1k",
                 "2k"
@@ -5731,7 +5931,8 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Number of generated images"
+              "Description": "Number of generated images",
+              "Notes": "Value range: [1, 9]\n\n\n"
             },
             {
               "Name": "aspect_ratio",
@@ -5739,6 +5940,7 @@
               "Required": "Optional",
               "Defval": "Default to 16:9",
               "Description": "Aspect ratio of the generated images (width:height)",
+              "Notes": "Different model versions support varying ranges. For details, refer to the Capability Map\n\n\n\n",
               "Enumvals": [
                 "16:9",
                 "9:16",
@@ -5754,19 +5956,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes."
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Will not overwrite system-generated task ID, but supports querying task by this ID\n\n\nPlease note that the customized task ID must be unique within a single user account.\n\n\n"
             }
           ]
         },
@@ -5817,7 +6022,8 @@
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\nWhen creating a task, you can choose to query by external_task_id or task_id.\n\n\n"
             }
           ],
           "Headers": [
@@ -5897,14 +6103,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -6017,32 +6225,37 @@
               "Name": "prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Positive text prompt"
+              "Description": "Positive text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "subject_image_list",
               "Type": "array",
               "Required": "Required",
-              "Description": "Subject Reference Images"
+              "Description": "Subject Reference Images",
+              "Notes": "Support up to 4 images, at least 1 image, using key:value format as follows:\n\n\"subject_image_list\":[\n  { \"subject_image\":\"image_url\" },\n  { \"subject_image\":\"image_url\" },\n  { \"subject_image\":\"image_url\" },\n  { \"subject_image\":\"image_url\" }\n]\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe API does not perform cropping, please upload images with subjects already cropped\n\n\nSupports image input as either Base64-encoded string or URL (ensure the URL is publicly accessible)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size must not exceed 10MB. Image dimensions must be at least 300px in width and height. Aspect ratio must be between 1:2.5 and 2.5:1\n\n\n"
             },
             {
               "Name": "scene_image",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Scene Reference Image"
+              "Description": "Scene Reference Image",
+              "Notes": "Supports image input as either Base64-encoded string or URL (ensure the URL is publicly accessible)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size must not exceed 10MB. Image dimensions must be at least 300px in width and height. Aspect ratio must be between 1:2.5 and 2.5:1\n\n\n"
             },
             {
               "Name": "style_image",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Style Reference Image"
+              "Description": "Style Reference Image",
+              "Notes": "Supports image input as either Base64-encoded string or URL (ensure the URL is publicly accessible)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size must not exceed 10MB. Image dimensions must be at least 300px in width and height. Aspect ratio must be between 1:2.5 and 2.5:1\n\n\n"
             },
             {
               "Name": "n",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Number of generated images"
+              "Description": "Number of generated images",
+              "Notes": "Value range: [1, 9]\n\n\n"
             },
             {
               "Name": "aspect_ratio",
@@ -6050,6 +6263,7 @@
               "Required": "Optional",
               "Defval": "Default to 16:9",
               "Description": "Aspect ratio of the generated images (width:height)",
+              "Notes": "The support range for different model versions. For more details, please refer to the current document's \"2-0 Capability Map\"\n\n\n",
               "Enumvals": [
                 "16:9",
                 "9:16",
@@ -6065,19 +6279,22 @@
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes"
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes",
+              "Notes": "The specific message schema of the notification can be found in Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "User-defined task ID. It will not override the system-generated task ID, but supports querying tasks by this ID\n\n\nPlease note that it must be unique for each user\n\n\n"
             }
           ]
         },
@@ -6128,7 +6345,8 @@
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\nWhen creating a task, you can choose to query by external_task_id or task_id.\n\n\n"
             }
           ],
           "Headers": [
@@ -6208,14 +6426,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -6317,62 +6537,72 @@
               "Name": "image",
               "Type": "string",
               "Required": "Required",
-              "Description": "Reference Image"
+              "Description": "Reference Image",
+              "Notes": "Supports image input as either Base64-encoded string or URL (ensure accessibility)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size must not exceed 10MB. Image dimensions must be at least 300px in width and height, aspect ratio: 1:2.5 ~ 2.5:1\n\n\n"
             },
             {
               "Name": "up_expansion_ratio",
               "Type": "float",
               "Required": "Required",
-              "Description": "Expand upwards range; calculated based on multiples of the original image height"
+              "Description": "Expand upwards range; calculated based on multiples of the original image height",
+              "Notes": "Value range: [0, 2]. The total area of the new image must not exceed 3 times that of the original image\n\n\nExample: If original height is 20 and value is 0.1, then: The distance from the top edge of the original image to the top edge of the new image is 20 × 0.1 = 2, and the area within is the expansion range\n\n\n\n"
             },
             {
               "Name": "down_expansion_ratio",
               "Type": "float",
               "Required": "Required",
-              "Description": "Expand downwards range; calculated based on multiples of the original image height"
+              "Description": "Expand downwards range; calculated based on multiples of the original image height",
+              "Notes": "Value range: [0, 2]. The total area of the new image must not exceed 3 times that of the original image\n\n\nExample: If original height is 20 and value is 0.2, then: The distance from the bottom edge of the original image to the bottom edge of the new image is 20 × 0.2 = 4, and the area within is the expansion range\n\n\n\n"
             },
             {
               "Name": "left_expansion_ratio",
               "Type": "float",
               "Required": "Required",
-              "Description": "Expand leftwards range; calculated based on multiples of the original image width"
+              "Description": "Expand leftwards range; calculated based on multiples of the original image width",
+              "Notes": "Value range: [0, 2]. The total area of the new image must not exceed 3 times that of the original image\n\n\nExample: If original width is 30 and value is 0.3, then: The distance from the left edge of the original image to the left edge of the new image is 30 × 0.3 = 9, and the area within is the expansion range\n\n\n\n"
             },
             {
               "Name": "right_expansion_ratio",
               "Type": "float",
               "Required": "Required",
-              "Description": "Expand rightwards range; calculated based on multiples of the original image width"
+              "Description": "Expand rightwards range; calculated based on multiples of the original image width",
+              "Notes": "Value range: [0, 2]. The total area of the new image must not exceed 3 times that of the original image\n\n\nExample: If original width is 30 and value is 0.4, then: The distance from the right edge of the original image to the right edge of the new image is 30 × 0.4 = 12, and the area within is the expansion range\n\n\n\n"
             },
             {
               "Name": "prompt",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Positive text prompt"
+              "Description": "Positive text prompt",
+              "Notes": "Cannot exceed 2500 characters\n\n\n"
             },
             {
               "Name": "n",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Number of generated images"
+              "Description": "Number of generated images",
+              "Notes": "Value range: [1, 9]\n\n\n"
             },
             {
               "Name": "watermark_info",
               "Type": "object",
               "Required": "Optional",
-              "Description": "Whether to generate watermarked results simultaneously"
+              "Description": "Whether to generate watermarked results simultaneously",
+              "Notes": "Defined by the enabled parameter, format:\n\n  \"watermark_info\": { \"enabled\": boolean } \n\n\n\n\n\n\n\n\n\n\n\n\n\ntrue: generate watermarked result, false: do not generate\n\n\nCustom watermarks are not currently supported\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes."
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.",
+              "Notes": "For specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Will not overwrite system-generated task ID, but supports querying task by this ID\n\n\nMust be unique within a single user account\n\n\n"
             }
           ]
         },
@@ -6423,7 +6653,8 @@
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\nWhen creating a task, you can choose to query by external_task_id or task_id.\n\n\n"
             }
           ],
           "Headers": [
@@ -6503,14 +6734,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -6612,19 +6845,22 @@
               "Name": "element_frontal_image",
               "Type": "string",
               "Required": "Required",
-              "Description": "The frontal side of element image"
+              "Description": "The frontal side of element image",
+              "Notes": "Supports inputting image Base64 encoding or image URL (ensure accessibility).\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nImage file size cannot exceed 10MB, and the width and height dimensions shall not be less than 300px, and the aspect ratio should be between 1:2.5 ~ 2.5:1\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes"
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes",
+              "Notes": "For the specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Users can provide a customized task ID, which will not overwrite the system-generated task ID but can be used for task queries\n\n\nPlease note that the customized task ID must be unique within a single user account\n\n\n"
             }
           ]
         },
@@ -6748,14 +6984,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Number of items per page"
+              "Description": "Number of items per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
@@ -6867,25 +7105,29 @@
               "Name": "human_image",
               "Type": "string",
               "Required": "Required",
-              "Description": "Reference human Image"
+              "Description": "Reference human Image",
+              "Notes": "Supports inputting image Base64 encoding or image URL (ensure accessibility)\n\n\nImportant: When using Base64, do NOT add any prefix like data:image/png;base64,. Submit only the raw Base64 string.\n\n\nCorrect Base64 format:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect Base64 format (with data: prefix):\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nThe image file size cannot exceed 10MB, and the width and height dimensions of the image shall not be less than 300px\n\n\n"
             },
             {
               "Name": "cloth_image",
               "Type": "string",
               "Required": "Required",
-              "Description": "Reference clothing image"
+              "Description": "Reference clothing image",
+              "Notes": "Support uploading clothing product images or clothing image with white background; Supports single clothing (upper, lower, and dress) try-on\n\n\nSupports inputting image Base64 encoding or image URL (ensure accessibility)\n\n\nBase64 Encoding Note:\nPlease note, if you use the Base64 method, make sure all image data parameters you pass are in Base64 encoding format. When using Base64, do NOT add any prefix like data:image/png;base64,. Only provide the Base64-encoded string.\nCorrect:\n\niVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\nIncorrect:\n\ndata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...\n\n\n\n\n\n\n\n\n\n\n\n\n\nSupported image formats: .jpg / .jpeg / .png\n\n\nFile size: ≤10MB, dimensions: min 300px\n\n\nThe kolors-virtual-try-on-v1-5 model not only supports single clothing input, but also supports \"upper + lower\" combination input: Input a single clothing image (upper, lower, or dress) → Generate a try-on image of the single item\nInput a combination clothing image (merge multiple items into one image with white background): \"upper + lower\" → Success\n\"upper + upper\" → Fails\n\"lower + lower\" → Fails\n\"dress + dress\" → Fails\n\"upper + dress\" → Fails\n\"lower + dress\" → Fails\n\n\n\n\n\n\n\n"
             },
             {
               "Name": "callback_url",
               "Type": "string",
               "Required": "Optional",
-              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes."
+              "Description": "The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.",
+              "Notes": "For the specific message schema, see Callback Protocol\n\n\n"
             },
             {
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID"
+              "Description": "Customized Task ID",
+              "Notes": "Will not overwrite system-generated task ID, but supports querying task by this ID\n\n\nPlease note that the customized task ID must be unique within a single user account.\n\n\n"
             }
           ]
         },
@@ -6931,7 +7173,8 @@
               "Name": "external_task_id",
               "Type": "string",
               "Required": "Optional",
-              "Description": "Customized Task ID for audio generation"
+              "Description": "Customized Task ID for audio generation",
+              "Notes": "The external_task_id filled in when creating the task. You can choose to query by external_task_id or task_id\nWhen creating a task, you can choose to query by external_task_id or task_id.\n\n\n"
             }
           ],
           "Headers": [
@@ -7006,14 +7249,16 @@
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 1",
-              "Description": "Page number"
+              "Description": "Page number",
+              "Notes": "Value range: [1, 1000]\n\n\n"
             },
             {
               "Name": "pageSize",
               "Type": "int",
               "Required": "Optional",
               "Defval": "Default to 30",
-              "Description": "Data volume per page"
+              "Description": "Data volume per page",
+              "Notes": "Value range: [1, 500]\n\n\n"
             }
           ],
           "Headers": [
