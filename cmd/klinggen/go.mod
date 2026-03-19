@@ -1,4 +1,4 @@
-module github.com/goplus/xai/cmd/kling_gen
+module github.com/goplus/xai/cmd/klinggen
 
 go 1.26
 

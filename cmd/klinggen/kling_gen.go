@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package main
+package klinggen
 
 import (
 	"encoding/json"
@@ -24,8 +24,6 @@ import (
 
 	"github.com/goplus/dql/klingai/model"
 )
-
-// -----------------------------------------------------------------------------
 
 type modelParam struct {
 	Model       string
@@ -42,42 +40,32 @@ type paramInfo struct {
 	Models []*modelParam
 }
 
-type none struct{}
+type None struct{}
 
-var imageModelSels = map[string]none{
-	"imageGeneration":   {},
-	"OmniImage":         {},
-	"multiImageToImage": {},
+type Util struct {
+	ModelSels       map[string]None
+	KnownParams     map[string]string
+	KnownParamTypes map[string]string
 }
 
-var knownParams = map[string]string{
-	"model_name":   "",
-	"prompt":       "Prompt",
-	"n":            "NumberOfImages",
-	"aspect_ratio": "AspectRatio",
-	"resolution":   "ImageSize",
-}
-
-var knownParamTypes = map[string]string{
-	"image_list": "[]xai.Image",
-}
-
-func main() {
-	b, err := os.ReadFile("../../../spec/kling/klingai.json")
+func (p *Util) DoFile(file string) {
+	b, err := os.ReadFile(file)
 	check(err)
 
 	var ret []*model.Result
 	err = json.Unmarshal(b, &ret)
 	check(err)
 
+	p.Do(ret)
+}
+
+func (p *Util) Do(ret []*model.Result) {
 	var paramExists = make(map[string]*paramInfo)
 	var params []*paramInfo
+	var modelSels = p.ModelSels
 	for _, r := range ret {
-		if _, ok := imageModelSels[r.Model]; ok {
+		if _, ok := modelSels[r.Model]; ok {
 			for _, item := range r.APIs[0].Req.Body {
-				if _, ok := knownParams[item.Name]; ok {
-					continue
-				}
 				model := &modelParam{
 					Model:       r.Model,
 					Required:    item.Required,
@@ -104,8 +92,13 @@ func main() {
 			}
 		}
 	}
+	knownParams := p.KnownParams
+	knownParamTypes := p.KnownParamTypes
 	for _, param := range params {
 		name := param.Name
+		if _, ok := knownParams[name]; ok {
+			continue
+		}
 		typ := param.Type
 		if typ == "array" || typ == "object" {
 			if t, ok := knownParamTypes[name]; ok {
@@ -127,5 +120,3 @@ func check(err error) {
 		panic(err)
 	}
 }
-
-// -----------------------------------------------------------------------------
