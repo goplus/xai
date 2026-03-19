@@ -31,12 +31,28 @@ type Service struct {
 	setApiKey func(string)
 }
 
+type klingServiceProvider interface {
+	KlingService() *kling.Service
+}
+
 // SetApiKey updates the API key at runtime. Only effective when using real Qiniu API;
 // no-op for mock service.
 func (s *Service) SetApiKey(apiKey string) {
 	if s.setApiKey != nil {
 		s.setApiKey(apiKey)
 	}
+}
+
+// KlingService exposes the wrapped Kling service so operation.Call can reach
+// the provider executors when examples are using the real Qiniu backend.
+func (s *Service) KlingService() *kling.Service {
+	if ks, ok := s.Service.(klingServiceProvider); ok {
+		return ks.KlingService()
+	}
+	if ks, ok := s.Service.(*kling.Service); ok {
+		return ks
+	}
+	return nil
 }
 
 // NewService creates a Kling Service. If QINIU_API_KEY is set, uses real Qnagic API;

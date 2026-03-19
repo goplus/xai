@@ -53,10 +53,11 @@ func NewVideoService(apiKey string, opts ...ClientOption) *openai.Service {
 func RegisterVideo(apiKey string, opts ...ClientOption) {
 	svc := NewVideoService(apiKey, opts...)
 	xai.Register("qiniu-video", func(ctx context.Context, uri string) (xai.Service, error) {
-		if uri == "" {
+		query := strings.TrimPrefix(uri, "qiniu-video:")
+		if query == "" {
 			return svc, nil
 		}
-		params, err := url.ParseQuery(uri)
+		params, err := url.ParseQuery(query)
 		if err != nil {
 			return nil, err
 		}

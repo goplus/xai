@@ -40,6 +40,10 @@ var DemoImageURLs = struct {
 
 // printImageResults prints and saves image URLs for verification.
 func printImageResults(model, demo string, results xai.Results) {
+	if results == nil {
+		fmt.Println("  No results")
+		return
+	}
 	urls := make([]string, 0, results.Len())
 	for i := 0; i < results.Len(); i++ {
 		out := results.At(i).(*xai.OutputImage)

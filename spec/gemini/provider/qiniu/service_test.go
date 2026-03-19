@@ -82,6 +82,13 @@ func TestOperationGenImage(t *testing.T) {
 		if body["prompt"] != "draw a cat" {
 			t.Fatalf("unexpected prompt: %#v", body["prompt"])
 		}
+		imageConfig, _ := body["image_config"].(map[string]any)
+		if imageConfig["aspect_ratio"] != "16:9" {
+			t.Fatalf("unexpected image_config.aspect_ratio: %#v", imageConfig["aspect_ratio"])
+		}
+		if imageConfig["image_size"] != "1K" {
+			t.Fatalf("unexpected image_config.image_size: %#v", imageConfig["image_size"])
+		}
 		_, _ = w.Write([]byte(`{
 			"created": 1,
 			"output_format": "png",
@@ -98,7 +105,8 @@ func TestOperationGenImage(t *testing.T) {
 	}
 	op.Params().
 		Set("Prompt", "draw a cat").
-		Set("AspectRatio", "16:9")
+		Set("AspectRatio", "16:9").
+		Set("ImageSize", "1K")
 	resp, err := op.Call(context.Background(), svc, nil)
 	if err != nil {
 		t.Fatalf("Call failed: %v", err)
@@ -130,6 +138,13 @@ func TestOperationEditImage(t *testing.T) {
 		if body["prompt"] != "watercolor style" {
 			t.Fatalf("unexpected prompt: %#v", body["prompt"])
 		}
+		imageConfig, _ := body["image_config"].(map[string]any)
+		if imageConfig["aspect_ratio"] != "16:9" {
+			t.Fatalf("unexpected image_config.aspect_ratio: %#v", imageConfig["aspect_ratio"])
+		}
+		if imageConfig["image_size"] != "1K" {
+			t.Fatalf("unexpected image_config.image_size: %#v", imageConfig["image_size"])
+		}
 		_, _ = w.Write([]byte(`{"created": 2, "data":[{"url":"https://example.com/edited.png"}]}`))
 	}))
 	defer ts.Close()
@@ -142,7 +157,9 @@ func TestOperationEditImage(t *testing.T) {
 	ref, _ := svc.ReferenceImage(svc.ImageFromStgUri(xai.ImageJPEG, "https://example.com/src.png"), 0, xai.RawReferenceImage)
 	op.Params().
 		Set("Prompt", "watercolor style").
-		Set("References", []genai.ReferenceImage{ref.(genai.ReferenceImage)})
+		Set("References", []genai.ReferenceImage{ref.(genai.ReferenceImage)}).
+		Set("AspectRatio", "16:9").
+		Set("ImageSize", "1K")
 	resp, err := op.Call(context.Background(), svc, nil)
 	if err != nil {
 		t.Fatalf("Call failed: %v", err)

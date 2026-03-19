@@ -61,9 +61,9 @@ func RunKlingV2() {
 	fmt.Println("--- multi_image ---")
 	op3, _ := svc.Operation(xai.Model(kling.ModelKlingV2), xai.GenImage)
 	op3.Params().Set(kling.ParamPrompt, "综合两个图像画一个漫画图")
-	op3.Params().Set(kling.ParamSubjectImageList, []map[string]string{
-		{kling.ParamSubjectImage: DemoImageURLs.Subject1},
-		{kling.ParamSubjectImage: DemoImageURLs.Subject2},
+	op3.Params().Set(kling.ParamSubjectImageList, []string{
+		DemoImageURLs.Subject1,
+		DemoImageURLs.Subject2,
 	})
 	op3.Params().Set(kling.ParamAspectRatio, kling.Aspect16x9)
 	results3, err := xai.Call(ctx, svc, op3, svc.Options(), nil)

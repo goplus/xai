@@ -43,7 +43,7 @@ type Backend interface {
 	GetVideosOperation(ctx context.Context, op *genai.GenerateVideosOperation, config *genai.GetOperationConfig) (*genai.GenerateVideosOperation, error)
 
 	GenerateImages(ctx context.Context, model string, prompt string, config *genai.GenerateImagesConfig) (*genai.GenerateImagesResponse, error)
-	EditImage(ctx context.Context, model string, prompt string, references []genai.ReferenceImage, config *genai.EditImageConfig) (*genai.EditImageResponse, error)
+	EditImage(ctx context.Context, model string, prompt string, references []genai.ReferenceImage, config *genai.EditImageConfig, imageSize string) (*genai.EditImageResponse, error)
 	RecontextImage(ctx context.Context, model string, source *genai.RecontextImageSource, config *genai.RecontextImageConfig) (*genai.RecontextImageResponse, error)
 	UpscaleImage(ctx context.Context, model string, image *genai.Image, factor string, config *genai.UpscaleImageConfig) (*genai.UpscaleImageResponse, error)
 	SegmentImage(ctx context.Context, model string, source *genai.SegmentImageSource, config *genai.SegmentImageConfig) (*genai.SegmentImageResponse, error)
@@ -91,7 +91,7 @@ func (p *genAIBackend) GenerateImages(ctx context.Context, model string, prompt 
 	return p.models.GenerateImages(ctx, model, prompt, config)
 }
 
-func (p *genAIBackend) EditImage(ctx context.Context, model string, prompt string, references []genai.ReferenceImage, config *genai.EditImageConfig) (*genai.EditImageResponse, error) {
+func (p *genAIBackend) EditImage(ctx context.Context, model string, prompt string, references []genai.ReferenceImage, config *genai.EditImageConfig, imageSize string) (*genai.EditImageResponse, error) {
 	return p.models.EditImage(ctx, model, prompt, references, config)
 }
 

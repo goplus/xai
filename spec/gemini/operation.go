@@ -183,6 +183,7 @@ type editImage struct {
 	Prompt     string
 	References []genai.ReferenceImage
 	genai.EditImageConfig
+	ImageSize string
 
 	model string
 }
@@ -199,7 +200,7 @@ func (p *editImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBu
 	if v, ok := opts.(*options); ok {
 		p.HTTPOptions = &v.opts
 	}
-	op, err := svc.(BackendService).Backend().EditImage(ctx, p.model, p.Prompt, p.References, &p.EditImageConfig)
+	op, err := svc.(BackendService).Backend().EditImage(ctx, p.model, p.Prompt, p.References, &p.EditImageConfig, p.ImageSize)
 	if err != nil {
 		return
 	}

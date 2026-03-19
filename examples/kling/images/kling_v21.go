@@ -63,9 +63,9 @@ func RunKlingV21() {
 	fmt.Println("--- multi_image ---")
 	op3, _ := svc.Operation(xai.Model(kling.ModelKlingV21), xai.GenImage)
 	op3.Params().Set(kling.ParamPrompt, "一个梦幻般的森林场景")
-	op3.Params().Set(kling.ParamSubjectImageList, []map[string]string{
-		{kling.ParamSubjectImage: DemoImageURLs.Subject1},
-		{kling.ParamSubjectImage: DemoImageURLs.Subject2},
+	op3.Params().Set(kling.ParamSubjectImageList, []string{
+		DemoImageURLs.Subject1,
+		DemoImageURLs.Subject2,
 	})
 	op3.Params().Set(kling.ParamSceneImage, DemoImageURLs.Subject2)
 	op3.Params().Set(kling.ParamStyleImage, DemoImageURLs.Subject1)

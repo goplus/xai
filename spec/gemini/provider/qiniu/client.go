@@ -177,7 +177,7 @@ func (c *client) doWithRetry(ctx context.Context, method, baseURL, path string, 
 
 	if os.Getenv("QINIU_MOCK_CURL") != "" {
 		c.logDebug("Mock mode enabled, returning mock response")
-		return nil, errors.New("mock mode enabled")
+		return c.mockResponse(path, body)
 	}
 
 	var lastErr error
@@ -291,6 +291,45 @@ func (c *client) doStreamWithRetry(ctx context.Context, baseURL, path string, pa
 		return nil, apiErr
 	}
 	return nil, lastErr
+}
+
+func (c *client) mockResponse(path string, body []byte) ([]byte, error) {
+	switch strings.TrimPrefix(path, "/") {
+	case endpointImagesGenerate:
+		return buildMockImagesResponse("images/generations", body)
+	case endpointImagesEdit:
+		return buildMockImagesResponse("images/edits", body)
+	default:
+		return nil, errors.New("mock mode enabled")
+	}
+}
+
+func buildMockImagesResponse(kind string, body []byte) ([]byte, error) {
+	type mockRequest struct {
+		N int `json:"n"`
+	}
+
+	n := 1
+	if len(body) > 0 {
+		var req mockRequest
+		if err := json.Unmarshal(body, &req); err == nil && req.N > 0 {
+			n = req.N
+		}
+	}
+
+	resp := map[string]any{
+		"created":       1,
+		"output_format": "png",
+		"data":          make([]map[string]any, 0, n),
+	}
+	data := resp["data"].([]map[string]any)
+	for i := 0; i < n; i++ {
+		data = append(data, map[string]any{
+			"url": fmt.Sprintf("https://example.com/mock/qiniu/%s/%d.png", kind, i),
+		})
+	}
+	resp["data"] = data
+	return json.Marshal(resp)
 }
 
 func (c *client) parseAPIError(respBody []byte, statusCode int, requestID string) *APIError {

@@ -155,6 +155,51 @@ func TestBuildV2ImageRequestMultiImage(t *testing.T) {
 	}
 }
 
+func TestBuildV2ImageRequestReferenceImages(t *testing.T) {
+	params := &image.V2ImageParams{
+		ModelName:       kling.ModelKlingV2,
+		Prompt:          "stylize this image",
+		Image:           "https://example.com/base.jpg",
+		ReferenceImages: []string{"https://example.com/style.jpg"},
+		AspectRatio:     "16:9",
+	}
+
+	req, err := BuildImageRequest(kling.ModelKlingV2, params)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	refs, ok := req.Body["reference_images"].([]string)
+	if !ok {
+		t.Fatalf("expected reference_images to be []string, got %T", req.Body["reference_images"])
+	}
+	if len(refs) != 1 || refs[0] != "https://example.com/style.jpg" {
+		t.Fatalf("unexpected reference_images payload: %#v", refs)
+	}
+}
+
+func TestBuildV21ImageRequestReferenceImages(t *testing.T) {
+	params := &image.V21ImageParams{
+		Prompt:          "same style but a mountain landscape",
+		Image:           "https://example.com/base.jpg",
+		ReferenceImages: []string{"https://example.com/style.jpg"},
+		AspectRatio:     "16:9",
+	}
+
+	req, err := BuildImageRequest(kling.ModelKlingV21, params)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	refs, ok := req.Body["reference_images"].([]string)
+	if !ok {
+		t.Fatalf("expected reference_images to be []string, got %T", req.Body["reference_images"])
+	}
+	if len(refs) != 1 || refs[0] != "https://example.com/style.jpg" {
+		t.Fatalf("unexpected reference_images payload: %#v", refs)
+	}
+}
+
 func TestBuildO1ImageRequest(t *testing.T) {
 	params := &image.O1ImageParams{
 		Prompt:          "a beautiful sunset",
@@ -207,6 +252,39 @@ func TestBuildV21VideoRequest(t *testing.T) {
 	}
 	if req.Body["input_reference"] != "https://example.com/img.jpg" {
 		t.Errorf("expected input_reference, got %v", req.Body["input_reference"])
+	}
+}
+
+func TestBuildO1VideoRequestLegacyFrames(t *testing.T) {
+	params := kling.NewParams()
+	params.
+		Set(kling.ParamPrompt, "a runner crossing the finish line").
+		Set(kling.ParamInputReference, "https://example.com/first.jpg").
+		Set(kling.ParamImageTail, "https://example.com/last.jpg").
+		Set(kling.ParamMode, kling.ModePro)
+
+	typedParams, err := kling.BuildVideoParams(kling.ModelKlingVideoO1, params)
+	if err != nil {
+		t.Fatalf("unexpected build params error: %v", err)
+	}
+
+	req, err := BuildVideoRequest(kling.ModelKlingVideoO1, typedParams)
+	if err != nil {
+		t.Fatalf("unexpected build request error: %v", err)
+	}
+
+	imageList, ok := req.Body["image_list"].([]map[string]any)
+	if !ok {
+		t.Fatalf("expected image_list payload, got %T", req.Body["image_list"])
+	}
+	if len(imageList) != 2 {
+		t.Fatalf("expected 2 legacy-converted image refs, got %d", len(imageList))
+	}
+	if imageList[0]["image"] != "https://example.com/first.jpg" || imageList[0]["type"].(video.ImageRefType) != video.ImageTypeFirstFrame {
+		t.Fatalf("unexpected first frame payload: %#v", imageList[0])
+	}
+	if imageList[1]["image"] != "https://example.com/last.jpg" || imageList[1]["type"].(video.ImageRefType) != video.ImageTypeEndFrame {
+		t.Fatalf("unexpected end frame payload: %#v", imageList[1])
 	}
 }
 

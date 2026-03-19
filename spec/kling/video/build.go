@@ -59,15 +59,39 @@ func buildBaseVideoParams(model, prompt string, p internal.ParamsReader) *BaseVi
 }
 
 func buildO1VideoParams(model, prompt string, p internal.ParamsReader) *O1VideoParams {
+	imageList := getImageList(p)
+	inputRef := p.GetString(internal.ParamInputReference)
+	imageTail := p.GetString(internal.ParamImageTail)
+	imageList = mergeLegacyO1Frames(imageList, inputRef, imageTail)
 	return &O1VideoParams{
 		Prompt:         prompt,
-		ImageList:      getImageList(p),
+		ImageList:      imageList,
 		VideoList:      getVideoList(p),
 		NegativePrompt: p.GetString(internal.ParamNegativePrompt),
 		Mode:           p.GetString(internal.ParamMode),
 		Seconds:        p.GetString(internal.ParamSeconds),
 		Size:           p.GetString(internal.ParamSize),
 	}
+}
+
+func mergeLegacyO1Frames(imageList []ImageInput, inputRef, imageTail string) []ImageInput {
+	hasFirstFrame := false
+	hasEndFrame := false
+	for _, item := range imageList {
+		switch item.Type {
+		case ImageTypeFirstFrame:
+			hasFirstFrame = true
+		case ImageTypeEndFrame:
+			hasEndFrame = true
+		}
+	}
+	if inputRef != "" && !hasFirstFrame {
+		imageList = append([]ImageInput{{Image: inputRef, Type: ImageTypeFirstFrame}}, imageList...)
+	}
+	if imageTail != "" && !hasEndFrame {
+		imageList = append(imageList, ImageInput{Image: imageTail, Type: ImageTypeEndFrame})
+	}
+	return imageList
 }
 
 func buildV3VideoParams(model, prompt string, p internal.ParamsReader) *V3VideoParams {

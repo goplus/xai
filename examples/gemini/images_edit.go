@@ -45,7 +45,8 @@ func runImageEdit() {
 	op.Params().
 		Set("Prompt", "结合这两张图片的风格，生成一张新的艺术作品").
 		Set("References", []genai.ReferenceImage{ref1.(genai.ReferenceImage), ref2.(genai.ReferenceImage)}).
-		Set("AspectRatio", "16:9")
+		Set("AspectRatio", "16:9").
+		Set("ImageSize", "1K")
 
 	resp, err := op.Call(ctx, service, nil)
 	if err != nil {
@@ -70,7 +71,8 @@ func runImageEditSingle() {
 
 	op.Params().
 		Set("Prompt", "为这个场景添加日落效果，让整体色调更温暖").
-		Set("References", []genai.ReferenceImage{ref.(genai.ReferenceImage)})
+		Set("References", []genai.ReferenceImage{ref.(genai.ReferenceImage)}).
+		Set("ImageSize", "1K")
 
 	resp, err := op.Call(ctx, service, nil)
 	if err != nil {
@@ -98,7 +100,8 @@ func runImageEditMask() {
 	op.Params().
 		Set("Prompt", "使用第二张图片作为遮罩图，仅在遮罩图中的白色区域允许生成内容。在第一张图片的对应位置添加两个人正在拥抱的场景。遮罩以白色区域为可生成区域，黑色区域保持第一张图片不变，不要修改遮罩外的背景、建筑或已有物体。不要把遮罩的白色保留到第一个图片。").
 		Set("References", []genai.ReferenceImage{refBase.(genai.ReferenceImage), refMask.(genai.ReferenceImage)}).
-		Set("AspectRatio", "16:9")
+		Set("AspectRatio", "16:9").
+		Set("ImageSize", "1K")
 
 	resp, err := op.Call(ctx, service, nil)
 	if err != nil {

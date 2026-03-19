@@ -133,8 +133,8 @@ func (p *backend) GenerateImages(ctx context.Context, model string, prompt strin
 		if config.NumberOfImages > 0 {
 			body["n"] = config.NumberOfImages
 		}
-		if config.AspectRatio != "" {
-			body["image_config"] = map[string]any{"aspect_ratio": config.AspectRatio}
+		if imageConfig := buildImageConfig(config.AspectRatio, config.ImageSize); len(imageConfig) > 0 {
+			body["image_config"] = imageConfig
 		}
 	}
 
@@ -145,7 +145,7 @@ func (p *backend) GenerateImages(ctx context.Context, model string, prompt strin
 	return resp.toGenerateImagesResponse(), nil
 }
 
-func (p *backend) EditImage(ctx context.Context, model string, prompt string, references []genai.ReferenceImage, config *genai.EditImageConfig) (*genai.EditImageResponse, error) {
+func (p *backend) EditImage(ctx context.Context, model string, prompt string, references []genai.ReferenceImage, config *genai.EditImageConfig, imageSize string) (*genai.EditImageResponse, error) {
 	if strings.TrimSpace(prompt) == "" {
 		return nil, fmt.Errorf("qiniu: Prompt is required")
 	}
@@ -165,13 +165,15 @@ func (p *backend) EditImage(ctx context.Context, model string, prompt string, re
 	} else {
 		body["image"] = images
 	}
+	aspectRatio := ""
 	if config != nil {
 		if config.NumberOfImages > 0 {
 			body["n"] = config.NumberOfImages
 		}
-		if config.AspectRatio != "" {
-			body["image_config"] = map[string]any{"aspect_ratio": config.AspectRatio}
-		}
+		aspectRatio = config.AspectRatio
+	}
+	if imageConfig := buildImageConfig(aspectRatio, imageSize); len(imageConfig) > 0 {
+		body["image_config"] = imageConfig
 	}
 
 	var resp imagesResponse
@@ -179,6 +181,20 @@ func (p *backend) EditImage(ctx context.Context, model string, prompt string, re
 		return nil, err
 	}
 	return resp.toEditImageResponse(), nil
+}
+
+func buildImageConfig(aspectRatio, imageSize string) map[string]any {
+	imageConfig := make(map[string]any, 2)
+	if aspectRatio != "" {
+		imageConfig["aspect_ratio"] = aspectRatio
+	}
+	if imageSize != "" {
+		imageConfig["image_size"] = imageSize
+	}
+	if len(imageConfig) == 0 {
+		return nil
+	}
+	return imageConfig
 }
 
 func (p *backend) RecontextImage(ctx context.Context, model string, source *genai.RecontextImageSource, config *genai.RecontextImageConfig) (*genai.RecontextImageResponse, error) {

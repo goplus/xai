@@ -50,7 +50,7 @@ func (e *ASRExecutor) Transcribe(ctx context.Context, model xai.Model, params xa
 	}
 
 	audioVal, _ := audioParams.Get(audio.ParamAudio)
-	audioMap := toAudioMap(audioVal)
+	audioMap := toAudioMap(audioVal, audioParams.GetString(audio.ParamFormat))
 
 	payload := map[string]interface{}{
 		"model": "asr",
@@ -151,11 +151,11 @@ func (e *TTSExecutor) Synthesize(ctx context.Context, model xai.Model, params xa
 }
 
 // toAudioMap converts audio param to {format, url} map.
-func toAudioMap(audioVal interface{}) map[string]string {
+func toAudioMap(audioVal interface{}, fallbackFormat string) map[string]string {
+	format := normalizeAudioFormat(fallbackFormat)
 	if a, ok := audioVal.(map[string]interface{}); ok {
-		format := "mp3"
 		if f, ok := a["format"].(string); ok && f != "" {
-			format = f
+			format = normalizeAudioFormat(f)
 		}
 		url := ""
 		if u, ok := a["url"].(string); ok {
@@ -165,9 +165,8 @@ func toAudioMap(audioVal interface{}) map[string]string {
 	}
 
 	if a, ok := audioVal.(map[string]string); ok {
-		format := "mp3"
 		if f, ok := a["format"]; ok && f != "" {
-			format = f
+			format = normalizeAudioFormat(f)
 		}
 		url := ""
 		if u, ok := a["url"]; ok {
@@ -178,18 +177,26 @@ func toAudioMap(audioVal interface{}) map[string]string {
 
 	str, ok := audioVal.(string)
 	if !ok {
-		return map[string]string{"format": "mp3", "url": ""}
+		return map[string]string{"format": format, "url": ""}
 	}
 
 	if strings.HasPrefix(str, "http") {
-		return map[string]string{"format": "mp3", "url": str}
+		return map[string]string{"format": format, "url": str}
 	}
 
 	if strings.HasPrefix(str, "data:audio/") {
-		return map[string]string{"format": "mp3", "url": str}
+		return map[string]string{"format": format, "url": str}
 	}
 
-	return map[string]string{"format": "mp3", "url": "data:audio/mp3;base64," + str}
+	return map[string]string{"format": format, "url": "data:audio/" + format + ";base64," + str}
+}
+
+func normalizeAudioFormat(format string) string {
+	format = strings.TrimSpace(format)
+	if format == "" {
+		return "mp3"
+	}
+	return format
 }
 
 // VoiceLister implements audio.VoiceLister for Qiniu API.

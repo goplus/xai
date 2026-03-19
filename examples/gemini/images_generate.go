@@ -37,7 +37,8 @@ func runImageGenerate() {
 	}
 	op.Params().
 		Set("Prompt", "梦幻森林中的精灵小屋，魔法光芒环绕").
-		Set("AspectRatio", "16:9")
+		Set("AspectRatio", "16:9").
+		Set("ImageSize", "1K")
 
 	resp, err := op.Call(ctx, service, nil)
 	if err != nil {
@@ -78,7 +79,8 @@ func runImageGeneratePortrait() {
 	}
 	op.Params().
 		Set("Prompt", "梦幻森林中的精灵小屋，魔法光芒环绕").
-		Set("AspectRatio", "9:16")
+		Set("AspectRatio", "9:16").
+		Set("ImageSize", "1K")
 
 	resp, err := op.Call(ctx, service, nil)
 	if err != nil {

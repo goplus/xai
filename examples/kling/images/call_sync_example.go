@@ -49,6 +49,7 @@ func RunCallSyncExample() {
 	resp, err := xai.CallSync(ctx, svc, op, svc.Options())
 	if err != nil {
 		fmt.Println("Error:", err)
+		return
 	}
 
 	// Get taskID for persistence (empty for sync responses; non-empty for async)

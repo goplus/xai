@@ -124,6 +124,9 @@ func buildV2ImageRequest(p *image.V2ImageParams) *ImageRequest {
 
 	// Single image mode
 	setOptionalString(body, "image", p.Image)
+	if len(p.ReferenceImages) > 0 {
+		body["reference_images"] = p.ReferenceImages
+	}
 	return &ImageRequest{
 		Endpoint: EndpointImageGenerations,
 		Body:     body,
@@ -158,6 +161,9 @@ func buildV21ImageRequest(p *image.V21ImageParams) *ImageRequest {
 
 	// Single image mode
 	setOptionalString(body, "image", p.Image)
+	if len(p.ReferenceImages) > 0 {
+		body["reference_images"] = p.ReferenceImages
+	}
 	return &ImageRequest{
 		Endpoint: EndpointImageGenerations,
 		Body:     body,

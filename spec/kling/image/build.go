@@ -28,27 +28,31 @@ import (
 func BuildImageParams(model string, p internal.ParamsReader) (ImageParams, error) {
 	m := strings.ToLower(model)
 	prompt := p.GetString(internal.ParamPrompt)
+	n := internal.GetInt(p, internal.ParamN)
+
+	if err := validateImageCount(m, n); err != nil {
+		return nil, err
+	}
 
 	switch {
 	case m == internal.ModelKlingV1:
-		return buildV1ImageParams(model, prompt, p), nil
+		return buildV1ImageParams(model, prompt, p, n), nil
 	case m == internal.ModelKlingV15:
-		return buildV15ImageParams(model, prompt, p), nil
+		return buildV15ImageParams(model, prompt, p, n), nil
 	case m == internal.ModelKlingV2 || m == internal.ModelKlingV2New:
-		return buildV2ImageParams(model, prompt, p)
+		return buildV2ImageParams(model, prompt, p, n)
 	case m == internal.ModelKlingV21:
-		return buildV21ImageParams(model, prompt, p), nil
+		return buildV21ImageParams(model, prompt, p, n)
 	case m == internal.ModelKlingImageO1:
-		return buildO1ImageParams(model, prompt, p), nil
+		return buildO1ImageParams(model, prompt, p, n)
 	case strings.Contains(m, "gemini"):
-		return buildGeminiImageParams(model, prompt, p), nil
+		return buildGeminiImageParams(model, prompt, p, n), nil
 	default:
 		return nil, fmt.Errorf("kling: unsupported image model %q", model)
 	}
 }
 
-func buildV1ImageParams(model, prompt string, p internal.ParamsReader) *V1ImageParams {
-	n := internal.GetInt(p, internal.ParamN)
+func buildV1ImageParams(model, prompt string, p internal.ParamsReader, n int) *V1ImageParams {
 	return &V1ImageParams{
 		Prompt:         prompt,
 		N:              &n,
@@ -60,8 +64,7 @@ func buildV1ImageParams(model, prompt string, p internal.ParamsReader) *V1ImageP
 	}
 }
 
-func buildV15ImageParams(model, prompt string, p internal.ParamsReader) *V15ImageParams {
-	n := internal.GetInt(p, internal.ParamN)
+func buildV15ImageParams(model, prompt string, p internal.ParamsReader, n int) *V15ImageParams {
 	return &V15ImageParams{
 		Prompt:         prompt,
 		N:              &n,
@@ -74,14 +77,17 @@ func buildV15ImageParams(model, prompt string, p internal.ParamsReader) *V15Imag
 	}
 }
 
-func buildV2ImageParams(model, prompt string, p internal.ParamsReader) (ImageParams, error) {
-	n := internal.GetInt(p, internal.ParamN)
+func buildV2ImageParams(model, prompt string, p internal.ParamsReader, n int) (ImageParams, error) {
 	m := strings.ToLower(model)
 	img := p.GetString(internal.ParamImage)
 	refs := internal.GetStringSlice(p, internal.ParamReferenceImages)
 	subjectList := internal.GetSubjectImageList(p, internal.ParamSubjectImageList)
 	sceneImg := p.GetString(internal.ParamSceneImage)
 	styleImg := p.GetString(internal.ParamStyleImage)
+
+	if _, ok := p.Get(internal.ParamSubjectImageList); ok && len(subjectList) > 0 && (len(subjectList) < 2 || len(subjectList) > 4) {
+		return nil, fmt.Errorf("kling: %s subject_image_list requires 2 to 4 images", model)
+	}
 
 	// kling-v2: multi-image (2-4) via subject_image_list
 	if len(subjectList) >= 2 && len(subjectList) <= 4 {
@@ -117,22 +123,26 @@ func buildV2ImageParams(model, prompt string, p internal.ParamsReader) (ImagePar
 		return nil, fmt.Errorf("kling: %s requires a reference image (img2img only)", model)
 	}
 	return &V2ImageParams{
-		ModelName:      model,
-		Prompt:         prompt,
-		N:              &n,
-		Image:          img,
-		AspectRatio:    p.GetString(internal.ParamAspectRatio),
-		NegativePrompt: p.GetString(internal.ParamNegativePrompt),
+		ModelName:       model,
+		Prompt:          prompt,
+		N:               &n,
+		Image:           img,
+		ReferenceImages: refs,
+		AspectRatio:     p.GetString(internal.ParamAspectRatio),
+		NegativePrompt:  p.GetString(internal.ParamNegativePrompt),
 	}, nil
 }
 
-func buildV21ImageParams(model, prompt string, p internal.ParamsReader) *V21ImageParams {
-	n := internal.GetInt(p, internal.ParamN)
+func buildV21ImageParams(model, prompt string, p internal.ParamsReader, n int) (ImageParams, error) {
 	img := p.GetString(internal.ParamImage)
 	refs := internal.GetStringSlice(p, internal.ParamReferenceImages)
 	subjectList := internal.GetSubjectImageList(p, internal.ParamSubjectImageList)
 	sceneImg := p.GetString(internal.ParamSceneImage)
 	styleImg := p.GetString(internal.ParamStyleImage)
+
+	if _, ok := p.Get(internal.ParamSubjectImageList); ok && len(subjectList) > 0 && (len(subjectList) < 2 || len(subjectList) > 4) {
+		return nil, fmt.Errorf("kling: %s subject_image_list requires 2 to 4 images", model)
+	}
 
 	var subjectImageList []SubjectImageItem
 	var refImages []string
@@ -150,34 +160,36 @@ func buildV21ImageParams(model, prompt string, p internal.ParamsReader) *V21Imag
 	}
 
 	return &V21ImageParams{
-		Prompt:          prompt,
-		N:               &n,
-		Image:           img,
-		ReferenceImages: refImages,
+		Prompt:           prompt,
+		N:                &n,
+		Image:            img,
+		ReferenceImages:  refImages,
 		SubjectImageList: subjectImageList,
 		SceneImage:       sceneImg,
 		StyleImage:       styleImg,
 		AspectRatio:      p.GetString(internal.ParamAspectRatio),
 		NegativePrompt:   p.GetString(internal.ParamNegativePrompt),
-	}
+	}, nil
 }
 
-func buildO1ImageParams(model, prompt string, p internal.ParamsReader) *O1ImageParams {
-	n := internal.GetInt(p, internal.ParamN)
+func buildO1ImageParams(model, prompt string, p internal.ParamsReader, n int) (ImageParams, error) {
 	if n < 1 {
 		n = 1
+	}
+	refImages := internal.GetStringSlice(p, internal.ParamReferenceImages)
+	if len(refImages) > 10 {
+		return nil, fmt.Errorf("kling: %s reference_images accepts at most 10 images", model)
 	}
 	return &O1ImageParams{
 		Prompt:          prompt,
 		N:               n,
 		Resolution:      p.GetString(internal.ParamResolution),
 		AspectRatio:     p.GetString(internal.ParamAspectRatio),
-		ReferenceImages: internal.GetStringSlice(p, internal.ParamReferenceImages),
-	}
+		ReferenceImages: refImages,
+	}, nil
 }
 
-func buildGeminiImageParams(model, prompt string, p internal.ParamsReader) *GeminiImageParams {
-	n := internal.GetInt(p, internal.ParamN)
+func buildGeminiImageParams(model, prompt string, p internal.ParamsReader, n int) *GeminiImageParams {
 	return &GeminiImageParams{
 		ModelName:       model,
 		Prompt:          prompt,
@@ -187,4 +199,15 @@ func buildGeminiImageParams(model, prompt string, p internal.ParamsReader) *Gemi
 		Image:           p.GetString(internal.ParamImage),
 		ReferenceImages: internal.GetStringSlice(p, internal.ParamReferenceImages),
 	}
+}
+
+func validateImageCount(model string, n int) error {
+	max := 10
+	if model == internal.ModelKlingImageO1 {
+		max = 9
+	}
+	if n > max {
+		return fmt.Errorf("kling: %s n must be between 1 and %d", model, max)
+	}
+	return nil
 }

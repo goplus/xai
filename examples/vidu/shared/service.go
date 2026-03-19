@@ -53,6 +53,17 @@ func (s *Service) ViduService() *vidu.Service {
 	return nil
 }
 
+// GetTask passes through task resume support for wrapped services so examples can
+// persist task IDs and continue polling through xai.GetTask.
+func (s *Service) GetTask(ctx context.Context, model xai.Model, action xai.Action, taskID string) (xai.OperationResponse, error) {
+	if sp, ok := s.Service.(interface {
+		GetTask(context.Context, xai.Model, xai.Action, string) (xai.OperationResponse, error)
+	}); ok {
+		return sp.GetTask(ctx, model, action, taskID)
+	}
+	return nil, xai.ErrNotSupported
+}
+
 // NewService creates a Vidu Service.
 // If QINIU_API_KEY is set, real Qiniu backend is used.
 // Otherwise, a local async mock executor is used.

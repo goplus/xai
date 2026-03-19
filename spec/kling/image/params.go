@@ -67,12 +67,13 @@ type SubjectImageItem struct {
 // kling-v2-new: single image only (img2img).
 type V2ImageParams struct {
 	imageParamsMarker
-	ModelName        string             `json:"model"` // kling-v2 or kling-v2-new
-	Prompt           string             `json:"prompt"`
-	N                *int               `json:"n,omitempty"`
-	Image            string             `json:"image,omitempty"`
-	AspectRatio      string             `json:"aspect_ratio,omitempty"`
-	NegativePrompt   string             `json:"negative_prompt,omitempty"`
+	ModelName       string   `json:"model"` // kling-v2 or kling-v2-new
+	Prompt          string   `json:"prompt"`
+	N               *int     `json:"n,omitempty"`
+	Image           string   `json:"image,omitempty"`
+	ReferenceImages []string `json:"reference_images,omitempty"`
+	AspectRatio     string   `json:"aspect_ratio,omitempty"`
+	NegativePrompt  string   `json:"negative_prompt,omitempty"`
 	// Multi-image edit (kling-v2 only, 2-4 images)
 	SubjectImageList []SubjectImageItem `json:"subject_image_list,omitempty"`
 	SceneImage       string             `json:"scene_image,omitempty"`
@@ -85,15 +86,15 @@ func (p *V2ImageParams) Model() string { return p.ModelName }
 // Supports single image (generations) or multi-image (edits via subject_image_list).
 type V21ImageParams struct {
 	imageParamsMarker
-	Prompt          string             `json:"prompt"`
-	N               *int               `json:"n,omitempty"`
-	Image           string             `json:"image,omitempty"`
-	ReferenceImages []string           `json:"reference_images,omitempty"`
+	Prompt           string             `json:"prompt"`
+	N                *int               `json:"n,omitempty"`
+	Image            string             `json:"image,omitempty"`
+	ReferenceImages  []string           `json:"reference_images,omitempty"`
 	SubjectImageList []SubjectImageItem `json:"subject_image_list,omitempty"`
-	SceneImage      string             `json:"scene_image,omitempty"`
-	StyleImage      string             `json:"style_image,omitempty"`
-	AspectRatio     string             `json:"aspect_ratio,omitempty"`
-	NegativePrompt  string             `json:"negative_prompt,omitempty"`
+	SceneImage       string             `json:"scene_image,omitempty"`
+	StyleImage       string             `json:"style_image,omitempty"`
+	AspectRatio      string             `json:"aspect_ratio,omitempty"`
+	NegativePrompt   string             `json:"negative_prompt,omitempty"`
 }
 
 func (p *V21ImageParams) Model() string { return internal.ModelKlingV21 }
@@ -101,10 +102,10 @@ func (p *V21ImageParams) Model() string { return internal.ModelKlingV21 }
 // O1ImageParams for kling-image-o1.
 type O1ImageParams struct {
 	imageParamsMarker
-	Prompt         string   `json:"prompt"`
-	N              int      `json:"n,omitempty"`
-	Resolution     string   `json:"resolution,omitempty"`
-	AspectRatio    string   `json:"aspect_ratio,omitempty"`
+	Prompt          string   `json:"prompt"`
+	N               int      `json:"n,omitempty"`
+	Resolution      string   `json:"resolution,omitempty"`
+	AspectRatio     string   `json:"aspect_ratio,omitempty"`
 	ReferenceImages []string `json:"reference_images,omitempty"`
 }
 
@@ -113,12 +114,12 @@ func (p *O1ImageParams) Model() string { return internal.ModelKlingImageO1 }
 // GeminiImageParams for gemini image models (e.g. via qiniu).
 type GeminiImageParams struct {
 	imageParamsMarker
-	ModelName      string   `json:"model"`
-	Prompt         string   `json:"prompt"`
-	N              *int     `json:"n,omitempty"`
-	Size           string   `json:"size,omitempty"`
-	AspectRatio    string   `json:"aspect_ratio,omitempty"`
-	Image          string   `json:"image,omitempty"`
+	ModelName       string   `json:"model"`
+	Prompt          string   `json:"prompt"`
+	N               *int     `json:"n,omitempty"`
+	Size            string   `json:"size,omitempty"`
+	AspectRatio     string   `json:"aspect_ratio,omitempty"`
+	Image           string   `json:"image,omitempty"`
 	ReferenceImages []string `json:"reference_images,omitempty"`
 }
 

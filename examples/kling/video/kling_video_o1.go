@@ -31,6 +31,7 @@
 //   - "end_frame" (ImageTypeEndFrame): 尾帧
 //   - 首尾帧规则：有尾帧时必须有首帧，暂不支持仅尾帧
 //   - 数量限制：有参考视频时最多 4 张，无参考视频时最多 7 张
+//   - 兼容旧参数：ParamInputReference / ParamImageTail 会自动转换为首尾帧 image_list
 package main
 
 import (
@@ -98,20 +99,18 @@ func RunKlingVideoO1() {
 	// =========================================================================
 	// 4. keyframe - 首尾帧生成视频
 	// =========================================================================
-	// 同时指定首帧和尾帧，生成平滑过渡视频
+	// 使用兼容写法：旧的首帧/尾帧参数会自动转换为 image_list
 	// 注意：有尾帧时必须有首帧
 	fmt.Println("--- keyframe (首尾帧) ---")
 	op4, _ := svc.Operation(xai.Model(kling.ModelKlingVideoO1), xai.GenVideo)
 	op4.Params().
 		Set(kling.ParamPrompt, "视频连贯过渡").
-		Set(kling.ParamImageList, []kling.ImageInput{
-			{Image: DemoVideoURLs.FirstFrame, Type: kling.ImageTypeFirstFrame},
-			{Image: DemoVideoURLs.EndFrame, Type: kling.ImageTypeEndFrame},
-		}).
+		Set(kling.ParamInputReference, DemoVideoURLs.FirstFrame).
+		Set(kling.ParamImageTail, DemoVideoURLs.EndFrame).
 		Set(kling.ParamSize, kling.Size1920x1080).
 		Set(kling.ParamMode, kling.ModePro)
 	results4, _ := xai.Call(ctx, svc, op4, svc.Options(), nil)
-	printVideoResults("kling-video-o1", "keyframe", results4)
+	printVideoResults("kling-video-o1", "keyframe_legacy_frames", results4)
 
 	// =========================================================================
 	// 5. multi_ref - 多图参考生成视频

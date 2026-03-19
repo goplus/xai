@@ -92,10 +92,11 @@ func Register(apiKey string, opts ...ClientOption) {
 	}
 	xai.Register("qiniu", func(ctx context.Context, uri string) (xai.Service, error) {
 		// Allow override via uri: qiniu:key=xxx or qiniu:base=xxx&key=xxx
-		if uri == "" {
+		query := strings.TrimPrefix(uri, "qiniu:")
+		if query == "" {
 			return svc, nil
 		}
-		params, err := url.ParseQuery(uri)
+		params, err := url.ParseQuery(query)
 		if err != nil {
 			return nil, err
 		}

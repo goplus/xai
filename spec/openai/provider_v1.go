@@ -24,7 +24,9 @@ import (
 	"fmt"
 	"io"
 	"iter"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 	"unsafe"
 
@@ -85,6 +87,11 @@ func (p *v1Provider) genWithExtendedParsing(ctx context.Context, params openai.C
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+p.apiKey)
+	log.Printf("[openai] curl command:\n%s", buildCurlCommand(httpReq, body))
+
+	if os.Getenv("QINIU_MOCK_CURL") != "" {
+		return mockExtendedChatCompletionResponse(body)
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(httpReq)
@@ -103,6 +110,75 @@ func (p *v1Provider) genWithExtendedParsing(ctx context.Context, params openai.C
 	return parseChatCompletionResponseExtended(respBody)
 }
 
+func mockExtendedChatCompletionResponse(body []byte) (genResponse, error) {
+	hasTools := bytes.Contains(body, []byte(`"tools"`))
+	hasToolResult := bytes.Contains(body, []byte(`"role":"tool"`))
+	hasImageURL := bytes.Contains(body, []byte(`"image_url"`))
+
+	switch {
+	case hasTools && !hasToolResult:
+		return parseChatCompletionResponseExtended([]byte(`{
+			"id":"chatcmpl-mock-tool",
+			"choices":[{
+				"index":0,
+				"finish_reason":"tool_calls",
+				"message":{
+					"role":"assistant",
+					"content":"",
+					"tool_calls":[{
+						"id":"call_mock_weather",
+						"type":"function",
+						"function":{
+							"name":"get_weather",
+							"arguments":"{\"city\":\"Shanghai\"}"
+						}
+					}]
+				}
+			}]
+		}`))
+	case hasTools && hasToolResult:
+		return parseChatCompletionResponseExtended([]byte(`{
+			"id":"chatcmpl-mock-tool-final",
+			"choices":[{
+				"index":0,
+				"finish_reason":"stop",
+				"message":{
+					"role":"assistant",
+					"content":"Shanghai is sunny and 26C."
+				}
+			}]
+		}`))
+	case hasImageURL:
+		return parseChatCompletionResponseExtended([]byte(`{
+			"id":"chatcmpl-mock-image",
+			"choices":[{
+				"index":0,
+				"finish_reason":"stop",
+				"message":{
+					"role":"assistant",
+					"content":"I changed the image to a red style.",
+					"images":[{
+						"type":"image_url",
+						"image_url":{"url":"data:image/png;base64,aGVsbG8="}
+					}]
+				}
+			}]
+		}`))
+	default:
+		return parseChatCompletionResponseExtended([]byte(`{
+			"id":"chatcmpl-mock-text",
+			"choices":[{
+				"index":0,
+				"finish_reason":"stop",
+				"message":{
+					"role":"assistant",
+					"content":"Gemini mock response."
+				}
+			}]
+		}`))
+	}
+}
+
 func (p *v1Provider) GenStream(ctx context.Context, req *genRequest, opts []option.RequestOption) iter.Seq2[genResponse, error] {
 	params := p.buildParams(req)
 	stream := p.chat.NewStreaming(ctx, params, opts...)
@@ -116,9 +192,9 @@ type chatCompletionResponseRaw struct {
 		Index        int32  `json:"index"`
 		FinishReason string `json:"finish_reason"`
 		Message      struct {
-			Role      string `json:"role"`
-			Content   string `json:"content"`
-			Images    []struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+			Images  []struct {
 				Type     string `json:"type"`
 				ImageURL struct {
 					URL string `json:"url"`
