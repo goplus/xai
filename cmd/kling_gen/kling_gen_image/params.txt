@@ -1,0 +1,15 @@
+image_list array: OmniImage  // Reference Image List
+element_list array: OmniImage imageGeneration  // Reference Element List based on element ID configuration
+result_type string: OmniImage  // Control whether to generate a single image or a series of images
+series_amount int: OmniImage  // Number of images in a series
+watermark_info object: OmniImage imageGeneration multiImageToImage  // Whether to generate watermarked results simultaneously
+callback_url string: OmniImage imageGeneration multiImageToImage  // The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes
+external_task_id string: OmniImage imageGeneration multiImageToImage  // Customized Task ID
+negative_prompt string: imageGeneration  // Negative text prompt
+image string: imageGeneration  // Reference Image
+image_reference string: imageGeneration  // Image reference type
+image_fidelity float: imageGeneration  // Face reference intensity for user-uploaded images during generation
+human_fidelity float: imageGeneration  // Facial reference intensity, refers to the similarity of the facial features of the person in the reference image
+subject_image_list array: multiImageToImage  // Subject Reference Images
+scene_image string: multiImageToImage  // Scene Reference Image
+style_image string: multiImageToImage  // Style Reference Image

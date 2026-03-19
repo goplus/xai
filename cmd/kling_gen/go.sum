@@ -1,0 +1,8 @@
+github.com/goplus/dql v0.5.0 h1:Xvn8lm3et8eR3c26i5R0AwW0vmKcpMmdKxAiDE+/2XY=
+github.com/goplus/dql v0.5.0/go.mod h1:ucKwMJyXybUKcCz9RTITL4bW3qkpEViHhYFDwJVEv2Y=
+github.com/goplus/xgo v1.6.7-0.20260318051537-98c85f111d9b h1:l9X4pXaWz9Q9/3pFZvVYDERvMGr4wh6tZPaMa7DjGts=
+github.com/goplus/xgo v1.6.7-0.20260318051537-98c85f111d9b/go.mod h1:8wsvmW48dGeZ+rCMqlk/MsNecp/snz/tUqNkXaLoe6U=
+github.com/qiniu/x v1.16.5 h1:+/cSm9m8F8sx6zJ4ylmsuhux8xVpxMHP/pzL8xv1Y9w=
+github.com/qiniu/x v1.16.5/go.mod h1:AiovSOCaRijaf3fj+0CBOpR1457pn24b0Vdb1JpwhII=
+golang.org/x/net v0.52.0 h1:He/TN1l0e4mmR3QqHMT2Xab3Aj3L9qjbhRm78/6jrW0=
+golang.org/x/net v0.52.0/go.mod h1:R1MAz7uMZxVMualyPXb+VaqGSa3LIaUqk0eEt3w36Sw=
