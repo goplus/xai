@@ -29,8 +29,14 @@ type genParams struct {
 	config   genai.GenerateContentConfig
 }
 
-func (p *genParams) System(v xai.TextBuilder) xai.ParamBuilder {
-	p.config.SystemInstruction = buildTexts(v)
+func (p *genParams) System(texts ...string) xai.ParamBuilder {
+	parts := make([]*genai.Part, len(texts))
+	for i, text := range texts {
+		parts[i] = genai.NewPartFromText(text)
+	}
+	p.config.SystemInstruction = &genai.Content{
+		Parts: parts,
+	}
 	return p
 }
 

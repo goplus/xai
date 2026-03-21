@@ -114,32 +114,3 @@ func (p *msgBuilder) Compaction(data string) xai.MsgBuilder {
 }
 
 // -----------------------------------------------------------------------------
-
-type textBuilder struct {
-	parts []*genai.Part
-}
-
-func (p *textBuilder) Text(text string) xai.TextBuilder {
-	p.parts = append(p.parts, genai.NewPartFromText(text))
-	return p
-}
-
-func (p *Service) Texts(texts ...string) xai.TextBuilder {
-	var parts []*genai.Part
-	if len(texts) > 0 {
-		parts = make([]*genai.Part, len(texts))
-		for i, text := range texts {
-			parts[i] = genai.NewPartFromText(text)
-		}
-	}
-	return &textBuilder{parts: parts}
-}
-
-func buildTexts(in xai.TextBuilder) *genai.Content {
-	// SystemInstruction set Role to "system" by default, so we don't need to set it here.
-	return &genai.Content{
-		Parts: in.(*textBuilder).parts,
-	}
-}
-
-// -----------------------------------------------------------------------------

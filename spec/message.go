@@ -46,10 +46,6 @@ type DocumentBuilder interface {
 	PlainText(text string) DocumentData
 }
 
-type TextBuilder interface {
-	Text(text string) TextBuilder
-}
-
 type MsgBuilder interface {
 	Text(text string) MsgBuilder
 

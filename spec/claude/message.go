@@ -122,29 +122,3 @@ func (p *msgBuilder) Compaction(data string) xai.MsgBuilder {
 }
 
 // -----------------------------------------------------------------------------
-
-type textBuilder struct {
-	content []anthropic.BetaTextBlockParam
-}
-
-func (p *textBuilder) Text(text string) xai.TextBuilder {
-	p.content = append(p.content, anthropic.BetaTextBlockParam{Text: text})
-	return p
-}
-
-func (p *Service) Texts(texts ...string) xai.TextBuilder {
-	var content []anthropic.BetaTextBlockParam
-	if len(texts) > 0 {
-		content = make([]anthropic.BetaTextBlockParam, len(texts))
-		for i, text := range texts {
-			content[i].Text = text
-		}
-	}
-	return &textBuilder{content: content}
-}
-
-func buildTexts(in xai.TextBuilder) []anthropic.BetaTextBlockParam {
-	return in.(*textBuilder).content
-}
-
-// -----------------------------------------------------------------------------

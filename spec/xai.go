@@ -51,7 +51,7 @@ type ParamBuilder interface {
 	//
 	// A system prompt is a way of providing context and instructions to AI, such
 	// as specifying a particular goal or role.
-	System(TextBuilder) ParamBuilder
+	System(prompt ...string) ParamBuilder
 
 	// Input messages.
 	//
@@ -288,11 +288,6 @@ type Service interface {
 
 	// Docs returns a `DocumentBuilder` that can be used to create document content.
 	Docs() DocumentBuilder
-
-	// Texts creates a text content block with the given texts. Each text will be
-	// treated as a separate text item within the block. The returned `TextBuilder`
-	// can be used to further customize the text content block.
-	Texts(texts ...string) TextBuilder
 
 	// UserMsg creates a message with the `user` role, which represents input from
 	// a user in a conversation. The content of the message can be built using the

@@ -49,10 +49,6 @@ func (p *Service[T]) Docs() xai.DocumentBuilder {
 	panic("unsupported")
 }
 
-func (p *Service[T]) Texts(texts ...string) xai.TextBuilder {
-	panic("unsupported")
-}
-
 func (p *Service[T]) UserMsg() xai.MsgBuilder {
 	panic("unsupported")
 }

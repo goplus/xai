@@ -140,29 +140,3 @@ func (p *msgBuilder) Compaction(data string) xai.MsgBuilder {
 }
 
 // -----------------------------------------------------------------------------
-
-type textBuilder struct {
-	content responses.ResponseInputMessageContentListParam
-}
-
-func (p *textBuilder) Text(text string) xai.TextBuilder {
-	p.content = append(p.content, responses.ResponseInputContentParamOfInputText(text))
-	return p
-}
-
-func (p *Service) Texts(texts ...string) xai.TextBuilder {
-	var content responses.ResponseInputMessageContentListParam
-	if len(texts) > 0 {
-		content = make(responses.ResponseInputMessageContentListParam, len(texts))
-		for i, text := range texts {
-			content[i] = responses.ResponseInputContentParamOfInputText(text)
-		}
-	}
-	return &textBuilder{content: content}
-}
-
-func buildTexts(in xai.TextBuilder) responses.ResponseInputMessageContentListParam {
-	return in.(*textBuilder).content
-}
-
-// -----------------------------------------------------------------------------

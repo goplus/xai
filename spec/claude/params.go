@@ -28,8 +28,12 @@ type params struct {
 	params anthropic.BetaMessageNewParams
 }
 
-func (p *params) System(v xai.TextBuilder) xai.ParamBuilder {
-	p.params.System = buildTexts(v)
+func (p *params) System(texts ...string) xai.ParamBuilder {
+	content := make([]anthropic.BetaTextBlockParam, len(texts))
+	for i, text := range texts {
+		content[i].Text = text
+	}
+	p.params.System = content
 	return p
 }
 

@@ -31,8 +31,12 @@ type params struct {
 	msgs   []xai.MsgBuilder
 }
 
-func (p *params) System(v xai.TextBuilder) xai.ParamBuilder {
-	p.sys = buildTexts(v)
+func (p *params) System(texts ...string) xai.ParamBuilder {
+	content := make(responses.ResponseInputMessageContentListParam, len(texts))
+	for i, text := range texts {
+		content[i] = responses.ResponseInputContentParamOfInputText(text)
+	}
+	p.sys = content
 	return p
 }
 
