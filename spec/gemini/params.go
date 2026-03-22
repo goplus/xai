@@ -17,6 +17,9 @@
 package gemini
 
 import (
+	"context"
+	"time"
+
 	xai "github.com/goplus/xai/spec"
 	"github.com/goplus/xai/spec/util"
 	"google.golang.org/genai"
@@ -29,6 +32,7 @@ type genParams struct {
 	contents []*genai.Content
 	config   genai.GenerateContentConfig
 	pconfig  *util.Params[adapter]
+	ctx      context.Context
 }
 
 /*
@@ -118,7 +122,7 @@ type genParams struct {
 // Optional. Settings for prompt and response sanitization using the Model Armor
 // service. If supplied, safety_settings must not be supplied.
 */
-func (p *genParams) Set(name string, val any) xai.ParamBuilder {
+func (p *genParams) Set(name string, val any) xai.GenParams {
 	if p.pconfig == nil {
 		p.pconfig = util.NewParams[adapter](&p.config)
 	}
@@ -126,7 +130,7 @@ func (p *genParams) Set(name string, val any) xai.ParamBuilder {
 	return p
 }
 
-func (p *genParams) System(texts ...string) xai.ParamBuilder {
+func (p *genParams) System(texts ...string) xai.GenParams {
 	parts := make([]*genai.Part, len(texts))
 	for i, text := range texts {
 		parts[i] = genai.NewPartFromText(text)
@@ -137,48 +141,73 @@ func (p *genParams) System(texts ...string) xai.ParamBuilder {
 	return p
 }
 
-func (p *genParams) Messages(msgs ...xai.MsgBuilder) xai.ParamBuilder {
+func (p *genParams) Messages(msgs ...xai.MsgBuilder) xai.GenParams {
 	p.contents = buildMessages(msgs)
 	return p
 }
 
-func (p *genParams) Tools(tools ...xai.ToolBase) xai.ParamBuilder {
+func (p *genParams) Tools(tools ...xai.ToolBase) xai.GenParams {
 	p.config.Tools = buildTools(tools)
 	return p
 }
 
-func (p *genParams) Model(model xai.Model) xai.ParamBuilder {
+func (p *genParams) Model(model xai.Model) xai.GenParams {
 	p.model = string(model) // TODO(xsw): validate model
 	return p
 }
 
-func (p *genParams) MaxOutputTokens(v int64) xai.ParamBuilder {
+func (p *genParams) MaxOutputTokens(v int64) xai.GenParams {
 	p.config.MaxOutputTokens = int32(v)
 	return p
 }
 
-func (p *genParams) Compact(maxInputTokens int64) xai.ParamBuilder {
+func (p *genParams) Compact(maxInputTokens int64) xai.GenParams {
 	// gemini does not support compaction, so we just ignore this parameter for now.
 	return p
 }
 
-func (p *genParams) Temperature(v float64) xai.ParamBuilder {
+func (p *genParams) Temperature(v float64) xai.GenParams {
 	p.config.Temperature = genai.Ptr(float32(v))
 	return p
 }
 
-func (p *genParams) TopP(v float64) xai.ParamBuilder {
+func (p *genParams) TopP(v float64) xai.GenParams {
 	p.config.TopP = genai.Ptr(float32(v)) // TODO(xsw): validate top_p
 	return p
 }
 
-func (p *Service) Params() xai.ParamBuilder {
+func (p *genParams) BaseURL(base string) xai.GenParams {
+	if p.config.HTTPOptions == nil {
+		p.config.HTTPOptions = &genai.HTTPOptions{}
+	}
+	p.config.HTTPOptions.BaseURL = base
+	return p
+}
+
+func (p *genParams) Timeout(timeout time.Duration) xai.GenParams {
+	if p.config.HTTPOptions == nil {
+		p.config.HTTPOptions = &genai.HTTPOptions{}
+	}
+	p.config.HTTPOptions.Timeout = &timeout
+	return p
+}
+
+func (p *genParams) Ctx(ctx context.Context) xai.GenParams {
+	p.ctx = ctx
+	return p
+}
+
+func (p *Service) GenParams() xai.GenParams {
 	return &genParams{}
 }
 
-func buildGenParams(in xai.ParamBuilder) (string, []*genai.Content, *genai.GenerateContentConfig) {
+func buildGenParams(in xai.GenParams) (context.Context, string, []*genai.Content, *genai.GenerateContentConfig) {
 	p := in.(*genParams)
-	return p.model, p.contents, &p.config
+	ctx := p.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return ctx, p.model, p.contents, &p.config
 }
 
 // -----------------------------------------------------------------------------

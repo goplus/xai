@@ -41,16 +41,18 @@ func (p *Service) Features() xai.Feature {
 
 // -----------------------------------------------------------------------------
 
-func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
-	resp, err := p.messages.New(ctx, buildParams(params), buildOptions(opts)...)
+func (p *Service) Gen(gp xai.GenParams) (xai.GenResponse, error) {
+	ctx, params, opts := buildParams(gp)
+	resp, err := p.messages.New(ctx, params, opts...)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
 	return response{resp}, nil
 }
 
-func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
-	resp := p.messages.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
+func (p *Service) GenStream(gp xai.GenParams) iter.Seq2[xai.GenResponse, error] {
+	ctx, params, opts := buildParams(gp)
+	resp := p.messages.NewStreaming(ctx, params, opts...)
 	return buildRespIter(resp)
 }
 

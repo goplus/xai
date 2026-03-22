@@ -43,10 +43,4 @@ func (p *Service) Options() xai.OptionBuilder {
 	return &options{}
 }
 
-func buildOptions(conf *genai.GenerateContentConfig, opts xai.OptionBuilder) {
-	if v, ok := opts.(*options); ok {
-		conf.HTTPOptions = &v.opts
-	}
-}
-
 // -----------------------------------------------------------------------------

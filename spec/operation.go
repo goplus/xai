@@ -87,6 +87,8 @@ func Wait(ctx context.Context, svc Service, resp OperationResponse, progress fun
 	return resp.Results(), nil
 }
 
+type OptionBuilder = any
+
 // Operation represents a long-running task that may take some time to complete, such as
 // generating a video or editing an image. You can use an `Operation` to set parameters
 // for the action and then call it with a prompt to start the operation.

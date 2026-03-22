@@ -17,9 +17,12 @@
 package claude
 
 import (
+	"context"
 	"reflect"
+	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/anthropics/anthropic-sdk-go/packages/param"
 	xai "github.com/goplus/xai/spec"
 	"github.com/goplus/xai/spec/util"
@@ -69,6 +72,8 @@ func (adapter) FromUnderlying(v any, kind reflect.Kind) any {
 type params struct {
 	params  anthropic.BetaMessageNewParams
 	pparams *util.Params[adapter]
+	opts    []option.RequestOption
+	ctx     context.Context
 }
 
 /*
@@ -148,7 +153,7 @@ type params struct {
 // How the model should use the provided tools. The model can use a specific tool,
 // any available tool, decide by itself, or not use tools at all.
 */
-func (p *params) Set(name string, val any) xai.ParamBuilder {
+func (p *params) Set(name string, val any) xai.GenParams {
 	if p.pparams == nil {
 		p.pparams = util.NewParams[adapter](&p.params)
 	}
@@ -156,7 +161,7 @@ func (p *params) Set(name string, val any) xai.ParamBuilder {
 	return p
 }
 
-func (p *params) System(texts ...string) xai.ParamBuilder {
+func (p *params) System(texts ...string) xai.GenParams {
 	content := make([]anthropic.BetaTextBlockParam, len(texts))
 	for i, text := range texts {
 		content[i].Text = text
@@ -165,27 +170,27 @@ func (p *params) System(texts ...string) xai.ParamBuilder {
 	return p
 }
 
-func (p *params) Messages(msgs ...xai.MsgBuilder) xai.ParamBuilder {
+func (p *params) Messages(msgs ...xai.MsgBuilder) xai.GenParams {
 	p.params.Messages = buildMessages(msgs)
 	return p
 }
 
-func (p *params) Tools(tools ...xai.ToolBase) xai.ParamBuilder {
+func (p *params) Tools(tools ...xai.ToolBase) xai.GenParams {
 	p.params.Tools = buildTools(tools)
 	return p
 }
 
-func (p *params) Model(model xai.Model) xai.ParamBuilder {
+func (p *params) Model(model xai.Model) xai.GenParams {
 	p.params.Model = anthropic.Model(model) // TODO(xsw): validate model
 	return p
 }
 
-func (p *params) MaxOutputTokens(v int64) xai.ParamBuilder {
+func (p *params) MaxOutputTokens(v int64) xai.GenParams {
 	p.params.MaxTokens = v
 	return p
 }
 
-func (p *params) Compact(maxInputTokens int64) xai.ParamBuilder {
+func (p *params) Compact(maxInputTokens int64) xai.GenParams {
 	p.params.Betas = []anthropic.AnthropicBeta{
 		"compact-2026-01-12",
 	}
@@ -199,7 +204,7 @@ func (p *params) Compact(maxInputTokens int64) xai.ParamBuilder {
 	return p
 }
 
-func (p *params) Temperature(v float64) xai.ParamBuilder {
+func (p *params) Temperature(v float64) xai.GenParams {
 	if v > 1 {
 		v = 1 // claude does not support temperature > 1
 	}
@@ -207,19 +212,38 @@ func (p *params) Temperature(v float64) xai.ParamBuilder {
 	return p
 }
 
-func (p *params) TopP(v float64) xai.ParamBuilder {
+func (p *params) TopP(v float64) xai.GenParams {
 	p.params.TopP = param.NewOpt(v)
 	return p
 }
 
-func (p *Service) Params() xai.ParamBuilder {
+func (p *params) BaseURL(base string) xai.GenParams {
+	p.opts = append(p.opts, option.WithBaseURL(base))
+	return p
+}
+
+func (p *params) Timeout(timeout time.Duration) xai.GenParams {
+	p.opts = append(p.opts, option.WithRequestTimeout(timeout))
+	return p
+}
+
+func (p *params) Ctx(ctx context.Context) xai.GenParams {
+	p.ctx = ctx
+	return p
+}
+
+func (p *Service) GenParams() xai.GenParams {
 	return &params{}
 }
 
-func buildParams(in xai.ParamBuilder) anthropic.BetaMessageNewParams {
+func buildParams(in xai.GenParams) (context.Context, anthropic.BetaMessageNewParams, []option.RequestOption) {
 	p := in.(*params)
 	// TODO(xsw): check param values
-	return p.params
+	ctx := p.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return ctx, p.params, p.opts
 }
 
 // -----------------------------------------------------------------------------
