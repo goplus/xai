@@ -18,6 +18,7 @@ package gemini
 
 import (
 	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai/spec/util"
 	"google.golang.org/genai"
 )
 
@@ -27,6 +28,102 @@ type genParams struct {
 	model    string
 	contents []*genai.Content
 	config   genai.GenerateContentConfig
+	pconfig  *util.Params[adapter]
+}
+
+/*
+// TopK float
+// Optional. For each token selection step, the “top_k“ tokens with the
+// highest probabilities are sampled. Then tokens are further filtered based
+// on “top_p“ with the final token selected using temperature sampling. Use
+// a lower number for less random responses and a higher number for more
+// random responses.
+
+// CandidateCount int
+// Optional. Number of response variations to return.
+// If empty, the system will choose a default value (currently 1).
+
+// StopSequences []string
+// Optional. List of strings that tells the model to stop generating text if one
+// of the strings is encountered in the response.
+
+// ResponseLogprobs bool
+// Optional. Whether to return the log probabilities of the tokens that were
+// chosen by the model at each step.
+
+// Logprobs int
+// Optional. Number of top candidate tokens to return the log probabilities for
+// at each generation step.
+
+// PresencePenalty float
+// Optional. Positive values penalize tokens that already appear in the
+// generated text, increasing the probability of generating more diverse
+// content.
+
+// FrequencyPenalty float
+// Optional. Positive values penalize tokens that repeatedly appear in the
+// generated text, increasing the probability of generating more diverse
+// content.
+
+// Seed int
+// Optional. When “seed“ is fixed to a specific number, the model makes a best
+// effort to provide the same response for repeated requests. By default, a
+// random number is used.
+
+// RoutingConfig *GenerationConfigRoutingConfig
+// Optional. Configuration for model router requests.
+
+// ModelSelectionConfig *ModelSelectionConfig
+// Optional. Configuration for model selection.
+
+// SafetySettings []*SafetySetting
+// Optional. Safety settings in the request to block unsafe content in the
+// response.
+
+// ToolConfig *ToolConfig
+// Optional. Associates model output to a specific function call.
+
+// Labels map[string]string
+// Optional. Labels with user-defined metadata to break down billed charges.
+
+// CachedContent string
+// Optional. Resource name of a context cache that can be used in subsequent
+// requests.
+
+// ResponseModalities []string
+// Optional. The requested modalities of the response. Represents the set of
+// modalities that the model can return.
+
+// MediaResolution MediaResolution
+// Optional. If specified, the media resolution specified will be used.
+
+// SpeechConfig *SpeechConfig
+// Optional. The speech generation configuration.
+
+// AudioTimestamp bool
+// Optional. If enabled, audio timestamp will be included in the request to the
+// model.
+
+// ThinkingConfig *ThinkingConfig
+// Optional. The thinking features configuration.
+
+// ImageConfig *ImageConfig
+// Optional. The image generation configuration.
+
+// EnableEnhancedCivicAnswers bool
+// Optional. Enables enhanced civic answers. It may not be available for all
+// models. This field is not supported in Vertex AI.
+
+// ModelArmorConfig *ModelArmorConfig
+// Optional. Settings for prompt and response sanitization using the Model Armor
+// service. If supplied, safety_settings must not be supplied.
+*/
+func (p *genParams) Set(name string, val any) xai.ParamBuilder {
+	if p.pconfig == nil {
+		p.pconfig = util.NewParams[adapter](&p.config)
+	}
+	p.pconfig.Set(name, val)
+	return p
 }
 
 func (p *genParams) System(texts ...string) xai.ParamBuilder {
@@ -65,23 +162,8 @@ func (p *genParams) Compact(maxInputTokens int64) xai.ParamBuilder {
 	return p
 }
 
-func (p *genParams) Container(v string) xai.ParamBuilder {
-	// TODO(xsw): validate container
-	return p
-}
-
-func (p *genParams) InferenceGeo(v string) xai.ParamBuilder {
-	// TODO(xsw): validate inference geo
-	return p
-}
-
 func (p *genParams) Temperature(v float64) xai.ParamBuilder {
 	p.config.Temperature = genai.Ptr(float32(v))
-	return p
-}
-
-func (p *genParams) TopK(v int64) xai.ParamBuilder {
-	p.config.TopK = genai.Ptr(float32(v)) // TODO(xsw): validate top_k
 	return p
 }
 

@@ -47,6 +47,8 @@ type OptionBuilder interface {
 // -----------------------------------------------------------------------------
 
 type ParamBuilder interface {
+	Set(name string, val any) ParamBuilder
+
 	// System prompt.
 	//
 	// A system prompt is a way of providing context and instructions to AI, such
@@ -149,13 +151,6 @@ type ParamBuilder interface {
 	// The format of the content is provider-specific.
 	Compact(maxInputTokens int64) ParamBuilder
 
-	// Container identifier for reuse across requests.
-	Container(string) ParamBuilder
-
-	// Specifies the geographic region for inference processing. If not specified, the
-	// workspace's `default_inference_geo` is used.
-	InferenceGeo(string) ParamBuilder
-
 	// Amount of randomness injected into the response.
 	//
 	// Defaults to `1.0`. Ranges from `0.0` to `1.0`. Use `temperature` closer to `0.0`
@@ -165,15 +160,6 @@ type ParamBuilder interface {
 	// Note that even with `temperature` of `0.0`, the results will not be fully
 	// deterministic.
 	Temperature(float64) ParamBuilder
-
-	// Only sample from the top K options for each subsequent token.
-	//
-	// Used to remove "long tail" low probability responses.
-	// [Learn more technical details here](https://towardsdatascience.com/how-to-sample-from-language-models-682bceb97277).
-	//
-	// Recommended for advanced use cases only. You usually only need to use
-	// `temperature`.
-	TopK(int64) ParamBuilder
 
 	// Use nucleus sampling.
 	//

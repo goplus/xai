@@ -17,15 +17,143 @@
 package claude
 
 import (
+	"reflect"
+
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/packages/param"
 	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai/spec/util"
 )
 
 // -----------------------------------------------------------------------------
 
+type adapter struct{}
+
+func (adapter) SetBasicOpt(fld, v reflect.Value, vkind reflect.Kind) (ok bool) {
+	ok = fld.Kind() == reflect.Struct // is param.Opt
+	if ok {
+		setBasicOpt(fld.Addr().Interface(), v, vkind)
+	}
+	return
+}
+
+func setBasicOpt(fld any, v reflect.Value, vkind reflect.Kind) {
+	switch fld := fld.(type) {
+	case *param.Opt[string]:
+		*fld = param.NewOpt(v.String())
+	case *param.Opt[int64]:
+		*fld = param.NewOpt(v.Int())
+	case *param.Opt[float64]:
+		if vkind >= reflect.Int && vkind <= reflect.Int64 {
+			*fld = param.NewOpt(float64(v.Int()))
+		} else {
+			*fld = param.NewOpt(v.Float())
+		}
+	case *param.Opt[bool]:
+		*fld = param.NewOpt(v.Bool())
+	default:
+		panic("unsupported opt type")
+	}
+}
+
+func (adapter) ToUnderlying(val any) any {
+	panic("todo")
+}
+
+func (adapter) FromUnderlying(v any, kind reflect.Kind) any {
+	panic("todo")
+}
+
+// -----------------------------------------------------------------------------
+
 type params struct {
-	params anthropic.BetaMessageNewParams
+	params  anthropic.BetaMessageNewParams
+	pparams *util.Params[adapter]
+}
+
+/*
+// InferenceGeo string
+// Specifies the geographic region for inference processing. If not specified, the
+// workspace's `default_inference_geo` is used.
+
+// TopK int
+// Only sample from the top K options for each subsequent token.
+//
+// Used to remove "long tail" low probability responses.
+// [Learn more technical details here](https://towardsdatascience.com/how-to-sample-from-language-models-682bceb97277).
+//
+// Recommended for advanced use cases only. You usually only need to use
+// `temperature`.
+
+// Container BetaMessageNewParamsContainerUnion
+// Container identifier for reuse across requests.
+
+// Speed BetaMessageNewParamsSpeed
+// The inference speed mode for this request. `"fast"` enables high
+// output-tokens-per-second inference.
+//
+// Any of "standard", "fast".
+
+// CacheControl BetaCacheControlEphemeralParam
+// Top-level cache control automatically applies a cache_control marker to the last
+// cacheable block in the request.
+
+// ContextManagement BetaContextManagementConfigParam
+// Context management configuration.
+//
+// This allows you to control how Claude manages context across multiple requests,
+// such as whether to clear function results or not.
+
+// MCPServers []BetaRequestMCPServerURLDefinitionParam
+// MCP servers to be utilized in this request
+
+// Metadata BetaMetadataParam
+// An object describing metadata about the request.
+
+// OutputConfig BetaOutputConfigParam
+// Configuration options for the model's output, such as the output format.
+
+// ServiceTier BetaMessageNewParamsServiceTier
+// Determines whether to use priority capacity (if available) or standard capacity
+// for this request.
+//
+// Anthropic offers different levels of service for your API requests. See
+// [service-tiers](https://docs.claude.com/en/api/service-tiers) for details.
+//
+// Any of "auto", "standard_only".
+
+// StopSequences []string
+// Custom text sequences that will cause the model to stop generating.
+//
+// Our models will normally stop when they have naturally completed their turn,
+// which will result in a response `stop_reason` of `"end_turn"`.
+//
+// If you want the model to stop generating when it encounters custom strings of
+// text, you can use the `stop_sequences` parameter. If the model encounters one of
+// the custom sequences, the response `stop_reason` value will be `"stop_sequence"`
+// and the response `stop_sequence` value will contain the matched stop sequence.
+
+// Thinking BetaThinkingConfigParamUnion
+// Configuration for enabling Claude's extended thinking.
+//
+// When enabled, responses include `thinking` content blocks showing Claude's
+// thinking process before the final answer. Requires a minimum budget of 1,024
+// tokens and counts towards your `max_tokens` limit.
+//
+// See
+// [extended thinking](https://docs.claude.com/en/docs/build-with-claude/extended-thinking)
+// for details.
+
+// ToolChoice BetaToolChoiceUnionParam
+// How the model should use the provided tools. The model can use a specific tool,
+// any available tool, decide by itself, or not use tools at all.
+*/
+func (p *params) Set(name string, val any) xai.ParamBuilder {
+	if p.pparams == nil {
+		p.pparams = util.NewParams[adapter](&p.params)
+	}
+	p.pparams.Set(name, val)
+	return p
 }
 
 func (p *params) System(texts ...string) xai.ParamBuilder {
@@ -71,27 +199,11 @@ func (p *params) Compact(maxInputTokens int64) xai.ParamBuilder {
 	return p
 }
 
-func (p *params) Container(v string) xai.ParamBuilder {
-	panic("todo")
-	// p.params.Container = param.NewOpt(v)
-	// return p
-}
-
-func (p *params) InferenceGeo(v string) xai.ParamBuilder {
-	p.params.InferenceGeo = param.NewOpt(v)
-	return p
-}
-
 func (p *params) Temperature(v float64) xai.ParamBuilder {
 	if v > 1 {
 		v = 1 // claude does not support temperature > 1
 	}
 	p.params.Temperature = param.NewOpt(v)
-	return p
-}
-
-func (p *params) TopK(v int64) xai.ParamBuilder {
-	p.params.TopK = param.NewOpt(v)
 	return p
 }
 
