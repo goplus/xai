@@ -14,21 +14,7 @@
  * limitations under the License.
  */
 
-package xaitest
+package main
 
-import (
-	"context"
-	"testing"
-
-	xai "github.com/goplus/xai/spec"
-)
-
-// Do runs the test cases for xai.
-func Do(t *testing.T, ctx context.Context, uri string) {
-	ai, err := xai.New(ctx, uri)
-	if err != nil {
-		t.Fatalf("failed to create xai client: %v\n", err)
-	}
-	// TODO(xsw): implement test cases for xai.
-	_ = ai
+func main() {
 }

@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package xaitest
+package openai
 
-import (
-	"context"
-	"testing"
+import xai "github.com/goplus/xai/spec"
 
-	xai "github.com/goplus/xai/spec"
-)
+// -----------------------------------------------------------------------------
 
-// Do runs the test cases for xai.
-func Do(t *testing.T, ctx context.Context, uri string) {
-	ai, err := xai.New(ctx, uri)
-	if err != nil {
-		t.Fatalf("failed to create xai client: %v\n", err)
-	}
-	// TODO(xsw): implement test cases for xai.
-	_ = ai
+func (p *Service) Actions(model xai.Model) []xai.Action {
+	panic("todo")
 }
+
+func (p *Service) Operation(model xai.Model, action xai.Action) (op xai.Operation, err error) {
+	panic("todo")
+}
+
+// -----------------------------------------------------------------------------
