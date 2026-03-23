@@ -20,7 +20,7 @@ import (
 	"context"
 	"iter"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // -----------------------------------------------------------------------------
@@ -29,15 +29,15 @@ func (p *Service[T]) Features() xai.Feature {
 	return xai.FeatureOperation
 }
 
-func (p *Service[T]) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
+func (p *Service[T]) Gen(ctx context.Context, params xai.GenParams) (xai.GenResponse, error) {
 	panic("unsupported")
 }
 
-func (p *Service[T]) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
+func (p *Service[T]) GenStream(ctx context.Context, params xai.GenParams) iter.Seq2[xai.GenResponse, error] {
 	panic("unsupported")
 }
 
-func (p *Service[T]) Params() xai.ParamBuilder {
+func (p *Service[T]) GenParams() xai.GenParams {
 	panic("unsupported")
 }
 

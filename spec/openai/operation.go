@@ -16,7 +16,7 @@
 
 package openai
 
-import xai "github.com/goplus/xai/spec"
+import "github.com/goplus/xai"
 
 // -----------------------------------------------------------------------------
 

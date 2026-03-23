@@ -16,7 +16,10 @@
 
 package xai
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // -----------------------------------------------------------------------------
 
@@ -51,40 +54,53 @@ type Results interface {
 	At(i int) Generated
 }
 
+// WaitParams represents the parameters that can be set when waiting for an `Operation`
+// to complete.
+type WaitParams interface {
+	// BaseURL sets the base URL for the API endpoint.
+	BaseURL(string) WaitParams
+
+	// Timeout sets a timeout for the API request. If the request takes longer than
+	// the specified duration, it will be aborted and an error will be returned.
+	Timeout(time.Duration) WaitParams
+
+	// Progress sets a callback function that will be called with the current
+	// `OperationResponse` each time the operation status is checked. This can be
+	// used to provide progress updates to the user while waiting for the operation
+	// to complete.
+	Progress(func(OperationResponse)) WaitParams
+}
+
 // OperationResponse represents the response from an `Operation`. It provides methods
 // to check the status of the operation, retrieve results when it's done.
 type OperationResponse interface {
 	// Done returns true if the operation is completed.
 	Done() bool
 
-	// Sleep sleeps a suggested amount of time before the next retry.
-	Sleep()
-
-	// Retry retries the operation. It returns a new `OperationResponse` that can be
-	// used to check the status of the operation and retrieve results when it's done.
-	// You can call this method multiple times to keep retrying until the operation
-	// is done.
-	Retry(ctx context.Context, svc Service, opts OptionBuilder) (OperationResponse, error)
-
 	// Results returns the result from the operation.
 	Results() Results
+
+	// WaitParams returns a `WaitParams` that can be used to set parameters for waiting
+	// on the operation.
+	WaitParams() WaitParams
+
+	// Wait waits for the operation to be completed. It repeatedly checks the status
+	// of the operation and calls the provided progress function with the current
+	// operation response. Once the operation is done, it returns the results.
+	Wait(ctx context.Context, __xgo_optional_params WaitParams) (Results, error)
 }
 
-// Wait is a helper function that waits for an `OperationResponse` to be done by
-// repeatedly calling `Retry` with appropriate sleeping in between. Once the operation
-// is done, it returns the results of the operation.
-func Wait(ctx context.Context, svc Service, resp OperationResponse, progress func(OperationResponse), opts OptionBuilder) (ret Results, err error) {
-	for !resp.Done() {
-		if progress != nil {
-			progress(resp)
-		}
-		resp.Sleep()
-		resp, err = resp.Retry(ctx, svc, opts)
-		if err != nil {
-			return
-		}
-	}
-	return resp.Results(), nil
+type CallParams interface {
+	// Set sets a parameter for the operation. You can call this method multiple
+	// times to set multiple parameters.
+	Set(name string, val any) CallParams
+
+	// BaseURL sets the base URL for the API endpoint.
+	BaseURL(string) CallParams
+
+	// Timeout sets a timeout for the API request. If the request takes longer than
+	// the specified duration, it will be aborted and an error will be returned.
+	Timeout(time.Duration) CallParams
 }
 
 // Operation represents a long-running task that may take some time to complete, such as
@@ -98,24 +114,16 @@ type Operation interface {
 	// before calling the operation.
 	InputSchema() InputSchema
 
-	// Params returns a `Params` that can be used to set parameters for the operation.
-	Params() Params
+	// CallParams creates a `CallParams` instance that can be used to set parameters for
+	// this operation. You can use the `Set` method of `CallParams` to set parameters by
+	// name and value, and then pass the `CallParams` to the `Call` method to start the
+	// operation.
+	CallParams() CallParams
 
 	// Call starts the operation with the given options. It returns an `OperationResponse`
 	// that can be used to check the status of the operation and retrieve results when
 	// it's done.
-	Call(ctx context.Context, svc Service, opts OptionBuilder) (OperationResponse, error)
-}
-
-// Call is a helper function that calls an `Operation` with the given options, and then
-// waits for the operation to be done. It returns the results of the operation once it's
-// completed.
-func Call(ctx context.Context, svc Service, op Operation, opts OptionBuilder, progress func(OperationResponse)) (ret Results, err error) {
-	resp, err := op.Call(ctx, svc, opts)
-	if err != nil {
-		return
-	}
-	return Wait(ctx, svc, resp, progress, opts)
+	Call(ctx context.Context, params CallParams) (OperationResponse, error)
 }
 
 // -----------------------------------------------------------------------------

@@ -22,10 +22,11 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"time"
 
-	xai "github.com/goplus/xai/spec"
-	"github.com/goplus/xai/spec/util"
+	"github.com/goplus/xai"
 	"github.com/goplus/xai/types"
+	"github.com/goplus/xai/util"
 	"google.golang.org/genai"
 )
 
@@ -371,6 +372,80 @@ func (adapter) OutputVideoFrom(item *genai.GeneratedVideo) *xai.OutputVideo {
 
 func newParams(params any) *util.Params[adapter] {
 	return util.NewParams[adapter](params)
+}
+
+// -----------------------------------------------------------------------------
+
+type callParams struct {
+	params util.Params[adapter]
+	opts   *genai.HTTPOptions
+}
+
+func (p *callParams) getWaitParams(wp xai.WaitParams) *waitParams {
+	if params, ok := wp.(*waitParams); ok {
+		return params
+	}
+	return &waitParams{opts: p.opts}
+}
+
+func (p *callParams) initCallParams(params any) xai.CallParams {
+	p.params = *util.NewParams[adapter](params)
+	return p
+}
+
+func (p *callParams) BaseURL(base string) xai.CallParams {
+	if p.opts == nil {
+		p.opts = &genai.HTTPOptions{}
+	}
+	p.opts.BaseURL = base
+	return p
+}
+
+func (p *callParams) Timeout(timeout time.Duration) xai.CallParams {
+	if p.opts == nil {
+		p.opts = &genai.HTTPOptions{}
+	}
+	p.opts.Timeout = &timeout
+	return p
+}
+
+func (p *callParams) Set(name string, val any) xai.CallParams {
+	p.params.Set(name, val)
+	return p
+}
+
+// -----------------------------------------------------------------------------
+
+type waitParams struct {
+	opts     *genai.HTTPOptions
+	progress func(xai.OperationResponse)
+}
+
+func newWaitParams(opts *genai.HTTPOptions) *waitParams {
+	return &waitParams{
+		opts: opts,
+	}
+}
+
+func (p *waitParams) Progress(progress func(xai.OperationResponse)) xai.WaitParams {
+	p.progress = progress
+	return p
+}
+
+func (p *waitParams) BaseURL(base string) xai.WaitParams {
+	if p.opts == nil {
+		p.opts = &genai.HTTPOptions{}
+	}
+	p.opts.BaseURL = base
+	return p
+}
+
+func (p *waitParams) Timeout(timeout time.Duration) xai.WaitParams {
+	if p.opts == nil {
+		p.opts = &genai.HTTPOptions{}
+	}
+	p.opts.Timeout = &timeout
+	return p
 }
 
 // -----------------------------------------------------------------------------

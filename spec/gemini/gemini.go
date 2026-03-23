@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 	"google.golang.org/genai"
 )
 
@@ -40,9 +40,8 @@ func (p *Service) Features() xai.Feature {
 	return xai.FeatureGen | xai.FeatureGenStream | xai.FeatureOperation
 }
 
-func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
+func (p *Service) Gen(ctx context.Context, params xai.GenParams) (xai.GenResponse, error) {
 	model, contents, config := buildGenParams(params)
-	buildOptions(config, opts)
 	resp, err := p.models.GenerateContent(ctx, model, contents, config)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
@@ -50,9 +49,8 @@ func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.Opt
 	return response{resp}, nil
 }
 
-func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
+func (p *Service) GenStream(ctx context.Context, params xai.GenParams) iter.Seq2[xai.GenResponse, error] {
 	model, contents, config := buildGenParams(params)
-	buildOptions(config, opts)
 	iter := p.models.GenerateContentStream(ctx, model, contents, config)
 	return func(yield func(xai.GenResponse, error) bool) {
 		iter(func(resp *genai.GenerateContentResponse, err error) bool {

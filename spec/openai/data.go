@@ -23,7 +23,7 @@ import (
 	"strings"
 	"unsafe"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 	"github.com/openai/openai-go/v3/packages/param"
 	"github.com/openai/openai-go/v3/responses"
 )

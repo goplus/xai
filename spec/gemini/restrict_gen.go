@@ -2,7 +2,7 @@
 
 package gemini
 
-import "github.com/goplus/xai/spec"
+import "github.com/goplus/xai"
 
 var restriction_editImage = map[string]*xai.Restriction{"Prompt": &xai.Restriction{Required: true}, "References": &xai.Restriction{Required: true}, "AspectRatio": &xai.Restriction{Limit: enum_genai_AspectRatio}, "SafetyFilterLevel": &xai.Restriction{Limit: enum_genai_SafetyFilterLevel}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration}, "Language": &xai.Restriction{Limit: enum_genai_ImagePromptLanguage}, "EditMode": &xai.Restriction{Limit: enum_genai_EditMode}}
 var restriction_genImage = map[string]*xai.Restriction{"Prompt": &xai.Restriction{Required: true}, "AspectRatio": &xai.Restriction{Limit: enum_genai_AspectRatio}, "SafetyFilterLevel": &xai.Restriction{Limit: enum_genai_SafetyFilterLevel}, "PersonGeneration": &xai.Restriction{Limit: enum_genai_PersonGeneration}, "Language": &xai.Restriction{Limit: enum_genai_ImagePromptLanguage}}

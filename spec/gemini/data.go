@@ -22,7 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 	"google.golang.org/genai"
 )
 

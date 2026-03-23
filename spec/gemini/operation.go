@@ -20,8 +20,8 @@ import (
 	"context"
 	"time"
 
-	xai "github.com/goplus/xai/spec"
-	"github.com/goplus/xai/spec/util"
+	"github.com/goplus/xai"
+	"github.com/goplus/xai/util"
 	"google.golang.org/genai"
 )
 
@@ -41,17 +41,17 @@ func (p *Service) Actions(model xai.Model) []xai.Action {
 func (p *Service) Operation(model xai.Model, action xai.Action) (op xai.Operation, err error) {
 	switch action {
 	case xai.GenVideo:
-		op = &genVideo{}
+		op = &genVideo{svc: p, model: string(model)}
 	case xai.GenImage:
-		op = &genImage{}
+		op = &genImage{svc: p, model: string(model)}
 	case xai.EditImage:
-		op = &editImage{}
+		op = &editImage{svc: p, model: string(model)}
 	case xai.RecontextImage:
-		op = &recontextImage{}
+		op = &recontextImage{svc: p, model: string(model)}
 	case xai.SegmentImage:
-		op = &segmentImage{}
+		op = &segmentImage{svc: p, model: string(model)}
 	case xai.UpscaleImage:
-		op = &upscaleImage{}
+		op = &upscaleImage{svc: p, model: string(model)}
 	default:
 		err = xai.ErrNotFound
 	}
@@ -61,84 +61,115 @@ func (p *Service) Operation(model xai.Model, action xai.Action) (op xai.Operatio
 // -----------------------------------------------------------------------------
 
 type genVideoResp struct {
-	op *genai.GenerateVideosOperation
+	op  *genai.GenerateVideosOperation
+	gen *genVideo
 }
 
-func (p genVideoResp) Done() bool {
+func (p *genVideoResp) Done() bool {
 	return p.op.Done
 }
 
-func (p genVideoResp) Sleep() {
-	time.Sleep(15 * time.Second)
-}
-
-func (p genVideoResp) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (xai.OperationResponse, error) {
-	var conf *genai.GetOperationConfig
-	if v, ok := opts.(*options); ok {
-		conf = &genai.GetOperationConfig{
-			HTTPOptions: &v.opts,
-		}
-	}
-	op, err := svc.(*Service).ops.GetVideosOperation(ctx, p.op, conf)
-	if err != nil {
-		return nil, err
-	}
-	return genVideoResp{op}, nil
-}
-
-func (p genVideoResp) Results() xai.Results {
+func (p *genVideoResp) Results() xai.Results {
 	ret := p.op.Response
 	return util.NewVideoResults[*genai.GeneratedVideo, adapter](ret, ret.GeneratedVideos)
 }
 
+func (p *genVideoResp) WaitParams() xai.WaitParams {
+	return newWaitParams(p.gen.opts)
+}
+
+func (p *genVideoResp) Sleep() {
+	time.Sleep(15 * time.Second)
+}
+
+func (p *genVideoResp) Retry(ctx context.Context, wp xai.WaitParams) (*genVideoResp, error) {
+	var conf *genai.GetOperationConfig
+	gen := p.gen
+	params := gen.getWaitParams(wp)
+	if params.opts != nil {
+		conf = &genai.GetOperationConfig{
+			HTTPOptions: params.opts,
+		}
+	}
+	op, err := gen.svc.ops.GetVideosOperation(ctx, p.op, conf)
+	if err != nil {
+		return nil, err
+	}
+	return &genVideoResp{op: op, gen: p.gen}, nil
+}
+
+func (p *genVideoResp) Wait(ctx context.Context, wp xai.WaitParams) (ret xai.Results, err error) {
+	var progress func(xai.OperationResponse)
+	if wp != nil {
+		progress = wp.(*waitParams).progress
+	}
+	for !p.Done() {
+		if progress != nil {
+			progress(p)
+		}
+		p.Sleep()
+		p, err = p.Retry(ctx, wp)
+		if err != nil {
+			return
+		}
+	}
+	return p.Results(), nil
+}
+
 type genVideo struct {
+	callParams
 	genai.GenerateVideosSource
 	genai.GenerateVideosConfig
 
 	model string
+	svc   *Service
 }
 
 func (p *genVideo) InputSchema() xai.InputSchema {
 	return newInputSchema(p, restriction_genVideo)
 }
 
-func (p *genVideo) Params() xai.Params {
-	return newParams(p)
+func (p *genVideo) CallParams() xai.CallParams {
+	return p.initCallParams(p)
 }
 
-func (p *genVideo) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	if v, ok := opts.(*options); ok {
-		p.HTTPOptions = &v.opts
+func (p *genVideo) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
+	params := cp.(*callParams)
+	if params.opts != nil {
+		p.HTTPOptions = params.opts
 	}
-	op, err := svc.(*Service).models.GenerateVideosFromSource(ctx, p.model, &p.GenerateVideosSource, &p.GenerateVideosConfig)
+	op, err := p.svc.models.GenerateVideosFromSource(ctx, p.model, &p.GenerateVideosSource, &p.GenerateVideosConfig)
 	if err != nil {
 		return
 	}
-	return genVideoResp{op}, nil
+	return &genVideoResp{op: op, gen: p}, nil
 }
 
 // -----------------------------------------------------------------------------
 
 type genImage struct {
+	callParams
 	Prompt string
 	genai.GenerateImagesConfig
 
 	model string
+	svc   *Service
 }
 
 func (p *genImage) InputSchema() xai.InputSchema {
 	return newInputSchema(p, restriction_genImage)
 }
 
-func (p *genImage) Params() xai.Params {
-	return newParams(p)
+func (p *genImage) CallParams() xai.CallParams {
+	return p.initCallParams(p)
 }
 
-func (p *genImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	if v, ok := opts.(*options); ok {
-		p.HTTPOptions = &v.opts
+func (p *genImage) Call(ctx context.Context, params xai.CallParams) (resp xai.OperationResponse, err error) {
+	cp := params.(*callParams)
+	if cp.opts != nil {
+		p.HTTPOptions = cp.opts
 	}
-	op, err := svc.(*Service).models.GenerateImages(ctx, p.model, p.Prompt, &p.GenerateImagesConfig)
+	op, err := p.svc.models.GenerateImages(ctx, p.model, p.Prompt, &p.GenerateImagesConfig)
 	if err != nil {
 		return
 	}
@@ -148,26 +179,29 @@ func (p *genImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBui
 // -----------------------------------------------------------------------------
 
 type editImage struct {
+	callParams
 	Prompt     string
 	References []genai.ReferenceImage
 	genai.EditImageConfig
 
 	model string
+	svc   *Service
 }
 
 func (p *editImage) InputSchema() xai.InputSchema {
 	return newInputSchema(p, restriction_editImage)
 }
 
-func (p *editImage) Params() xai.Params {
-	return newParams(p)
+func (p *editImage) CallParams() xai.CallParams {
+	return p.initCallParams(p)
 }
 
-func (p *editImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	if v, ok := opts.(*options); ok {
-		p.HTTPOptions = &v.opts
+func (p *editImage) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
+	params := cp.(*callParams)
+	if params.opts != nil {
+		p.HTTPOptions = params.opts
 	}
-	op, err := svc.(*Service).models.EditImage(ctx, p.model, p.Prompt, p.References, &p.EditImageConfig)
+	op, err := p.svc.models.EditImage(ctx, p.model, p.Prompt, p.References, &p.EditImageConfig)
 	if err != nil {
 		return
 	}
@@ -177,25 +211,28 @@ func (p *editImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBu
 // -----------------------------------------------------------------------------
 
 type recontextImage struct {
+	callParams
 	genai.RecontextImageSource
 	genai.RecontextImageConfig
 
 	model string
+	svc   *Service
 }
 
 func (p *recontextImage) InputSchema() xai.InputSchema {
 	return newInputSchema(p, restriction_recontextImage)
 }
 
-func (p *recontextImage) Params() xai.Params {
-	return newParams(p)
+func (p *recontextImage) CallParams() xai.CallParams {
+	return p.initCallParams(p)
 }
 
-func (p *recontextImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	if v, ok := opts.(*options); ok {
-		p.HTTPOptions = &v.opts
+func (p *recontextImage) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
+	params := cp.(*callParams)
+	if params.opts != nil {
+		p.HTTPOptions = params.opts
 	}
-	op, err := svc.(*Service).models.RecontextImage(ctx, p.model, &p.RecontextImageSource, &p.RecontextImageConfig)
+	op, err := p.svc.models.RecontextImage(ctx, p.model, &p.RecontextImageSource, &p.RecontextImageConfig)
 	if err != nil {
 		return
 	}
@@ -205,26 +242,29 @@ func (p *recontextImage) Call(ctx context.Context, svc xai.Service, opts xai.Opt
 // -----------------------------------------------------------------------------
 
 type upscaleImage struct {
+	callParams
 	Image  *genai.Image
 	Factor string // upscale factor
 	genai.UpscaleImageConfig
 
 	model string
+	svc   *Service
 }
 
 func (p *upscaleImage) InputSchema() xai.InputSchema {
 	return newInputSchema(p, restriction_upscaleImage)
 }
 
-func (p *upscaleImage) Params() xai.Params {
-	return newParams(p)
+func (p *upscaleImage) CallParams() xai.CallParams {
+	return p.initCallParams(p)
 }
 
-func (p *upscaleImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	if v, ok := opts.(*options); ok {
-		p.HTTPOptions = &v.opts
+func (p *upscaleImage) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
+	params := cp.(*callParams)
+	if params.opts != nil {
+		p.HTTPOptions = params.opts
 	}
-	op, err := svc.(*Service).models.UpscaleImage(ctx, p.model, p.Image, p.Factor, &p.UpscaleImageConfig)
+	op, err := p.svc.models.UpscaleImage(ctx, p.model, p.Image, p.Factor, &p.UpscaleImageConfig)
 	if err != nil {
 		return
 	}
@@ -234,25 +274,28 @@ func (p *upscaleImage) Call(ctx context.Context, svc xai.Service, opts xai.Optio
 // -----------------------------------------------------------------------------
 
 type segmentImage struct {
+	callParams
 	genai.SegmentImageSource
 	genai.SegmentImageConfig
 
 	model string
+	svc   *Service
 }
 
 func (p *segmentImage) InputSchema() xai.InputSchema {
 	return newInputSchema(p, restriction_segmentImage)
 }
 
-func (p *segmentImage) Params() xai.Params {
-	return newParams(p)
+func (p *segmentImage) CallParams() xai.CallParams {
+	return p.initCallParams(p)
 }
 
-func (p *segmentImage) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
-	if v, ok := opts.(*options); ok {
-		p.HTTPOptions = &v.opts
+func (p *segmentImage) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
+	params := cp.(*callParams)
+	if params.opts != nil {
+		p.HTTPOptions = params.opts
 	}
-	op, err := svc.(*Service).models.SegmentImage(ctx, p.model, &p.SegmentImageSource, &p.SegmentImageConfig)
+	op, err := p.svc.models.SegmentImage(ctx, p.model, &p.SegmentImageSource, &p.SegmentImageConfig)
 	if err != nil {
 		return
 	}

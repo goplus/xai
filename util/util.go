@@ -20,8 +20,9 @@ import (
 	"context"
 	"log"
 	"reflect"
+	"time"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // -----------------------------------------------------------------------------
@@ -246,16 +247,28 @@ func (p SimpleResp[T]) Done() bool {
 	return true
 }
 
-func (p SimpleResp[T]) Sleep() {
-	panic("unreachable")
-}
-
-func (p SimpleResp[T]) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (xai.OperationResponse, error) {
-	panic("unreachable")
-}
-
 func (p SimpleResp[T]) Results() xai.Results {
 	return p.ret
+}
+
+func (p SimpleResp[T]) Wait(context.Context, xai.WaitParams) (xai.Results, error) {
+	return p.ret, nil
+}
+
+func (p SimpleResp[T]) WaitParams() xai.WaitParams {
+	return p
+}
+
+func (p SimpleResp[T]) BaseURL(string) xai.WaitParams {
+	return p
+}
+
+func (p SimpleResp[T]) Timeout(time.Duration) xai.WaitParams {
+	return p
+}
+
+func (p SimpleResp[T]) Progress(func(xai.OperationResponse)) xai.WaitParams {
+	return p
 }
 
 // -----------------------------------------------------------------------------

@@ -21,9 +21,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 	"unsafe"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // -----------------------------------------------------------------------------
@@ -62,16 +63,11 @@ func (p *ServiceBase) HTTPClient() *Client {
 	return &p.c
 }
 
-// implement xai.Service
-func (p *ServiceBase) Options() xai.OptionBuilder {
-	return new(HTTPOptions)
-}
-
 // -----------------------------------------------------------------------------
 
 // ResponseCreator is a function type that creates an xai.OperationResponse from
 // a given HTTP response body.
-type ResponseCreator func(c *Client, body map[string]any) (xai.OperationResponse, error)
+type ResponseCreator func(c *Client, body map[string]any, opts *HTTPOptions) (xai.OperationResponse, error)
 
 // ActionInfo contains information about an action, including the path to call for
 // the action, the name of the parameter for the model, and a function to create a
@@ -127,28 +123,62 @@ func (p *Service[T]) Operation(model xai.Model, action xai.Action) (xai.Operatio
 
 // -----------------------------------------------------------------------------
 
+type CallParamsBase struct {
+	opts *HTTPOptions
+}
+
+func getWaitParams(wp xai.WaitParams, opts *HTTPOptions) *waitParams {
+	if params, ok := wp.(*waitParams); ok {
+		return params
+	}
+	return &waitParams{opts: opts}
+}
+
+func (p *CallParamsBase) BaseURL(base string) xai.CallParams {
+	if p.opts == nil {
+		p.opts = &HTTPOptions{}
+	}
+	p.opts.BaseURL(base)
+	return p
+}
+
+func (p *CallParamsBase) Timeout(timeout time.Duration) xai.CallParams {
+	if p.opts == nil {
+		p.opts = &HTTPOptions{}
+	}
+	p.opts.Timeout(timeout)
+	return p
+}
+
+func (p *CallParamsBase) Set(name string, val any) xai.CallParams {
+	panic("unreachable")
+}
+
+// -----------------------------------------------------------------------------
+
 type Operation[T serviceAdapter] struct {
 	body    map[string]any
 	action  xai.Action
 	model   xai.Model
 	c       *Client
 	adapter T
+	CallParamsBase
 }
 
 func (p *Operation[T]) InputSchema() xai.InputSchema {
 	return p.adapter.InputSchema(p.action)
 }
 
-func (p *Operation[T]) Params() xai.Params {
-	return p
-}
-
-func (p *Operation[T]) Set(name string, val any) xai.Params {
+func (p *Operation[T]) Set(name string, val any) xai.CallParams {
 	p.adapter.SetParam(p.body, name, val)
 	return p
 }
 
-func (p *Operation[T]) Call(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
+func (p *Operation[T]) CallParams() xai.CallParams {
+	return p
+}
+
+func (p *Operation[T]) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
 	a := p.adapter.BuildAction(p.action, p.body, p.model)
 	req, err := p.c.NewRequest(http.MethodPost, a.Path)
 	if err != nil {
@@ -158,10 +188,13 @@ func (p *Operation[T]) Call(ctx context.Context, svc xai.Service, opts xai.Optio
 	if err != nil {
 		return
 	}
-	return call(ctx, req, a.NewResponse, opts)
+	return call(ctx, req, a.NewResponse, p.opts)
 }
 
-func call(ctx context.Context, req *Request, newResponse ResponseCreator, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
+func call(ctx context.Context, req *Request, newResp ResponseCreator, opts *HTTPOptions) (resp xai.OperationResponse, err error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	ret, err := req.Do(ctx, opts)
 	if err != nil {
 		return
@@ -174,7 +207,7 @@ func call(ctx context.Context, req *Request, newResponse ResponseCreator, opts x
 	if err != nil {
 		return
 	}
-	return newResponse(req.c, body)
+	return newResp(req.c, body, opts)
 }
 
 // -----------------------------------------------------------------------------
@@ -291,12 +324,13 @@ type responseAdapter interface {
 type OperationResponse[T responseAdapter] struct {
 	body    map[string]any
 	c       *Client
+	opts    *HTTPOptions
 	action  xai.Action
 	adapter T
 }
 
-func NewOperationResponse[T responseAdapter](c *Client, action xai.Action, body map[string]any) *OperationResponse[T] {
-	return &OperationResponse[T]{c: c, body: body, action: action}
+func NewOperationResponse[T responseAdapter](c *Client, action xai.Action, body map[string]any, opts *HTTPOptions) *OperationResponse[T] {
+	return &OperationResponse[T]{c: c, body: body, action: action, opts: opts}
 }
 
 func (p *OperationResponse[T]) Done() bool {
@@ -311,7 +345,7 @@ var (
 	ErrMissingOperationID = errors.New("missing operation ID in response body")
 )
 
-func (p *OperationResponse[T]) Retry(ctx context.Context, svc xai.Service, opts xai.OptionBuilder) (resp xai.OperationResponse, err error) {
+func (p *OperationResponse[T]) Retry(ctx context.Context, wp xai.WaitParams) (resp *OperationResponse[T], err error) {
 	qoi, err := p.adapter.BuildQuery(p.action, p.body)
 	if err != nil {
 		return
@@ -322,11 +356,72 @@ func (p *OperationResponse[T]) Retry(ctx context.Context, svc xai.Service, opts 
 	}
 	// query operation has no body,
 	// so we can directly call it without setting body
-	return call(ctx, req, qoi.NewResponse, opts)
+	params := getWaitParams(wp, p.opts)
+	ret, err := call(ctx, req, qoi.NewResponse, params.opts)
+	if err != nil {
+		return
+	}
+	return ret.(*OperationResponse[T]), nil
 }
 
 func (p *OperationResponse[T]) Results() xai.Results {
 	return p.adapter.Results(p.action, p.body)
+}
+
+func (p *OperationResponse[T]) WaitParams() xai.WaitParams {
+	return newWaitParams(p.opts)
+}
+
+func (p *OperationResponse[T]) Wait(ctx context.Context, wp xai.WaitParams) (ret xai.Results, err error) {
+	var progress func(xai.OperationResponse)
+	if wp != nil {
+		progress = wp.(*waitParams).progress
+	}
+	for !p.Done() {
+		if progress != nil {
+			progress(p)
+		}
+		p.Sleep()
+		p, err = p.Retry(ctx, wp)
+		if err != nil {
+			return
+		}
+	}
+	return p.Results(), nil
+}
+
+// -----------------------------------------------------------------------------
+
+type waitParams struct {
+	opts     *HTTPOptions
+	progress func(xai.OperationResponse)
+}
+
+func newWaitParams(opts *HTTPOptions) *waitParams {
+	return &waitParams{
+		opts: opts,
+	}
+}
+
+func (p *waitParams) Progress(progress func(xai.OperationResponse)) xai.WaitParams {
+	p.progress = progress
+	return p
+}
+
+func (p *waitParams) BaseURL(base string) xai.WaitParams {
+	if p.opts == nil {
+		p.opts = &HTTPOptions{}
+	}
+	p.opts.BaseURL(base)
+	return p
+}
+
+func (p *waitParams) Timeout(timeout time.Duration) xai.WaitParams {
+	if p.opts == nil {
+		p.opts = &HTTPOptions{}
+	}
+	p.opts.Timeout(timeout)
+	return p
 }
 
 // -----------------------------------------------------------------------------

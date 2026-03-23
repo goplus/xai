@@ -19,7 +19,7 @@ package claude
 import (
 	"io"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // -----------------------------------------------------------------------------

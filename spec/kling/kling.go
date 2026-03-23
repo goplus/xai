@@ -22,15 +22,15 @@ import (
 	"strings"
 	"time"
 
-	xai "github.com/goplus/xai/spec"
-	"github.com/goplus/xai/spec/geno"
+	"github.com/goplus/xai"
+	"github.com/goplus/xai/geno"
 	"golang.org/x/oauth2"
 )
 
 // -----------------------------------------------------------------------------
 
-func newGenImageResponse(c *geno.Client, body map[string]any) (xai.OperationResponse, error) {
-	return geno.NewOperationResponse[adapter](c, xai.GenImage, body), nil
+func newGenImageResponse(c *geno.Client, body map[string]any, opts *geno.HTTPOptions) (xai.OperationResponse, error) {
+	return geno.NewOperationResponse[adapter](c, xai.GenImage, body, opts), nil
 }
 
 // -----------------------------------------------------------------------------

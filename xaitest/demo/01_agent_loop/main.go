@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 	_ "github.com/goplus/xai/spec/claude"
 	_ "github.com/goplus/xai/spec/openai"
 )

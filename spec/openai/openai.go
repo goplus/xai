@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/responses"
 )
@@ -39,16 +39,18 @@ func (p *Service) Features() xai.Feature {
 	return xai.FeatureGen | xai.FeatureGenStream | xai.FeatureOperation
 }
 
-func (p *Service) Gen(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) (xai.GenResponse, error) {
-	resp, err := p.responses.New(ctx, buildParams(params), buildOptions(opts)...)
+func (p *Service) Gen(ctx context.Context, gp xai.GenParams) (xai.GenResponse, error) {
+	params, opts := buildParams(gp)
+	resp, err := p.responses.New(ctx, params, opts...)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
 	}
 	return response{resp}, nil
 }
 
-func (p *Service) GenStream(ctx context.Context, params xai.ParamBuilder, opts xai.OptionBuilder) iter.Seq2[xai.GenResponse, error] {
-	resp := p.responses.NewStreaming(ctx, buildParams(params), buildOptions(opts)...)
+func (p *Service) GenStream(ctx context.Context, gp xai.GenParams) iter.Seq2[xai.GenResponse, error] {
+	params, opts := buildParams(gp)
+	resp := p.responses.NewStreaming(ctx, params, opts...)
 	return buildRespIter(resp)
 }
 

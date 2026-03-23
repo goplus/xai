@@ -11,7 +11,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // ---------------------------------------------------------------------------
