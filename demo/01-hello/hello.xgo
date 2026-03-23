@@ -1,0 +1,13 @@
+import (
+    "context"
+
+	"github.com/goplus/xai"
+	_ "github.com/goplus/xai/spec/claude"
+	_ "github.com/goplus/xai/spec/gemini"
+	_ "github.com/goplus/xai/spec/openai"
+)
+
+ctx := context.background
+ai := xai.new(ctx, "gemini:xxx")!
+resp := ai.gen(ctx, system = "Hi")!
+echo resp.at(0).part(0).text
