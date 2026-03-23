@@ -18,7 +18,7 @@ package claude
 
 import (
 	"github.com/anthropics/anthropic-sdk-go"
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // -----------------------------------------------------------------------------

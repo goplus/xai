@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"time"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // -----------------------------------------------------------------------------

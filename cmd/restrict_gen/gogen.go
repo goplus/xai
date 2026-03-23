@@ -61,7 +61,7 @@ type genCtx struct {
 
 func gen(ret *pkgRestriction) {
 	out := gogen.NewPackage(ret.pkgPath, ret.pkgName, nil)
-	xai := out.Import("github.com/goplus/xai/spec")
+	xai := out.Import("github.com/goplus/xai")
 	str := types.Typ[types.String]
 	restr := xai.Ref("Restriction").Type()
 	stringEnum := xai.Ref("StringEnum").Type()

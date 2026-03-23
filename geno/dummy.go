@@ -19,7 +19,7 @@ package geno
 import (
 	"iter"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // -----------------------------------------------------------------------------

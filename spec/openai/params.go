@@ -21,8 +21,8 @@ import (
 	"reflect"
 	"time"
 
-	xai "github.com/goplus/xai/spec"
-	"github.com/goplus/xai/spec/util"
+	"github.com/goplus/xai"
+	"github.com/goplus/xai/util"
 	"github.com/openai/openai-go/v3/option"
 	"github.com/openai/openai-go/v3/packages/param"
 	"github.com/openai/openai-go/v3/responses"

@@ -25,9 +25,9 @@ import (
 	"reflect"
 	"time"
 
-	xai "github.com/goplus/xai/spec"
-	"github.com/goplus/xai/spec/util"
+	"github.com/goplus/xai"
 	"github.com/goplus/xai/types"
+	"github.com/goplus/xai/util"
 	"google.golang.org/genai"
 )
 

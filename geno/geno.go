@@ -24,7 +24,7 @@ import (
 	"time"
 	"unsafe"
 
-	xai "github.com/goplus/xai/spec"
+	"github.com/goplus/xai"
 )
 
 // -----------------------------------------------------------------------------

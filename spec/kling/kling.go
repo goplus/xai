@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
-	xai "github.com/goplus/xai/spec"
-	"github.com/goplus/xai/spec/geno"
+	"github.com/goplus/xai"
+	"github.com/goplus/xai/geno"
 	"golang.org/x/oauth2"
 )
 
