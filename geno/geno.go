@@ -67,7 +67,7 @@ func (p *ServiceBase) HTTPClient() *Client {
 
 // ResponseCreator is a function type that creates an xai.OperationResponse from
 // a given HTTP response body.
-type ResponseCreator func(c *Client, body map[string]any, cp *CallParamsBase) (xai.OperationResponse, error)
+type ResponseCreator func(c *Client, body map[string]any, opts *HTTPOptions) (xai.OperationResponse, error)
 
 // ActionInfo contains information about an action, including the path to call for
 // the action, the name of the parameter for the model, and a function to create a
@@ -125,19 +125,13 @@ func (p *Service[T]) Operation(model xai.Model, action xai.Action) (xai.Operatio
 
 type CallParamsBase struct {
 	opts *HTTPOptions
-	ctx  context.Context
 }
 
-func (p *CallParamsBase) getWaitParams(wp xai.WaitParams) *waitParams {
+func getWaitParams(wp xai.WaitParams, opts *HTTPOptions) *waitParams {
 	if params, ok := wp.(*waitParams); ok {
 		return params
 	}
-	return &waitParams{ctx: p.ctx, opts: p.opts}
-}
-
-func (p *CallParamsBase) Ctx(ctx context.Context) xai.CallParams {
-	p.ctx = ctx
-	return p
+	return &waitParams{opts: opts}
 }
 
 func (p *CallParamsBase) BaseURL(base string) xai.CallParams {
@@ -184,7 +178,7 @@ func (p *Operation[T]) CallParams() xai.CallParams {
 	return p
 }
 
-func (p *Operation[T]) Call(xai.CallParams) (resp xai.OperationResponse, err error) {
+func (p *Operation[T]) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
 	a := p.adapter.BuildAction(p.action, p.body, p.model)
 	req, err := p.c.NewRequest(http.MethodPost, a.Path)
 	if err != nil {
@@ -194,10 +188,10 @@ func (p *Operation[T]) Call(xai.CallParams) (resp xai.OperationResponse, err err
 	if err != nil {
 		return
 	}
-	return call(p.ctx, req, a.NewResponse, p.opts, &p.CallParamsBase)
+	return call(ctx, req, a.NewResponse, p.opts)
 }
 
-func call(ctx context.Context, req *Request, newResp ResponseCreator, opts *HTTPOptions, cp *CallParamsBase) (resp xai.OperationResponse, err error) {
+func call(ctx context.Context, req *Request, newResp ResponseCreator, opts *HTTPOptions) (resp xai.OperationResponse, err error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -213,7 +207,7 @@ func call(ctx context.Context, req *Request, newResp ResponseCreator, opts *HTTP
 	if err != nil {
 		return
 	}
-	return newResp(req.c, body, cp)
+	return newResp(req.c, body, opts)
 }
 
 // -----------------------------------------------------------------------------
@@ -330,13 +324,13 @@ type responseAdapter interface {
 type OperationResponse[T responseAdapter] struct {
 	body    map[string]any
 	c       *Client
-	cp      *CallParamsBase
+	opts    *HTTPOptions
 	action  xai.Action
 	adapter T
 }
 
-func NewOperationResponse[T responseAdapter](c *Client, action xai.Action, body map[string]any, cp *CallParamsBase) *OperationResponse[T] {
-	return &OperationResponse[T]{c: c, body: body, action: action, cp: cp}
+func NewOperationResponse[T responseAdapter](c *Client, action xai.Action, body map[string]any, opts *HTTPOptions) *OperationResponse[T] {
+	return &OperationResponse[T]{c: c, body: body, action: action, opts: opts}
 }
 
 func (p *OperationResponse[T]) Done() bool {
@@ -351,7 +345,7 @@ var (
 	ErrMissingOperationID = errors.New("missing operation ID in response body")
 )
 
-func (p *OperationResponse[T]) Retry(wp xai.WaitParams) (resp *OperationResponse[T], err error) {
+func (p *OperationResponse[T]) Retry(ctx context.Context, wp xai.WaitParams) (resp *OperationResponse[T], err error) {
 	qoi, err := p.adapter.BuildQuery(p.action, p.body)
 	if err != nil {
 		return
@@ -362,8 +356,8 @@ func (p *OperationResponse[T]) Retry(wp xai.WaitParams) (resp *OperationResponse
 	}
 	// query operation has no body,
 	// so we can directly call it without setting body
-	params := p.cp.getWaitParams(wp)
-	ret, err := call(params.ctx, req, qoi.NewResponse, params.opts, p.cp)
+	params := getWaitParams(wp, p.opts)
+	ret, err := call(ctx, req, qoi.NewResponse, params.opts)
 	if err != nil {
 		return
 	}
@@ -375,10 +369,10 @@ func (p *OperationResponse[T]) Results() xai.Results {
 }
 
 func (p *OperationResponse[T]) WaitParams() xai.WaitParams {
-	return newWaitParams(p.cp)
+	return newWaitParams(p.opts)
 }
 
-func (p *OperationResponse[T]) Wait(wp xai.WaitParams) (ret xai.Results, err error) {
+func (p *OperationResponse[T]) Wait(ctx context.Context, wp xai.WaitParams) (ret xai.Results, err error) {
 	var progress func(xai.OperationResponse)
 	if wp != nil {
 		progress = wp.(*waitParams).progress
@@ -388,7 +382,7 @@ func (p *OperationResponse[T]) Wait(wp xai.WaitParams) (ret xai.Results, err err
 			progress(p)
 		}
 		p.Sleep()
-		p, err = p.Retry(wp)
+		p, err = p.Retry(ctx, wp)
 		if err != nil {
 			return
 		}
@@ -399,21 +393,14 @@ func (p *OperationResponse[T]) Wait(wp xai.WaitParams) (ret xai.Results, err err
 // -----------------------------------------------------------------------------
 
 type waitParams struct {
-	ctx      context.Context
 	opts     *HTTPOptions
 	progress func(xai.OperationResponse)
 }
 
-func newWaitParams(cp *CallParamsBase) *waitParams {
+func newWaitParams(opts *HTTPOptions) *waitParams {
 	return &waitParams{
-		ctx:  cp.ctx,
-		opts: cp.opts,
+		opts: opts,
 	}
-}
-
-func (p *waitParams) Ctx(ctx context.Context) xai.WaitParams {
-	p.ctx = ctx
-	return p
 }
 
 func (p *waitParams) Progress(progress func(xai.OperationResponse)) xai.WaitParams {

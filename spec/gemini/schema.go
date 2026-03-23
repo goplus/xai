@@ -17,7 +17,6 @@
 package gemini
 
 import (
-	"context"
 	"encoding/base64"
 	"io"
 	"log"
@@ -379,7 +378,6 @@ func newParams(params any) *util.Params[adapter] {
 
 type callParams struct {
 	params util.Params[adapter]
-	ctx    context.Context
 	opts   *genai.HTTPOptions
 }
 
@@ -387,16 +385,11 @@ func (p *callParams) getWaitParams(wp xai.WaitParams) *waitParams {
 	if params, ok := wp.(*waitParams); ok {
 		return params
 	}
-	return &waitParams{ctx: p.ctx, opts: p.opts}
+	return &waitParams{opts: p.opts}
 }
 
 func (p *callParams) initCallParams(params any) xai.CallParams {
 	p.params = *util.NewParams[adapter](params)
-	return p
-}
-
-func (p *callParams) Ctx(ctx context.Context) xai.CallParams {
-	p.ctx = ctx
 	return p
 }
 
@@ -424,21 +417,14 @@ func (p *callParams) Set(name string, val any) xai.CallParams {
 // -----------------------------------------------------------------------------
 
 type waitParams struct {
-	ctx      context.Context
 	opts     *genai.HTTPOptions
 	progress func(xai.OperationResponse)
 }
 
-func newWaitParams(cp *callParams) *waitParams {
+func newWaitParams(opts *genai.HTTPOptions) *waitParams {
 	return &waitParams{
-		ctx:  cp.ctx,
-		opts: cp.opts,
+		opts: opts,
 	}
-}
-
-func (p *waitParams) Ctx(ctx context.Context) xai.WaitParams {
-	p.ctx = ctx
-	return p
 }
 
 func (p *waitParams) Progress(progress func(xai.OperationResponse)) xai.WaitParams {

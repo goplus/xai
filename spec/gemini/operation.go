@@ -75,21 +75,17 @@ func (p *genVideoResp) Results() xai.Results {
 }
 
 func (p *genVideoResp) WaitParams() xai.WaitParams {
-	return newWaitParams(&p.gen.callParams)
+	return newWaitParams(p.gen.opts)
 }
 
 func (p *genVideoResp) Sleep() {
 	time.Sleep(15 * time.Second)
 }
 
-func (p *genVideoResp) Retry(wp xai.WaitParams) (*genVideoResp, error) {
+func (p *genVideoResp) Retry(ctx context.Context, wp xai.WaitParams) (*genVideoResp, error) {
 	var conf *genai.GetOperationConfig
 	gen := p.gen
 	params := gen.getWaitParams(wp)
-	ctx := params.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if params.opts != nil {
 		conf = &genai.GetOperationConfig{
 			HTTPOptions: params.opts,
@@ -102,7 +98,7 @@ func (p *genVideoResp) Retry(wp xai.WaitParams) (*genVideoResp, error) {
 	return &genVideoResp{op: op, gen: p.gen}, nil
 }
 
-func (p *genVideoResp) Wait(wp xai.WaitParams) (ret xai.Results, err error) {
+func (p *genVideoResp) Wait(ctx context.Context, wp xai.WaitParams) (ret xai.Results, err error) {
 	var progress func(xai.OperationResponse)
 	if wp != nil {
 		progress = wp.(*waitParams).progress
@@ -112,7 +108,7 @@ func (p *genVideoResp) Wait(wp xai.WaitParams) (ret xai.Results, err error) {
 			progress(p)
 		}
 		p.Sleep()
-		p, err = p.Retry(wp)
+		p, err = p.Retry(ctx, wp)
 		if err != nil {
 			return
 		}
@@ -137,12 +133,8 @@ func (p *genVideo) CallParams() xai.CallParams {
 	return p.initCallParams(p)
 }
 
-func (p *genVideo) Call(cp xai.CallParams) (resp xai.OperationResponse, err error) {
+func (p *genVideo) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
 	params := cp.(*callParams)
-	ctx := params.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if params.opts != nil {
 		p.HTTPOptions = params.opts
 	}
@@ -172,12 +164,8 @@ func (p *genImage) CallParams() xai.CallParams {
 	return p.initCallParams(p)
 }
 
-func (p *genImage) Call(params xai.CallParams) (resp xai.OperationResponse, err error) {
+func (p *genImage) Call(ctx context.Context, params xai.CallParams) (resp xai.OperationResponse, err error) {
 	cp := params.(*callParams)
-	ctx := cp.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if cp.opts != nil {
 		p.HTTPOptions = cp.opts
 	}
@@ -208,12 +196,8 @@ func (p *editImage) CallParams() xai.CallParams {
 	return p.initCallParams(p)
 }
 
-func (p *editImage) Call(cp xai.CallParams) (resp xai.OperationResponse, err error) {
+func (p *editImage) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
 	params := cp.(*callParams)
-	ctx := params.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if params.opts != nil {
 		p.HTTPOptions = params.opts
 	}
@@ -243,12 +227,8 @@ func (p *recontextImage) CallParams() xai.CallParams {
 	return p.initCallParams(p)
 }
 
-func (p *recontextImage) Call(cp xai.CallParams) (resp xai.OperationResponse, err error) {
+func (p *recontextImage) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
 	params := cp.(*callParams)
-	ctx := params.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if params.opts != nil {
 		p.HTTPOptions = params.opts
 	}
@@ -279,12 +259,8 @@ func (p *upscaleImage) CallParams() xai.CallParams {
 	return p.initCallParams(p)
 }
 
-func (p *upscaleImage) Call(cp xai.CallParams) (resp xai.OperationResponse, err error) {
+func (p *upscaleImage) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
 	params := cp.(*callParams)
-	ctx := params.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if params.opts != nil {
 		p.HTTPOptions = params.opts
 	}
@@ -314,12 +290,8 @@ func (p *segmentImage) CallParams() xai.CallParams {
 	return p.initCallParams(p)
 }
 
-func (p *segmentImage) Call(cp xai.CallParams) (resp xai.OperationResponse, err error) {
+func (p *segmentImage) Call(ctx context.Context, cp xai.CallParams) (resp xai.OperationResponse, err error) {
 	params := cp.(*callParams)
-	ctx := params.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	if params.opts != nil {
 		p.HTTPOptions = params.opts
 	}

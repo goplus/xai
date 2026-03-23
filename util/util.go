@@ -251,15 +251,11 @@ func (p SimpleResp[T]) Results() xai.Results {
 	return p.ret
 }
 
-func (p SimpleResp[T]) Wait(xai.WaitParams) (xai.Results, error) {
+func (p SimpleResp[T]) Wait(context.Context, xai.WaitParams) (xai.Results, error) {
 	return p.ret, nil
 }
 
 func (p SimpleResp[T]) WaitParams() xai.WaitParams {
-	return p
-}
-
-func (p SimpleResp[T]) Ctx(context.Context) xai.WaitParams {
 	return p
 }
 

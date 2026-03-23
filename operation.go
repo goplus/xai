@@ -57,11 +57,6 @@ type Results interface {
 // WaitParams represents the parameters that can be set when waiting for an `Operation`
 // to complete.
 type WaitParams interface {
-	// Ctx sets the context for the API request. This can be used to control cancellation
-	// and timeouts for the request, as well as to pass additional metadata or values
-	// that may be needed by the provider during the request.
-	Ctx(context.Context) WaitParams
-
 	// BaseURL sets the base URL for the API endpoint.
 	BaseURL(string) WaitParams
 
@@ -92,15 +87,10 @@ type OperationResponse interface {
 	// Wait waits for the operation to be completed. It repeatedly checks the status
 	// of the operation and calls the provided progress function with the current
 	// operation response. Once the operation is done, it returns the results.
-	Wait(__xgo_optional_params WaitParams) (Results, error)
+	Wait(ctx context.Context, __xgo_optional_params WaitParams) (Results, error)
 }
 
 type CallParams interface {
-	// Ctx sets the context for the API request. This can be used to control cancellation
-	// and timeouts for the request, as well as to pass additional metadata or values
-	// that may be needed by the provider during the request.
-	Ctx(context.Context) CallParams
-
 	// Set sets a parameter for the operation. You can call this method multiple
 	// times to set multiple parameters.
 	Set(name string, val any) CallParams
@@ -133,7 +123,7 @@ type Operation interface {
 	// Call starts the operation with the given options. It returns an `OperationResponse`
 	// that can be used to check the status of the operation and retrieve results when
 	// it's done.
-	Call(params CallParams) (OperationResponse, error)
+	Call(ctx context.Context, params CallParams) (OperationResponse, error)
 }
 
 // -----------------------------------------------------------------------------
