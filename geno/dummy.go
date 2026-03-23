@@ -17,6 +17,7 @@
 package geno
 
 import (
+	"context"
 	"iter"
 
 	"github.com/goplus/xai"
@@ -28,11 +29,11 @@ func (p *Service[T]) Features() xai.Feature {
 	return xai.FeatureOperation
 }
 
-func (p *Service[T]) Gen(params xai.GenParams) (xai.GenResponse, error) {
+func (p *Service[T]) Gen(ctx context.Context, params xai.GenParams) (xai.GenResponse, error) {
 	panic("unsupported")
 }
 
-func (p *Service[T]) GenStream(params xai.GenParams) iter.Seq2[xai.GenResponse, error] {
+func (p *Service[T]) GenStream(ctx context.Context, params xai.GenParams) iter.Seq2[xai.GenResponse, error] {
 	panic("unsupported")
 }
 

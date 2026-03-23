@@ -17,7 +17,6 @@
 package gemini
 
 import (
-	"context"
 	"time"
 
 	"github.com/goplus/xai"
@@ -32,7 +31,6 @@ type genParams struct {
 	contents []*genai.Content
 	config   genai.GenerateContentConfig
 	pconfig  *util.Params[adapter]
-	ctx      context.Context
 }
 
 /*
@@ -192,22 +190,13 @@ func (p *genParams) Timeout(timeout time.Duration) xai.GenParams {
 	return p
 }
 
-func (p *genParams) Ctx(ctx context.Context) xai.GenParams {
-	p.ctx = ctx
-	return p
-}
-
 func (p *Service) GenParams() xai.GenParams {
 	return &genParams{}
 }
 
-func buildGenParams(in xai.GenParams) (context.Context, string, []*genai.Content, *genai.GenerateContentConfig) {
+func buildGenParams(in xai.GenParams) (string, []*genai.Content, *genai.GenerateContentConfig) {
 	p := in.(*genParams)
-	ctx := p.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return ctx, p.model, p.contents, &p.config
+	return p.model, p.contents, &p.config
 }
 
 // -----------------------------------------------------------------------------

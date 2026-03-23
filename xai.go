@@ -41,11 +41,6 @@ var (
 // methods in this interface return the GenParams itself, allowing for method
 // chaining when building the parameters for a request.
 type GenParams interface {
-	// Ctx sets the context for the API request. This can be used to control cancellation
-	// and timeouts for the request, as well as to pass additional metadata or values
-	// that may be needed by the provider during the request.
-	Ctx(context.Context) GenParams
-
 	// Set sets a parameter with the given name and value. This can be used to set any
 	// parameter that is not explicitly covered by the other methods in this interface.
 	Set(name string, val any) GenParams
@@ -256,7 +251,7 @@ type Service interface {
 	// conversations.
 	//
 	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
-	Gen(params GenParams) (GenResponse, error)
+	Gen(ctx context.Context, params GenParams) (GenResponse, error)
 
 	// Send a structured list of input messages with text and/or image content, and the
 	// model will generate the next message in the conversation.
@@ -265,7 +260,7 @@ type Service interface {
 	// conversations.
 	//
 	// Note: If you choose to set a timeout for this request, we recommend 10 minutes.
-	GenStream(params GenParams) iter.Seq2[GenResponse, error]
+	GenStream(ctx context.Context, params GenParams) iter.Seq2[GenResponse, error]
 
 	// GenParams creates a `GenParams` that can be used to build the parameters for
 	// generation requests. This includes setting the system prompt, input messages,

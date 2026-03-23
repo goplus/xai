@@ -40,8 +40,8 @@ func (p *Service) Features() xai.Feature {
 	return xai.FeatureGen | xai.FeatureGenStream | xai.FeatureOperation
 }
 
-func (p *Service) Gen(params xai.GenParams) (xai.GenResponse, error) {
-	ctx, model, contents, config := buildGenParams(params)
+func (p *Service) Gen(ctx context.Context, params xai.GenParams) (xai.GenResponse, error) {
+	model, contents, config := buildGenParams(params)
 	resp, err := p.models.GenerateContent(ctx, model, contents, config)
 	if err != nil {
 		return nil, err // TODO(xsw): translate error
@@ -49,8 +49,8 @@ func (p *Service) Gen(params xai.GenParams) (xai.GenResponse, error) {
 	return response{resp}, nil
 }
 
-func (p *Service) GenStream(params xai.GenParams) iter.Seq2[xai.GenResponse, error] {
-	ctx, model, contents, config := buildGenParams(params)
+func (p *Service) GenStream(ctx context.Context, params xai.GenParams) iter.Seq2[xai.GenResponse, error] {
+	model, contents, config := buildGenParams(params)
 	iter := p.models.GenerateContentStream(ctx, model, contents, config)
 	return func(yield func(xai.GenResponse, error) bool) {
 		iter(func(resp *genai.GenerateContentResponse, err error) bool {

@@ -17,7 +17,6 @@
 package claude
 
 import (
-	"context"
 	"reflect"
 	"time"
 
@@ -73,7 +72,6 @@ type params struct {
 	params  anthropic.BetaMessageNewParams
 	pparams *util.Params[adapter]
 	opts    []option.RequestOption
-	ctx     context.Context
 }
 
 /*
@@ -227,23 +225,14 @@ func (p *params) Timeout(timeout time.Duration) xai.GenParams {
 	return p
 }
 
-func (p *params) Ctx(ctx context.Context) xai.GenParams {
-	p.ctx = ctx
-	return p
-}
-
 func (p *Service) GenParams() xai.GenParams {
 	return &params{}
 }
 
-func buildParams(in xai.GenParams) (context.Context, anthropic.BetaMessageNewParams, []option.RequestOption) {
+func buildParams(in xai.GenParams) (anthropic.BetaMessageNewParams, []option.RequestOption) {
 	p := in.(*params)
 	// TODO(xsw): check param values
-	ctx := p.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	return ctx, p.params, p.opts
+	return p.params, p.opts
 }
 
 // -----------------------------------------------------------------------------

@@ -17,7 +17,6 @@
 package openai
 
 import (
-	"context"
 	"reflect"
 	"time"
 
@@ -76,7 +75,6 @@ type params struct {
 	opts    []option.RequestOption
 	sys     responses.ResponseInputMessageContentListParam
 	msgs    []xai.MsgBuilder
-	ctx     context.Context
 }
 
 /*
@@ -297,29 +295,20 @@ func (p *params) Timeout(timeout time.Duration) xai.GenParams {
 	return p
 }
 
-func (p *params) Ctx(ctx context.Context) xai.GenParams {
-	p.ctx = ctx
-	return p
-}
-
 func (p *Service) GenParams() xai.GenParams {
 	return &params{}
 }
 
-func buildParams(in xai.GenParams) (context.Context, responses.ResponseNewParams, []option.RequestOption) {
+func buildParams(in xai.GenParams) (responses.ResponseNewParams, []option.RequestOption) {
 	p := in.(*params)
 	// TODO(xsw): check param values
-	ctx := p.ctx
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	// Merge system prompt and messages into input param
 	var sys responses.ResponseInputItemUnionParam
 	if len(p.sys) > 0 {
 		sys = responses.ResponseInputItemParamOfMessage(p.sys, responses.EasyInputMessageRoleSystem)
 	}
 	p.params.Input = buildMessages(p.msgs, sys)
-	return ctx, p.params, p.opts
+	return p.params, p.opts
 }
 
 // -----------------------------------------------------------------------------
