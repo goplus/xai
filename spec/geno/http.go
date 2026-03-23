@@ -24,8 +24,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	xai "github.com/goplus/xai/spec"
 )
 
 // -----------------------------------------------------------------------------
@@ -99,7 +97,7 @@ type HTTPOptions struct {
 
 // BaseURL sets the base URL for the request. It will override the client's base
 // URL if set.
-func (p *HTTPOptions) BaseURL(baseURL string) xai.OptionBuilder {
+func (p *HTTPOptions) BaseURL(baseURL string) *HTTPOptions {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		panic(err)
@@ -110,7 +108,7 @@ func (p *HTTPOptions) BaseURL(baseURL string) xai.OptionBuilder {
 
 // Timeout sets the timeout for the request. It will override the client's timeout
 // if set.
-func (p *HTTPOptions) Timeout(timeout time.Duration) xai.OptionBuilder {
+func (p *HTTPOptions) Timeout(timeout time.Duration) *HTTPOptions {
 	p.timeout = &timeout
 	return p
 }
@@ -142,13 +140,12 @@ func (p *Request) Json(v any) error {
 
 // Do sends the HTTP request and returns the response.
 // options can be nil, in which case the client's settings will be used.
-func (p *Request) Do(ctx context.Context, options xai.OptionBuilder) (*http.Response, error) {
+func (p *Request) Do(ctx context.Context, options *HTTPOptions) (*http.Response, error) {
 	var baseURL *url.URL
 	var timeout *time.Duration
 	if options != nil {
-		opts := options.(*HTTPOptions)
-		baseURL = opts.baseURL
-		timeout = opts.timeout
+		baseURL = options.baseURL
+		timeout = options.timeout
 	}
 	req := p.Request.WithContext(ctx)
 	client := &p.c.client

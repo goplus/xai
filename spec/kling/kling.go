@@ -29,8 +29,8 @@ import (
 
 // -----------------------------------------------------------------------------
 
-func newGenImageResponse(c *geno.Client, body map[string]any) (xai.OperationResponse, error) {
-	return geno.NewOperationResponse[adapter](c, xai.GenImage, body), nil
+func newGenImageResponse(c *geno.Client, body map[string]any, cp *geno.CallParamsBase) (xai.OperationResponse, error) {
+	return geno.NewOperationResponse[adapter](c, xai.GenImage, body, cp), nil
 }
 
 // -----------------------------------------------------------------------------

@@ -135,7 +135,7 @@ type GenParams interface {
 	Tools(tools ...ToolBase) GenParams
 
 	// The model that will complete your prompt.
-	Model(model Model) GenParams
+	Model(Model) GenParams
 
 	// The maximum number of tokens to generate before stopping.
 	//
@@ -174,11 +174,11 @@ type GenParams interface {
 	TopP(float64) GenParams
 
 	// BaseURL sets the base URL for the API endpoint.
-	BaseURL(base string) GenParams
+	BaseURL(string) GenParams
 
 	// Timeout sets a timeout for the API request. If the request takes longer than
 	// the specified duration, it will be aborted and an error will be returned.
-	Timeout(timeout time.Duration) GenParams
+	Timeout(time.Duration) GenParams
 }
 
 // -----------------------------------------------------------------------------
