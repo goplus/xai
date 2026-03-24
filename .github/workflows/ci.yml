@@ -15,6 +15,7 @@ jobs:
       matrix:
         module:
           - "."
+          - "demo"
           - "spec/openai"
           - "spec/claude"
           - "spec/gemini"
