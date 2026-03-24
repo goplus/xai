@@ -7,6 +7,7 @@ require (
 	github.com/goplus/xai/spec/claude v0.2.0
 	github.com/goplus/xai/spec/gemini v0.2.0
 	github.com/goplus/xai/spec/openai v0.2.0
+	github.com/qiniu/x v1.16.5
 )
 
 require (
